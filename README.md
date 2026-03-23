@@ -18,10 +18,8 @@ Auxiliar a comunidade acadêmica do IFRN através de uma interface intuitiva que
 ---
 
 ## Tecnologia Front-End
-Para garantir performance e uma experiência de usuário (UX) superior, utilizamos:
 
-| Tecnologia | 
-| **Next.js** | 
+**Next.js** 
 
 
 
