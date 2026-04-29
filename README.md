@@ -1,5 +1,7 @@
 # Projeto Prática
 
+docs: https://docs.google.com/document/d/1TAAgqXNDqt-VwOz2UvTYLu7HG_jW5TVuvvDxYErDZT8/edit?usp=sharing
+
 O **Projeto Prática** é um sistema web desenvolvido para modernizar e centralizar o cadastro de **Centros de Aprendizagem (CA)** do **IFRN**, servindo como uma ponte eficiente entre alunos e professores.
 ---
 ## Equipe
