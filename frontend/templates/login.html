@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Login</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>Login</h1>
+
+        <form id="form-login">
+
+            <input
+            type="email"
+            id="email"
+            placeholder="Email">
+
+            <input
+            type="password"
+            id="senha"
+            placeholder="Senha">
+
+            <button type="submit">
+                Entrar
+            </button>
+
+        </form>
+
+    </div>
+
+<script>
+
+const form = document.getElementById('form-login')
+
+form.addEventListener('submit', async (e) => {
+
+    e.preventDefault()
+
+    const resposta = await fetch('/login', {
+
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+
+            email: email.value,
+            senha: senha.value
+        })
+    })
+
+    const dados = await resposta.json()
+
+    if(dados.redirect){
+
+        window.location.href = dados.redirect
+    }
+})
+
+</script>
+
+</body>
+</html>

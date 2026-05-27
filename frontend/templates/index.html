@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>PratiCA</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>Cadastro</h1>
+
+        <form id="formulario">
+
+            <input
+            type="text"
+            id="nome"
+            placeholder="Nome completo"
+            required>
+
+            <input
+            type="email"
+            id="email"
+            placeholder="Email"
+            required>
+
+            <input
+            type="text"
+            id="matricula"
+            placeholder="Matrícula"
+            required>
+
+            <select id="tipo_usuario" required>
+
+                <option value="">
+                    Tipo de usuário
+                </option>
+
+                <option value="aluno">
+                    Aluno
+                </option>
+
+                <option value="professor">
+                    Professor
+                </option>
+
+                <option value="mediador">
+                    Mediador
+                </option>
+
+            </select>
+
+            <input
+            type="password"
+            id="senha"
+            placeholder="Senha"
+            required>
+
+            <button type="submit">
+                Cadastrar
+            </button>
+
+        </form>
+
+    </div>
+
+    <script
+    src="{{ url_for('static', filename='script.js') }}">
+    </script>
+
+</body>
+</html>

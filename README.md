@@ -3,141 +3,133 @@
 docs: https://docs.google.com/document/d/1TAAgqXNDqt-VwOz2UvTYLu7HG_jW5TVuvvDxYErDZT8/edit?usp=sharing
 
 O **Projeto Prática** é um sistema web desenvolvido para modernizar e centralizar o cadastro de **Centros de Aprendizagem (CA)** do **IFRN**, servindo como uma ponte eficiente entre alunos e professores.
+
 ---
+
 ## Equipe
+
 A execução do projeto é realizada pelos desenvolvedores:
 
-* **Eduardo Vinícius**
-* **José Abílio**
-* **Lucas Fernando**
-* **Maria Luíza**
+- **Eduardo Vinícius**
+- **José Abílio**
+- **Lucas Fernando**
+- **Maria Luíza**
 
 ---
 
 ## Proposta
+
 Auxiliar a comunidade acadêmica do IFRN através de uma interface intuitiva que facilite o registro, a consulta e a gestão dos Centros de Aprendizagem, otimizando o fluxo de informações institucionais.
 
 ---
 
-## Tecnologia Front-End
+# Tecnologias Utilizadas
 
-**Next.js**
+## Front-End
+- HTML
+- CSS
+- JavaScript
 
----
+## Back-End
+- Python
+- Flask
+- Flask Login
+- Flask SQLAlchemy
+- Flask Bcrypt
 
-# Cronograma Inicial do Projeto (com datas)
+## Banco de Dados
+- MySQL
 
-##  Visão Geral
-O desenvolvimento do sistema será realizado entre **março e setembro de 2026**, com foco na entrega funcional completa até setembro.  
-Os meses seguintes serão destinados a melhorias visuais, refinamento e otimizações.
-
----
-
-##  Etapa 1 – Planejamento e Modelagem
-**Período:** 23/03/2026 a 10/04/2026  
-
-### Atividades:
-- Levantamento de requisitos  
-- Definição das funcionalidades  
-- Modelagem do banco de dados (DER)  
-- Definição da arquitetura (API REST)  
-- Criação do repositório no GitHub  
-
-### Entrega:
-- Documento de requisitos  
-- Estrutura inicial do projeto  
+## Ferramentas
+- Git/GitHub
+- Figma
+- Trello
+- XAMPP
+- MySQL Workbench
 
 ---
 
-##  Etapa 2 – Desenvolvimento do Backend (Parte 1)
-**Período:** 11/04/2026 a 10/05/2026  
+# Estrutura do Projeto
 
-### Atividades:
-- Estrutura do backend  
-- Implementação de usuários  
-- Sistema de autenticação (JWT)  
-- Primeiras rotas da API  
+```txt
+Pratica_POAS/
+│
+├── backend/
+│   ├── app.py
+│   ├── banco.py
+│   ├── schema.sql
+│   ├── requirements.txt
+│   ├── .env
+│   │
+│   └── models/
+│       └── usuario.py
+│
+└── frontend/
+    │
+    ├── templates/
+    │   ├── index.html
+    │   ├── login.html
+    │   └── dashboard.html
+    │
+    └── static/
+        ├── style.css
+        └── script.js
 
-### Entrega:
-- API com autenticação funcionando  
+Como Rodar o Projeto
+1. Clone o repositório
+git clone https://github.com/Maria72714/Pratica_POAS.git
+2. Entre na pasta do projeto
+cd Pratica_POAS
+3. Crie um ambiente virtual
+Windows
+python -m venv venv
+4. Ative o ambiente virtual
+CMD
+venv\Scripts\activate
+PowerShell
+.\venv\Scripts\Activate.ps1
+5. Instale as dependências
+pip install -r backend/requirements.txt
+Configuração do Banco de Dados
+1. Abra o XAMPP
 
----
+Inicie:
 
-##  Etapa 3 – Desenvolvimento do Backend (Parte 2)
-**Período:** 11/05/2026 a 10/06/2026  
+Apache
+MySQL
+2. Crie o banco de dados
 
-### Atividades:
-- Implementação de:
-  - Disciplinas  
-  - Agendamentos  
-  - Atendimentos  
-- Validações e regras de negócio  
-- Testes das rotas  
+Abra o MySQL Workbench e execute:
 
-### Entrega:
-- Backend completo e funcional  
+CREATE DATABASE pratica;
 
----
+Depois:
 
-##  Etapa 4 – Desenvolvimento do Frontend
-**Período:** 11/06/2026 a 20/07/2026  
+USE pratica;
+3. Execute o schema.sql
 
-### Atividades:
-- Criação das telas:
-  - Login  
-  - Dashboard  
-  - Agendamentos  
-- Integração com a API  
-- Navegação do sistema  
+Abra e execute o arquivo:
 
-### Entrega:
-- Sistema com interface funcional  
+backend/schema.sql
+Configuração do arquivo .env
 
----
+Crie um arquivo .env dentro da pasta backend.
 
-##  Etapa 5 – Integração e Testes
-**Período:** 21/07/2026 a 20/08/2026  
+Exemplo:
 
-### Atividades:
-- Integração completa frontend + backend  
-- Testes gerais  
-- Correção de bugs  
-- Ajustes de funcionamento  
+DATABASE_URL=mysql+pymysql://root:@localhost/pratica
 
-### Entrega:
-- Sistema estável e pronto para deploy  
+Caso o MySQL tenha senha:
 
----
+DATABASE_URL=mysql+pymysql://root:SENHA@localhost/pratica
+Executando o Projeto
+Entre na pasta backend
+cd backend
+Rode a aplicação Flask
+python app.py
 
-##  Etapa 6 – Deploy e Finalização
-**Período:** 21/08/2026 a 10/09/2026  
+Se tudo estiver correto, aparecerá algo semelhante a:
 
-### Atividades:
-- Containerização com Docker  
-- Configuração de CI/CD  
-- Deploy da aplicação  
-- Documentação do projeto  
-
-### Entrega:
-- Sistema publicado e funcionando online  
-
----
-
-##  Etapa 7 – Melhorias e Estilização
-**Período:** 11/09/2026 a 30/11/2026  
-
-### Atividades:
-- Melhorias na interface (UI/UX)  
-- Ajustes visuais  
-- Implementação de dashboards  
-- Possíveis melhorias com IA  
-- Otimização do sistema  
-
-### Entrega:
-- Sistema refinado e otimizado  
-
----
-
-
-
-
+Running on http://127.0.0.1:5000
+Acesse no navegador
+http://127.0.0.1:5000
