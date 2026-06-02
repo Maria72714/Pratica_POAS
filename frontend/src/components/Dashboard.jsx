@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const Dashboard = () => {
   // dados dos cards de estatisticas - depois isso vai vir da API do backend
+  //mockss
   const stats = [
     { label: 'Atendimentos Este Mês', value: '8' },
     { label: 'Próximo Atendimento', value: 'Hoje' },
@@ -53,7 +54,7 @@ const Dashboard = () => {
   return (
     <div className="flex-1 bg-gray-50">
       {/* banner de boas vindas */}
-      <div className="bg-emerald-900 text-white px-8 py-10">
+      <div className="bg-emerald-900 text-white px-8 py-10 ml-6 mr-6 rounded-xl mb-8 mt-10">
         <h1 className="text-3xl font-bold mb-2">Bem-vindo ao Centro de Aprendizagem</h1>
         <p className="text-emerald-100 text-lg">
           Agende atendimentos com monitores e acompanhe seu desenvolvimento acadêmico
@@ -63,13 +64,14 @@ const Dashboard = () => {
       <div className="p-8">
         {/* cards com as estatisticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          
           {/* o map() percorre o array stats e renderiza um card para cada item */}
           {/* o key={index} é obrigatorio no React para identificar cada elemento na lista */}
           {stats.map((stat, index) => (
             <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div>
                 <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
-                <p className="text-4xl font-bold text-gray-800 mt-2">{stat.value}</p>
+                <p className={`text-4xl font-bold mt-2 ${stat.value === 'Hoje' ? 'text-emerald-600' : 'text-gray-800'}`}>{stat.value}</p>
               </div>
             </div>
           ))}
