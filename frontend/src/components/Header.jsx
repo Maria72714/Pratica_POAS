@@ -7,11 +7,13 @@ const Header = () => {
         {/* barra de busca */}
         <div className="flex-1 max-w-xl">
           <div className="relative">
+            {/* input de busca - placeholder mostra o texto de exemplo */}
             <input
               type="text"
               placeholder="Buscar disciplinas, professores, atendimentos..."
               className="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
+            {/* icone de lupa da busca - posicionado com absolute */}
             <svg
               className="absolute left-3 top-3 h-5 w-5 text-gray-400"
               fill="none"
@@ -30,11 +32,12 @@ const Header = () => {
 
         {/* lado direito com notificacao, usuario e logout */}
         <div className="flex items-center gap-6">
-          {/* botao de notificacao */}
+          {/* botao de notificacao - o span vermelho indica que tem notificacoes nao lidas */}
           <button className="relative p-2 text-gray-500 hover:text-gray-700 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
+            {/* ponto vermelho indicando notificacao */}
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
@@ -44,6 +47,7 @@ const Header = () => {
               <p className="font-medium text-gray-800">Ana Carolina Silva</p>
               <p className="text-sm text-gray-500">Aluno - Mat. 20231145678</p>
             </div>
+            {/* avatar com as iniciais do nome */}
             <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
               AC
             </div>

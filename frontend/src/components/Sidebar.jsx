@@ -13,6 +13,8 @@ const Sidebar = () => {
       {/* menu de navegacao */}
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
+          {/* item do menu ativo (pagina atual) - bg-emerald-800 deixa destacado */}
+           
           <li>
             <a
               href="#"
@@ -24,6 +26,7 @@ const Sidebar = () => {
               Início
             </a>
           </li>
+          {/* itens do menu inativos - hover:bg-emerald-800 muda a cor quando passa o mouse */}
           <li>
             <a
               href="#"
