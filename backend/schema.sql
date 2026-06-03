@@ -7,7 +7,7 @@ CREATE TYPE status_solicitacao AS ENUM ('Pendente', 'Aprovado', 'Recusado', 'Can
 
 CREATE TYPE modalidade_aula AS ENUM ('Presencial', 'Remoto');
 
-CREATe TYPE tipo_atendimento AS ENUM ('TAL', 'TAI')
+CREATe TYPE tipo_atendimento AS ENUM ('TAL', 'TAI');
 
 -- TABELA DE disciplinas
 
@@ -56,9 +56,8 @@ CREATE TABLE notificacoes(
 
 CREATE TABLE horarios(
 	id SERIAL PRIMARY KEY,
-	horario_inicio TIMESTAMP NOT NULL,
-	horario_termino TIMESTAMP NOT NULL,
-	status status_horario
+	horario_inicio TIME NOT NULL,
+	horario_termino TIME NOT NULL
 );
 
 CREATE TABLE salas(
@@ -70,23 +69,24 @@ CREATE TABLE atendimentos(
 	id SERIAL PRIMARY KEY,
 	id_professor INT REFERENCES professores(id) NOT NULL,
 	id_turma INT REFERENCES turmas(id) NOT NULL,
-	id_horario INT REFERENCES horarios(id) NOT NULL,
-    id_sala INT REFERENCES salas(id) NOT NULL,
 	id_disciplina INT REFERENCES disciplinas(id) NOT NULL,
     id_solicitacao INT UNIQUE REFERENCES solicitacoes(id),
-	tipo_atendimento tipo_atendimento
+	id_horario INT REFERENCES horarios(id) NOT NULL,
+    id_sala INT REFERENCES salas(id),
+	data_atendimento DATE NOT NULL,
+	tipo_atendimento tipo_atendimento,
+	modalidade modalidade_aula,
 	assunto VARCHAR(500),
     relatorio VARCHAR(500),
-    status status_atendimento,
-	modalidade modalidade_aula
+    status status_atendimento
 );
 
 CREATE TABLE solicitacoes(
     id SERIAL PRIMARY KEY,
     id_aluno INT REFERENCES alunos(id) NOT NULL,
     id_mediador INT REFERENCES mediador(id) NOT NULL,
-    assunto VARCHAR(500),
-    status status_solicitacao
+    observacoes TEXT,
+    status status_solicitacao DEFAULT 'Pendente'
 );
 
 
