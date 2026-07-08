@@ -21,7 +21,7 @@ Auxiliar a comunidade acadêmica do IFRN através de uma interface intuitiva que
 
 ## Tecnologia Front-End
 
-**Next.js**
+**React.js**
 
 ---
 
