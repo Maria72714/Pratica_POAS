@@ -6,8 +6,26 @@ import Dashboard from './components/Dashboard';
 import DashboardProfessor from './components/DashboardProfessor';
 import SolicitacaoAtendimento from './components/SolicitacaoAtendimento';
 
+// ── Rotas de autenticação OAuth2 SUAP ────────────────────────────────────────
+import Login from './pages/Login';
+import Callback from './pages/Callback';
+import DashboardAuth from './pages/DashboardAuth';
+
+import { useNavigate } from 'react-router-dom';
+
 function AppLayout({ children, isProfessor }) {
-  // Configuração simples para demonstrar as rotas
+  const navigate = useNavigate();
+  const dados = localStorage.getItem('usuario');
+  const usuarioLogado = dados ? JSON.parse(dados) : null;
+
+  React.useEffect(() => {
+    if (!dados) {
+      navigate('/login');
+    }
+  }, [dados, navigate]);
+
+  if (!dados) return null;
+
   const professorMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/professor" },
     { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Meus Atendimentos", link: "/professor" },
@@ -23,14 +41,24 @@ function AppLayout({ children, isProfessor }) {
     { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/" }
   ];
 
-  const professorInfo = { nome: "Prof. Dr. Roberto Santos", descricao: "Professor • Mat. 198765", iniciais: "PD", corAvatar: "bg-emerald-700" };
-  const alunoInfo = { nome: "Ana Carolina Silva", descricao: "Aluno - Mat. 20231145678", iniciais: "AC", corAvatar: "bg-emerald-600" };
+  const iniciais = usuarioLogado?.nome 
+    ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() 
+    : 'U';
+
+  const usuarioInfo = {
+    nome: usuarioLogado?.nome || (isProfessor ? "Professor" : "Aluno"),
+    descricao: `${usuarioLogado?.tipo_vinculo || (isProfessor ? 'Professor' : 'Aluno')} • Mat. ${usuarioLogado?.matricula || ''}`,
+    iniciais: iniciais,
+    corAvatar: isProfessor ? "bg-emerald-700" : "bg-emerald-600",
+    foto: usuarioLogado?.foto,
+    email: usuarioLogado?.email
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar itensMenu={isProfessor ? professorMenu : alunoMenu} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header usuario={isProfessor ? professorInfo : alunoInfo} />
+        <Header usuario={usuarioInfo} />
         {children}
       </div>
     </div>
@@ -41,11 +69,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rotas do Aluno */}
+        {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
+        <Route path="/login"     element={<Login />} />
+        <Route path="/callback"  element={<Callback />} />
+        <Route path="/dashboard" element={<DashboardAuth />} />
+
+        {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
         <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
         <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false}><SolicitacaoAtendimento /></AppLayout>} />
-        
-        {/* Rotas do Professor */}
+
+        {/* ── Rotas do Professor ───────────────────────────────────────── */}
         <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
       </Routes>
     </BrowserRouter>
