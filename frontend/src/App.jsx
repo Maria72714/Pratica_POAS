@@ -12,6 +12,7 @@ import Callback from './pages/Callback';
 import DashboardAuth from './pages/DashboardAuth';
 
 import { useNavigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 
 function AppLayout({ children, isProfessor }) {
   const navigate = useNavigate();
@@ -67,21 +68,23 @@ function AppLayout({ children, isProfessor }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
-        <Route path="/login"     element={<Login />} />
-        <Route path="/callback"  element={<Callback />} />
-        <Route path="/dashboard" element={<DashboardAuth />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
+          <Route path="/login"     element={<Login />} />
+          <Route path="/callback"  element={<Callback />} />
+          <Route path="/dashboard" element={<DashboardAuth />} />
 
-        {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
-        <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
-        <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false}><SolicitacaoAtendimento /></AppLayout>} />
+          {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
+          <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
+          <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false}><SolicitacaoAtendimento /></AppLayout>} />
 
-        {/* ── Rotas do Professor ───────────────────────────────────────── */}
-        <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
-      </Routes>
-    </BrowserRouter>
+          {/* ── Rotas do Professor ───────────────────────────────────────── */}
+          <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
