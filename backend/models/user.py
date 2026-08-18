@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import Optional
 from professor import Professor
+from aluno import Aluno
+from mediador import Mediador
 
 class Usuario(SQLModel, table=True):
     __tablename__ = 'usuarios'
@@ -11,6 +13,8 @@ class Usuario(SQLModel, table=True):
     senha: str = Field(max_length=100, nullable=False)
 
     professor: Optional["Professor"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
+    aluno: Optional["Aluno"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
+    mediador: Optional["Mediador"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
 
 class UsuarioCreate(SQLModel):
     nome: str
