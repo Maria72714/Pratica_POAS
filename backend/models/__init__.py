@@ -4,5 +4,5 @@ from .professor import Professor
 from .mediador import Mediador
 from .disciplina import Disciplina
 from .horario import Horario
-from .notificacoes import Notificacao
+from .notificacao import Notificacao
 from .turma import Turma
