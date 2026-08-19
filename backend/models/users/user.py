@@ -1,8 +1,8 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import Optional, List
-from professor import Professor
-from aluno import Aluno
-from mediador import Mediador
+from backend.models.users.professor import Professor
+from backend.models.users.aluno import Aluno
+from backend.models.users.mediador import Mediador
 from notificacao import Notificacao
 from usuario_notificacao import UsuarioNotificacao
 

@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import Optional
-from user import Usuario
+from backend.models.users.user import Usuario
 
 class Mediador(SQLModel, table=True):
     __tablename__ = 'mediadores'

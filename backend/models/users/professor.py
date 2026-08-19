@@ -1,9 +1,9 @@
 from typing import List
 from sqlmodel import SQLModel, table, Field, Relationship
-from user import Usuario
+from backend.models.users.user import Usuario
 from turma import Turma
-from professor_turma import ProfessorTurma
-from professor_disciplina import ProfessorDisciplina
+from backend.models.associativas.professor_turma import ProfessorTurma
+from backend.models.associativas.professor_disciplina import ProfessorDisciplina
 from disciplina import Disciplina
 
 class Professor(SQLModel, table=True):

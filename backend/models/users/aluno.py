@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import List
-from user import Usuario
-from backend.models.aluno_atendimento import AlunoAtendimento
+from backend.models.users.user import Usuario
+from backend.models.associativas.aluno_atendimento import AlunoAtendimento
 from atendimento import Atendimento
 
 class Aluno(SQLModel, table=True):
