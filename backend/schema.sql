@@ -90,7 +90,7 @@ CREATE TABLE solicitacoes(
 );
 
 
----------- TABELAS AUXILIARES ----------
+---------- TABELAS ASSOCIATIVAS ----------
 
 CREATE TABLE aluno_atendimentos(
 	id_aluno INT REFERENCES alunos(id),

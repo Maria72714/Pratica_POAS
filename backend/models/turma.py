@@ -1,4 +1,7 @@
-from sqlmodel import SQLModel, table, Field
+from sqlmodel import SQLModel, table, Field, Relationship
+from typing import List
+from professor import Professor
+from professor_turma import ProfessorTurma
 
 class Turma(SQLModel, table=True):
     __tablename__ = 'turmas'
@@ -6,3 +9,5 @@ class Turma(SQLModel, table=True):
     curso: str = Field(max_length=100, nullable=False)
     ano: str
     turno: str = Field(max_length=10)
+
+    professores: List["Professor"] = Relationship(back_populates="turmas", link_model=ProfessorTurma)

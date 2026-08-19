@@ -1,5 +1,8 @@
-from sqlmodel import SQLModel, table, Field
+from sqlmodel import SQLModel, table, Field, Relationship
+from typing import List
 from datetime import datetime
+from user import Usuario
+from usuario_notificacao import UsuarioNotificacao
 
 class Notificacao(SQLModel, table=True):
     __tablename__ = 'notificacoes'
@@ -9,3 +12,5 @@ class Notificacao(SQLModel, table=True):
     lida: bool = Field(default=False)   
     criado_em: datetime = Field(default_factory=datetime.now)
     lido_em: datetime | None = None
+
+    notificacoes: List["Usuario"] = Relationship(back_populates='notificacoes', link_model=UsuarioNotificacao)

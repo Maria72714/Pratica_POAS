@@ -6,3 +6,11 @@ from .disciplina import Disciplina
 from .horario import Horario
 from .notificacao import Notificacao
 from .turma import Turma
+from .solicitacao import Solicitacao
+from .atendimento import Atendimento
+from .sala import Sala
+from .aluno_atendimento import AlunoAtendimento
+from .professor_turma import ProfessorTurma
+from .professor_disciplina import ProfessorDisciplina
+from .horario_sala import HorarioSala
+from .usuario_notificacao import UsuarioNotificacao
