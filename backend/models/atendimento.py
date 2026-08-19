@@ -1,8 +1,13 @@
-from sqlmodel import SQLModel, table, Field
+from sqlmodel import SQLModel, table, Field, Relationship
 from datetime import date
-from enums import TipoAtendimento, ModalidadeAula
+from typing import List
+from enums import TipoAtendimento, ModalidadeAula, StatusAtendimento
+from aluno import Aluno
+from aluno_atendimento import AlunoAtendimento
+
 
 class Atendimento(SQLModel, table=True):
+    __tablename__ = 'atendimentos'
     id: int | None = Field(default=None, primary_key=True)
     id_professor: int = Field(foreign_key="professores.id")
     id_turma: int = Field(foreign_key="turmas.id")
@@ -13,28 +18,9 @@ class Atendimento(SQLModel, table=True):
     data_atendimento: date
     tipo_atendimento: TipoAtendimento = Field(default=TipoAtendimento.TAL)   
     modalidade: ModalidadeAula = Field(default=ModalidadeAula.PRESENCIAL)
-    assunto: str | None = Field(max_length=500, default=None)
-    status: 
+    assunto: str | None = Field(max_length=250, default=None)
+    relatorio: str = Field(max_length=500)
+    status: StatusAtendimento = Field(default=StatusAtendimento.AGENDADO)
 
+    alunos: List["Aluno"] = Relationship(back_populates="atendimentos", link_model=AlunoAtendimento)
 
-
-
-
-
-'''
-CREATE TABLE atendimentos(
-	id SERIAL PRIMARY KEY,
-	id_professor INT REFERENCES professores(id) NOT NULL,
-	id_turma INT REFERENCES turmas(id) NOT NULL,
-	id_disciplina INT REFERENCES disciplinas(id) NOT NULL,
-    id_solicitacao INT UNIQUE REFERENCES solicitacoes(id),
-	id_horario INT REFERENCES horarios(id) NOT NULL,
-    id_sala INT REFERENCES salas(id),
-	data_atendimento DATE NOT NULL,
-	tipo_atendimento tipo_atendimento,
-	modalidade modalidade_aula,
-	assunto VARCHAR(500),
-    relatorio VARCHAR(500),
-    status status_atendimento
-);
-'''

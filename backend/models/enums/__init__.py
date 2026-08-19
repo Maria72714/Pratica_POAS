@@ -13,3 +13,13 @@ class StatusAtendimento(str, Enum):
     CONCLUIDO = 'Concluído'
     CANCELADO = 'Cancelado'
 
+class StatusSolicitacao(str, Enum):
+    PENDENTE = 'Pendente'
+    APROVADO = 'Aprovado'
+    RECUSADO = 'Recusado'
+    CANCELADO = 'Cancelado'
+
+class StatusHorario(str, Enum):
+    DISPONIVEL = 'Disponível'
+    RESERVADO = 'Reservado'
+
