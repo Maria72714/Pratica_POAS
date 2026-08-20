@@ -166,7 +166,7 @@ const Login = () => {
                 onClick={() => setShowDevLogin(!showDevLogin)}
                 className="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium transition-colors"
               >
-                <span>Login Local (Dev)</span>
+                <span>Login Local</span>
                 <svg className={`w-4 h-4 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
