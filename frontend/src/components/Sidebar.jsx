@@ -32,7 +32,10 @@ const Sidebar = ({ itensMenu }) => {
     <aside className="w-72 bg-emerald-900 min-h-screen flex flex-col">
       {/* logo e info do campus */}
       <div className="p-6 border-b border-emerald-800">
-        <h1 className="text-2xl font-bold text-white">pratiCA</h1>
+        <div className="flex items-center gap-3">
+          <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="w-10 h-10 flex-shrink-0 object-contain" />
+          <h1 className="text-2xl font-bold text-white">pratiCA</h1>
+        </div>
         <p className="text-emerald-200 text-sm mt-1">Centro de Aprendizagem</p>
         <p className="text-emerald-300 text-xs mt-2">IFRN - Campus Caicó</p>
       </div>
@@ -48,11 +51,10 @@ const Sidebar = ({ itensMenu }) => {
               <li key={index}>
                 <Link
                   to={item.link || '#'}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
-                    isAtivo 
-                      ? 'bg-emerald-800 text-white' 
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isAtivo
+                      ? 'bg-emerald-800 text-white'
                       : 'text-emerald-50 hover:bg-emerald-800'
-                  }`}
+                    }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icone} />
