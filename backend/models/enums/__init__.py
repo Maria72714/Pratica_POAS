@@ -23,3 +23,12 @@ class StatusHorario(str, Enum):
     DISPONIVEL = 'Disponível'
     RESERVADO = 'Reservado'
 
+class TipoMediador(str, Enum):
+    LIBRAS = 'Libras'
+    BRAILE = 'Braile'
+    ACOMPANHAMENTO = 'Acompanhamento'
+    MOBILIDADE = 'Mobilidade'
+    TRANSTORNOS_ESPECIFICOS = 'Transtornos Específicos'
+    OUTRO = 'Outro'
+
+
