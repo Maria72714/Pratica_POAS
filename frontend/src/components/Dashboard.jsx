@@ -81,7 +81,10 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800">Meus Agendamentos</h2>
-            <button className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium">
+            <button
+              onClick={() => window.location.href = "/solicitar-atendimento"}
+              className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+>
               Solicitar Novo Atendimento
             </button>
           </div>
