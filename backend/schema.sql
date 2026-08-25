@@ -27,12 +27,15 @@ CREATE TABLE usuarios(
 	id SERIAL PRIMARY KEY,
 	nome VARCHAR(255) NOT NULL,
 	email VARCHAR(255) NOT NULL,
+	email_escolar VARCHAR(255),
 	matricula VARCHAR(50) NOT NULL,
-	senha VARCHAR(255) NOT NULL
+	senha VARCHAR(255) NOT NULL,
+	perfil_preenchido BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE professor(
-	id INT PRIMARY KEY REFERENCES usuarios(id)
+CREATE TABLE professores(
+	id INT PRIMARY KEY REFERENCES usuarios(id),
+	curso VARCHAR(100)
 );
 
 CREATE TABLE mediador(
@@ -41,7 +44,12 @@ CREATE TABLE mediador(
 
 CREATE TABLE alunos(
 	id INT PRIMARY KEY REFERENCES usuarios(id),
-	id_turma REFERENCES turmas(id),
+	id_turma INT REFERENCES turmas(id),
+	curso VARCHAR(100),
+	ano_letivo VARCHAR(50),
+	is_tai_claimed BOOLEAN DEFAULT FALSE,
+	tai_status VARCHAR(20) DEFAULT 'NAO_SOLICITADO',
+	laudo_url VARCHAR(500),
     necessidades_especiais BOOLEAN DEFAULT FALSE
 );
 

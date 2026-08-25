@@ -51,22 +51,23 @@ const Dashboard = () => {
     { month: 'Abr', atendimentos: 4 },
   ];
 
+  const dadosStorage = localStorage.getItem('usuario');
+  const usuarioLogado = dadosStorage ? JSON.parse(dadosStorage) : null;
+  const isApprovedTai = usuarioLogado?.tai_status === 'APROVADO';
+
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 font-sans">
       {/* banner de boas vindas */}
       <div className="bg-emerald-900 text-white px-8 py-10 ml-6 mr-6 rounded-xl mb-8 mt-10">
         <h1 className="text-3xl font-bold mb-2">Bem-vindo ao Centro de Aprendizagem</h1>
         <p className="text-emerald-100 text-lg">
-          Agende atendimentos com monitores e acompanhe seu desenvolvimento acadêmico
+          Participe de atendimentos (CA) com professores e acompanhe seu desenvolvimento acadêmico
         </p>
       </div>
 
       <div className="p-8">
         {/* cards com as estatisticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          
-          {/* o map() percorre o array stats e renderiza um card para cada item */}
-          {/* o key={index} é obrigatorio no React para identificar cada elemento na lista */}
           {stats.map((stat, index) => (
             <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div>
@@ -80,13 +81,22 @@ const Dashboard = () => {
         {/* secao de agendamentos */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Meus Agendamentos</h2>
-            <button
-              onClick={() => window.location.href = "/solicitar-atendimento"}
-              className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
->
-              Solicitar Novo Atendimento
-            </button>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Atendimentos e Horários</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isApprovedTai
+                  ? 'Você pode participar dos atendimentos disponíveis ou abrir uma nova solicitação TAI.'
+                  : 'Como aluno TAL, você participa dos horários de atendimento (CA) criados pelos professores.'}
+              </p>
+            </div>
+            {isApprovedTai && (
+              <button
+                onClick={() => window.location.href = "/solicitar-atendimento"}
+                className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm cursor-pointer shadow-sm"
+              >
+                Solicitar Atendimento TAI
+              </button>
+            )}
           </div>
 
           {/* lista de agendamentos */}

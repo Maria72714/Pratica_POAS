@@ -11,8 +11,10 @@ class Usuario(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     nome: str = Field(max_length=100)
     email: str = Field(max_length=100, unique=True)
+    email_escolar: Optional[str] = Field(default=None, max_length=100)
     matricula: str = Field(max_length=20, unique=True)
-    senha: str = Field(max_length=100)
+    senha: str = Field(default="", max_length=100)
+    perfil_preenchido: bool = Field(default=False)
 
     professor: Optional["Professor"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
     aluno: Optional["Aluno"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
