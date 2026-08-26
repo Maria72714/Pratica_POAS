@@ -4,6 +4,8 @@ from pydantic import BaseModel
 import httpx
 import os
 from dotenv import load_dotenv
+from routes import atendimento
+
 
 load_dotenv()
 
@@ -16,7 +18,7 @@ SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
 SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
 
 app = FastAPI()
-
+app.include_router(atendimento.router, prefix="/api")  
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
