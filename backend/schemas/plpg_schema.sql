@@ -1,3 +1,5 @@
+CREATE DATABASE pratiCA_db 
+
 -- TYPES
 CREATE TYPE status_horario AS ENUM ('Disponivel', 'Reservado');
 
