@@ -1,11 +1,9 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import List, TYPE_CHECKING
+from typing import List
 
-from backend.models.associativas.aluno_atendimento import AlunoAtendimento
-from atendimento import Atendimento
-
-if TYPE_CHECKING:
-    from backend.models.users.user import Usuario
+from models.associativas.aluno_atendimento import AlunoAtendimento
+from ..atendimento import Atendimento
+from user import Usuario
 
 class Aluno(SQLModel, table=True):
     __tablename__ = "alunos"

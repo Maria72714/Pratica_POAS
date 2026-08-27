@@ -2,8 +2,8 @@ from sqlmodel import SQLModel, table, Field, Relationship
 from datetime import date
 from typing import List
 from enums import TipoAtendimento, ModalidadeAula, StatusAtendimento
-from backend.models.users.aluno import Aluno
-from backend.models.associativas.aluno_atendimento import AlunoAtendimento
+from models.users.aluno import Aluno
+from models.associativas.aluno_atendimento import AlunoAtendimento
 
 
 class Atendimento(SQLModel, table=True):

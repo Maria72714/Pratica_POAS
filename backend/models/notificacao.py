@@ -1,8 +1,8 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import List
 from datetime import datetime
-from backend.models.users.user import Usuario
-from backend.models.associativas.usuario_notificacao import UsuarioNotificacao
+from models.users.user import Usuario
+from models.associativas.usuario_notificacao import UsuarioNotificacao
 
 class Notificacao(SQLModel, table=True):
     __tablename__ = 'notificacoes'

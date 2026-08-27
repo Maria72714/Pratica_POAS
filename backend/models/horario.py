@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, table, Field, Relationship
 from typing import List
 from datetime import time
 from sala import Sala
-from backend.models.associativas.horario_sala import HorarioSala
+from models.associativas.horario_sala import HorarioSala
 
 class Horario(SQLModel, table=True):
     __tablename__ = 'horarios'

@@ -4,7 +4,8 @@ from pydantic import BaseModel
 import httpx
 import os
 from dotenv import load_dotenv
-from routes import atendimento
+from routes.atendimentos import atendimento
+from deps.deps import lifespan
 
 
 load_dotenv()
@@ -17,7 +18,7 @@ REDIRECT_URI  = os.getenv("REDIRECT_URI",  "http://localhost:5173/callback")
 SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
 SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.include_router(atendimento.router, prefix="/api")  
 app.add_middleware(
     CORSMiddleware,
