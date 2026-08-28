@@ -1,7 +1,9 @@
 from sqlmodel import SQLModel, table, Field, Relationship
-from typing import Optional
-from models.users.user import Usuario
-from enums import TipoMediador
+from models.enums import TipoMediador
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.users.user import Usuario
 
 class Mediador(SQLModel, table=True):
     __tablename__ = 'mediadores'

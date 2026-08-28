@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, table
-from enums import StatusSolicitacao
+from models.enums import StatusSolicitacao
 
 class Solicitacao(SQLModel, table=True):
     __tablename__ = 'solicitacoes'

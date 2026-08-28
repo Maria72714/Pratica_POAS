@@ -1,10 +1,12 @@
 from sqlmodel import SQLModel, table, Field, Relationship
-from typing import Optional, List
-from models.users.professor import Professor
-from models.users.aluno import Aluno
-from models.users.mediador import Mediador
-from notificacao import Notificacao
-from associativas.usuario_notificacao import UsuarioNotificacao
+from typing import Optional, List, TYPE_CHECKING
+from models.associativas.usuario_notificacao import UsuarioNotificacao
+
+if TYPE_CHECKING:
+    from models.users.professor import Professor
+    from models.users.aluno import Aluno
+    from models.users.mediador import Mediador  
+    from models.notificacao import Notificacao  
 
 class Usuario(SQLModel, table=True):
     __tablename__ = 'usuarios'
