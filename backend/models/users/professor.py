@@ -1,14 +1,9 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from sqlmodel import SQLModel, Field, Relationship
 
-from backend.models.associativas.professor_turma import ProfessorTurma
-from backend.models.associativas.professor_disciplina import ProfessorDisciplina
-
-if TYPE_CHECKING:
-    from backend.models.users.user import Usuario
-    from turma import Turma
-    from disciplina import Disciplina
+from models.associativas.professor_turma import ProfessorTurma
+from models.associativas.professor_disciplina import ProfessorDisciplina
 
 
 class Professor(SQLModel, table=True):
@@ -20,16 +15,16 @@ class Professor(SQLModel, table=True):
         foreign_key="usuarios.id"
     )
 
-    usuario: "Usuario" = Relationship(
+    usuario = Relationship(
         back_populates="professor"
     )
 
-    turmas: List["Turma"] = Relationship(
+    turmas = Relationship(
         back_populates="professores",
         link_model=ProfessorTurma
     )
 
-    disciplinas: List["Disciplina"] = Relationship(
+    disciplinas = Relationship(
         back_populates="professores",
         link_model=ProfessorDisciplina
     )

@@ -1,10 +1,10 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import Optional, List
-from backend.models.users.professor import Professor
-from backend.models.users.aluno import Aluno
-from backend.models.users.mediador import Mediador
+from models.users.professor import Professor
+from models.users.aluno import Aluno
+from models.users.mediador import Mediador
 from notificacao import Notificacao
-from usuario_notificacao import UsuarioNotificacao
+from associativas.usuario_notificacao import UsuarioNotificacao
 
 class Usuario(SQLModel, table=True):
     __tablename__ = 'usuarios'
@@ -19,4 +19,3 @@ class Usuario(SQLModel, table=True):
     mediador: Optional["Mediador"] = Relationship(back_populates="usuario", sa_relationship_kwargs={"uselist": False})
 
     notificacoes: List["Notificacao"] = Relationship(back_populates='usuarios', link_model=UsuarioNotificacao)
-

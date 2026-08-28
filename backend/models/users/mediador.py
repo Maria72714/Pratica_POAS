@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import Optional
-from backend.models.users.user import Usuario
+from models.users.user import Usuario
 from enums import TipoMediador
 
 class Mediador(SQLModel, table=True):

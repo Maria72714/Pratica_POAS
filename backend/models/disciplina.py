@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from typing import List
-from backend.models.users.professor import Professor
-from backend.models.associativas.professor_disciplina import ProfessorDisciplina
+from models.users.professor import Professor
+from models.associativas.professor_disciplina import ProfessorDisciplina
 
 class Disciplina(SQLModel, table=True):
     __tablename__ = 'disciplinas'
