@@ -35,7 +35,7 @@ export default function Historico(){
         <div className="mx-7 my-5 py-4 px-3 grid grid-cols-3 border rounded-xl bg-white text-sm">
           {
             Object.entries(caData).map(([nome, valor]) => (
-              <select name="" id="" className="flex flex-col py-1.5 mx-2 border bg-white rounded-md p-2 shadow-sm">
+              <select name="" id="" className="flex flex-col py-2 mx-2 border bg-white rounded-md p-2 shadow-sm focus:outline-none focus:border-green-600 focus:ring-[1px] focus:ring-green-600">
                 <option value="">{nome === "modalidades" ? "Todas as modalidades" : `Todos os ${nome}`}</option>
                 {
                   valor.map((data) => (
@@ -45,6 +45,10 @@ export default function Historico(){
               </select>
             ))
           }
+        </div>
+
+        <div className="mx-7 my-5 border py-10 text-center text-gray-500 text-sm font-bold rounded-xl bg-white">
+          Nenhum atendimento encontrado
         </div>
 
     </div>
