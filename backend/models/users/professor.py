@@ -19,7 +19,7 @@ class Professor(SQLModel, table=True):
         foreign_key="usuarios.id"
     )
 
-    usuario: Usuario = Relationship(
+    usuario: "Usuario" = Relationship(
         back_populates="professor"
     )
 
