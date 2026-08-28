@@ -1,7 +1,10 @@
 from sqlmodel import SQLModel, table, Field, Relationship
-from typing import List
-from horario import Horario
+from typing import List, TYPE_CHECKING
+
 from models.associativas.horario_sala import HorarioSala
+
+if TYPE_CHECKING:
+    from models.horario import Horario
 
 class Sala(SQLModel, table=True):
     __tablename__ = 'salas'

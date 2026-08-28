@@ -5,6 +5,7 @@ import httpx
 import os
 from dotenv import load_dotenv
 from routes.atendimentos import atendimento
+from routes.usuarios import usuarios
 from deps.deps import lifespan
 
 
@@ -19,7 +20,10 @@ SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
 SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(atendimento.router, prefix="/api")  
+app.include_router(atendimento.router, prefix="/api")
+app.include_router(usuarios.router, prefix="/api")
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

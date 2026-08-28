@@ -1,8 +1,10 @@
 from sqlmodel import SQLModel, table, Field, Relationship
-from typing import List
+from typing import List, TYPE_CHECKING
 from datetime import datetime
-from models.users.user import Usuario
 from models.associativas.usuario_notificacao import UsuarioNotificacao
+
+if TYPE_CHECKING:
+    from models.users.user import Usuario
 
 class Notificacao(SQLModel, table=True):
     __tablename__ = 'notificacoes'

@@ -1,9 +1,12 @@
 from sqlmodel import SQLModel, table, Field, Relationship
 from datetime import date
-from typing import List
-from enums import TipoAtendimento, ModalidadeAula, StatusAtendimento
+from typing import List, TYPE_CHECKING
+from models.enums import TipoAtendimento, ModalidadeAula, StatusAtendimento
 from models.users.aluno import Aluno
 from models.associativas.aluno_atendimento import AlunoAtendimento
+
+if TYPE_CHECKING:
+    from models.associativas.aluno_atendimento import AlunoAtendimento
 
 
 class Atendimento(SQLModel, table=True):
