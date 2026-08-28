@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import DashboardProfessor from './components/DashboardProfessor';
 import SolicitacaoAtendimento from './components/SolicitacaoAtendimento';
 import Agendamentos from './pages/Agendamentos';
-import Historico from './pages/historico';
+import Historico from './pages/Historico';
 // ── Rotas de autenticação OAuth2 SUAP ────────────────────────────────────────
 import Login from './pages/Login';
 import Callback from './pages/Callback';

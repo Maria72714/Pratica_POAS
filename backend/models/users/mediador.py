@@ -11,4 +11,4 @@ class Mediador(SQLModel, table=True):
     tipo: TipoMediador
     apoio_descricao: str | None = Field(max_length=250)
 
-    usuario: Usuario = Relationship(back_populates="mediador")
+    usuario: "Usuario" = Relationship(back_populates="mediador")
