@@ -1,11 +1,22 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+
 
 export default function Historico(){
+  const navigate = useNavigate()
+
+  const [status, setStatus] = useState('')
+  const [tipo, setTipo] = useState('')
+  const [modalidade, setModalidade] = useState('')
+
+  function backDashboard(){
+    navigate('/')
+  }
 
   const infoCA = {
     Total: 0,
     Concluídos: 0,
     Agendados: 0
-
   }
 
   const caData = {
@@ -35,11 +46,17 @@ export default function Historico(){
         <div className="mx-7 my-5 py-4 px-3 grid grid-cols-3 border rounded-xl bg-white text-sm">
           {
             Object.entries(caData).map(([nome, valor]) => (
-              <select name="" id="" className="flex flex-col py-2 mx-2 border bg-white rounded-md p-2 shadow-sm focus:outline-none focus:border-green-600 focus:ring-[1px] focus:ring-green-600">
+              <select
+              onChange={nome == 'status' ? (e) => setStatus(e.target.value) :
+                        nome == 'tipos' ? (e) => setTipo(e.target.value) : (e) => setModalidade(e.target.value)}
+              className="flex flex-col py-2 mx-2 border bg-white rounded-md p-2 shadow-sm focus:outline-none focus:border-green-600 focus:ring-[1px] focus:ring-green-600">
+                
                 <option value="">{nome === "modalidades" ? "Todas as modalidades" : `Todos os ${nome}`}</option>
                 {
                   valor.map((data) => (
-                    <option value="">{data}</option>
+                    <option value={data}>
+                      {data}
+                    </option>
                   ))
                 }
               </select>
@@ -51,6 +68,12 @@ export default function Historico(){
           Nenhum atendimento encontrado
         </div>
 
+        <button 
+        className="ml-7 text-gray-500 text-sm"
+        onClick={backDashboard}>
+           {'<'} Voltar ao dashboard 
+
+        </button>
     </div>
   )
 };
