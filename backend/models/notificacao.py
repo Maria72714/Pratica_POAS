@@ -15,4 +15,4 @@ class Notificacao(SQLModel, table=True):
     criado_em: datetime = Field(default_factory=datetime.now)
     lido_em: datetime | None = None
 
-    notificacoes: List["Usuario"] = Relationship(back_populates='notificacoes', link_model=UsuarioNotificacao)
+    usuarios: List["Usuario"] = Relationship(back_populates='notificacoes', link_model=UsuarioNotificacao)

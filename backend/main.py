@@ -6,7 +6,11 @@ import os
 from dotenv import load_dotenv
 from routes.atendimentos import atendimento
 from routes.usuarios import usuarios
-from deps.deps import lifespan
+from deps.deps import lifespan, SessionDep
+from sqlmodel import select
+from models.users.user import Usuario
+from models.users.aluno import Aluno
+from models.users.professor import Professor
 
 
 load_dotenv()
@@ -26,7 +30,10 @@ app.include_router(usuarios.router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +45,7 @@ class AuthCode(BaseModel):
 
 
 @app.post("/api/auth/suap")
-async def auth_suap(payload: AuthCode):
+async def auth_suap(payload: AuthCode, session: SessionDep):
     print(f"\n[SUAP] Code recebido: {payload.code[:20]}...")
 
     async with httpx.AsyncClient() as client:
@@ -124,12 +131,53 @@ async def auth_suap(payload: AuthCode):
         print(f"[SUAP] Chaves do perfil: {perfil.keys()}")
         print(f"[SUAP] Objeto perfil completo: {perfil}")
 
+    nome = perfil.get("nome_usual") or perfil.get("nome")
+    nome_completo = perfil.get("nome_registro") or perfil.get("nome")
+    matricula = perfil.get("matricula") or perfil.get("identificacao")
+    email = (
+        perfil.get("email")
+        or perfil.get("email_preferencial")
+        or perfil.get("email_academico")
+        or perfil.get("email_secundario")
+        or f"{matricula}@suap.ifrn.edu.br"
+    )
+    tipo_vinculo = perfil.get("tipo_vinculo") or perfil.get("tipo_usuario")
+    foto = perfil.get("foto")
+
+    if not matricula:
+        raise HTTPException(status_code=400, detail="Matrícula não encontrada no perfil do SUAP.")
+
+    # Verifica se o usuário já existe no banco
+    db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
+
+    if not db_user:
+        # Cria novo usuário
+        db_user = Usuario(
+            nome=nome_completo or nome,
+            email=email,
+            matricula=matricula,
+            senha="auth_suap" # Senha inativa, pois autentica pelo SUAP
+        )
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
+
+        vinculo_lower = (tipo_vinculo or "").lower()
+        if "aluno" in vinculo_lower:
+            aluno = Aluno(id=db_user.id)
+            session.add(aluno)
+        elif "professor" in vinculo_lower or "servidor" in vinculo_lower:
+            professor = Professor(id=db_user.id)
+            session.add(professor)
+        
+        session.commit()
+
     # Retornamos apenas as chaves necessárias estruturadas de forma consistente
     return {
-        "nome":          perfil.get("nome_usual") or perfil.get("nome"),
-        "nome_completo": perfil.get("nome"),
-        "matricula":     perfil.get("matricula"),
-        "email":         perfil.get("email"),
-        "tipo_vinculo":  perfil.get("tipo_vinculo"),
-        "foto":          perfil.get("foto"),
+        "nome":          nome,
+        "nome_completo": nome_completo,
+        "matricula":     matricula,
+        "email":         email,
+        "tipo_vinculo":  tipo_vinculo,
+        "foto":          foto,
     }

@@ -1,13 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../services/suapAuth';
 
 const API_URL = 'http://localhost:8000/api/auth/suap';
+
+function formatarErro(e) {
+  if (typeof e?.detail === 'string') return e.detail;
+  if (e?.message === 'Failed to fetch') {
+    return 'Não foi possível conectar ao backend. Verifique se o servidor está rodando em http://localhost:8000.';
+  }
+  if (e?.message) return e.message;
+  return 'Erro ao autenticar. Tente novamente.';
+}
 
 export default function Callback() {
   const navigate = useNavigate();
   const [erro, setErro] = useState(null);
+  const processado = useRef(false);
 
   useEffect(() => {
+    if (processado.current) return;
+    processado.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
@@ -21,38 +35,40 @@ export default function Callback() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     })
-      .then((res) => {
-        if (!res.ok) return res.json().then((e) => Promise.reject(e));
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return Promise.reject(data);
+        return data;
       })
       .then((usuario) => {
         localStorage.setItem('usuario', JSON.stringify(usuario));
-        navigate('/');
+        localStorage.setItem('suap_user', JSON.stringify(usuario));
+        localStorage.setItem('suap_access_token', 'suap-oauth');
+        localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+
+        const destino = (usuario.tipo_vinculo || '').toLowerCase().includes('professor')
+          ? '/professor'
+          : '/';
+        navigate(destino, { replace: true });
       })
       .catch((e) => {
         console.error(e);
-        setErro(e?.detail ?? 'Erro ao autenticar. Tente novamente.');
+        setErro(formatarErro(e));
       });
   }, [navigate]);
 
   if (erro) {
-    const CLIENT_ID = '6IPsGy1xSQlxdmEydLEfygqTVwoH06vkxdCwyZQa';
-    const REDIRECT_URI = 'http://localhost:5173/callback';
-    const SUAP_AUTH_URL =
-      `https://suap.ifrn.edu.br/o/authorize/?response_type=code` +
-      `&client_id=${CLIENT_ID}` +
-      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
-
     return (
       <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif' }}>
         <p style={{ color: 'red', fontSize: '18px', fontWeight: 'bold' }}>Erro na Autenticação</p>
         <p style={{ color: '#555', margin: '20px 0' }}>{erro}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <a href={SUAP_AUTH_URL}>
-            <button style={{ padding: '10px 24px', fontSize: '16px', cursor: 'pointer', backgroundColor: '#047857', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-              Tentar Novamente no SUAP
-            </button>
-          </a>
+          <button
+            onClick={login}
+            style={{ padding: '10px 24px', fontSize: '16px', cursor: 'pointer', backgroundColor: '#047857', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
+          >
+            Tentar Novamente no SUAP
+          </button>
           <a href="/login" style={{ color: '#047857', textDecoration: 'underline' }}>
             Ir para a página de Login local
           </a>

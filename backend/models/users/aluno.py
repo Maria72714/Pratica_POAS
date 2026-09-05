@@ -16,7 +16,7 @@ class Aluno(SQLModel, table=True):
         foreign_key="usuarios.id"
     )
 
-    usuario: "Usuario" = Relationship(back_populates="alunos")
+    usuario: "Usuario" = Relationship(back_populates="aluno")
 
     atendimentos: List["Atendimento"] = Relationship(
         back_populates="alunos",
