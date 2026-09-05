@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from routes.atendimentos import atendimento
 from routes.usuarios import usuarios
+from routes.alunos import alunos
 from deps.deps import lifespan, SessionDep
 from sqlmodel import select
 from models.users.user import Usuario
@@ -26,6 +27,7 @@ SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dado
 app = FastAPI(lifespan=lifespan)
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
+app.include_router(alunos.router, prefix="/api")
 
 
 app.add_middleware(
@@ -150,34 +152,71 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     # Verifica se o usuário já existe no banco
     db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
 
+    vinculo_lower = (tipo_vinculo or "").lower()
+    is_aluno = "aluno" in vinculo_lower
+
     if not db_user:
-        # Cria novo usuário
         db_user = Usuario(
             nome=nome_completo or nome,
             email=email,
             matricula=matricula,
-            senha="auth_suap" # Senha inativa, pois autentica pelo SUAP
+            senha="auth_suap"
         )
         session.add(db_user)
         session.commit()
         session.refresh(db_user)
 
-        vinculo_lower = (tipo_vinculo or "").lower()
-        if "aluno" in vinculo_lower:
-            aluno = Aluno(id=db_user.id)
-            session.add(aluno)
+        if is_aluno:
+            session.add(Aluno(id=db_user.id))
         elif "professor" in vinculo_lower or "servidor" in vinculo_lower:
-            professor = Professor(id=db_user.id)
-            session.add(professor)
-        
+            session.add(Professor(id=db_user.id))
         session.commit()
+    elif is_aluno:
+        aluno_existente = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
+        if not aluno_existente:
+            session.add(Aluno(id=db_user.id))
+            session.commit()
+
+    # Busca perfil acadêmico se for aluno
+    aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
+    perfil_completo = True
+    curso_id = None
+    curso_nome = None
+    ano_letivo = None
+    necessidades_especiais = False
+
+    if aluno:
+        from data.cursos import get_curso
+        perfil_completo = aluno.perfil_completo
+        curso_id = aluno.curso_id
+        ano_letivo = aluno.ano_letivo
+        necessidades_especiais = aluno.necessidades_especiais
+        curso = get_curso(curso_id) if curso_id else None
+        curso_nome = curso["nome"] if curso else None
+        if foto and not aluno.foto_suap:
+            aluno.foto_suap = foto
+            session.add(aluno)
+            session.commit()
+    elif is_aluno:
+        perfil_completo = False
+
+    from data.cursos import get_disciplinas as _get_disciplinas
+    disciplinas = _get_disciplinas(curso_id, ano_letivo) if curso_id and ano_letivo else []
+    foto_resposta = foto or (aluno.foto_suap if aluno else None)
 
     # Retornamos apenas as chaves necessárias estruturadas de forma consistente
     return {
         "nome":          nome,
         "nome_completo": nome_completo,
         "matricula":     matricula,
-        "email":         email,
+        "email":         db_user.email,
         "tipo_vinculo":  tipo_vinculo,
-        "foto":          foto,
+        "foto":          foto_resposta,
+        "is_aluno":      is_aluno,
+        "perfil_completo": perfil_completo if is_aluno else True,
+        "curso_id":      curso_id,
+        "curso_nome":    curso_nome,
+        "ano_letivo":    ano_letivo,
+        "necessidades_especiais": necessidades_especiais,
+        "disciplinas":   disciplinas,
     }

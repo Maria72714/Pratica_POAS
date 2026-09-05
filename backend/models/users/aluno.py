@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 from models.associativas.aluno_atendimento import AlunoAtendimento
 
@@ -15,6 +15,12 @@ class Aluno(SQLModel, table=True):
         primary_key=True,
         foreign_key="usuarios.id"
     )
+    curso_id: Optional[str] = Field(default=None, max_length=50)
+    ano_letivo: Optional[str] = Field(default=None, max_length=20)
+    necessidades_especiais: bool = Field(default=False)
+    perfil_completo: bool = Field(default=False)
+    laudo_path: Optional[str] = Field(default=None, max_length=255)
+    foto_suap: Optional[str] = Field(default=None, max_length=500)
 
     usuario: "Usuario" = Relationship(back_populates="aluno")
 

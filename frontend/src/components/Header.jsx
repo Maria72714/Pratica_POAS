@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Header = ({ usuario }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const dropdownRef = useRef(null);
   const [dropdownAberto, setDropdownAberto] = useState(false);
   
@@ -62,8 +64,8 @@ const Header = ({ usuario }) => {
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem('usuario');
-    navigate('/login');
+    logout();
+    navigate('/login', { replace: true });
   }
 
   function marcarComoLida(id) {

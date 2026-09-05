@@ -1,0 +1,1 @@
+from .alunos import router

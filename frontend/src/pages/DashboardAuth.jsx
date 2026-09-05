@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardAuth() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    const dados = localStorage.getItem('usuario');
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
     if (!dados) {
-      navigate('/');
+      navigate('/login');
       return;
     }
     setUsuario(JSON.parse(dados));
   }, [navigate]);
 
   function sair() {
-    localStorage.removeItem('usuario');
-    navigate('/');
+    logout();
+    navigate('/login', { replace: true });
   }
 
   if (!usuario) return null;

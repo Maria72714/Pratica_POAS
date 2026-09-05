@@ -11,22 +11,47 @@ import Historico from './pages/Historico';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
 import DashboardAuth from './pages/DashboardAuth';
+import ComplementacaoPerfil from './pages/ComplementacaoPerfil';
 
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
 
-function AppLayout({ children, isProfessor }) {
+function AppLayout({ children, isProfessor, requerTai = false }) {
   const navigate = useNavigate();
-  const dados = localStorage.getItem('usuario');
-  const usuarioLogado = dados ? JSON.parse(dados) : null;
+  const [usuarioLogado, setUsuarioLogado] = React.useState(() => {
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    return dados ? JSON.parse(dados) : null;
+  });
 
   React.useEffect(() => {
-    if (!dados) {
+    if (!usuarioLogado) {
       navigate('/login');
+      return;
     }
-  }, [dados, navigate]);
+    if (!isProfessor && !usuarioLogado.perfil_completo) {
+      navigate('/complementar-perfil');
+      return;
+    }
+    if (requerTai && !usuarioLogado.necessidades_especiais) {
+      navigate('/');
+    }
+  }, [usuarioLogado, navigate, isProfessor, requerTai]);
 
-  if (!dados) return null;
+  React.useEffect(() => {
+    if (!usuarioLogado?.matricula || usuarioLogado?.foto) return;
+    fetchPerfilAluno(usuarioLogado.matricula)
+      .then((perfil) => {
+        if (perfil.foto) {
+          const atualizado = { ...usuarioLogado, ...perfil };
+          salvarUsuarioLocal(atualizado);
+          setUsuarioLogado(atualizado);
+        }
+      })
+      .catch(() => {});
+  }, [usuarioLogado]);
+
+  if (!usuarioLogado) return null;
 
   const professorMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/professor" },
@@ -39,7 +64,7 @@ function AppLayout({ children, isProfessor }) {
   const alunoMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/" },
     { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Meus Agendamentos", link: "/Agendamentos" },
-    { icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" },
+    ...(usuarioLogado?.necessidades_especiais ? [{ icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" }] : []),
     { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/historico" }
   ];
 
@@ -75,11 +100,12 @@ function App() {
           {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
           <Route path="/login"     element={<Login />} />
           <Route path="/callback"  element={<Callback />} />
+          <Route path="/complementar-perfil" element={<ComplementacaoPerfil />} />
           <Route path="/dashboard" element={<DashboardAuth />} />
 
           {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
           <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
-          <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false}><SolicitacaoAtendimento /></AppLayout>} />
+          <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false} requerTai={true}><SolicitacaoAtendimento /></AppLayout>} />
           <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
           <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
 

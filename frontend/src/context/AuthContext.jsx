@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { logoutUsuario as limparStorage } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -9,7 +10,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('suap_access_token');
-    const userData = localStorage.getItem('suap_user');
+    const userData = localStorage.getItem('suap_user') || localStorage.getItem('usuario');
     
     if (token && userData) {
       setUser(JSON.parse(userData));
@@ -25,9 +26,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('suap_access_token');
-    localStorage.removeItem('suap_token_expiry');
-    localStorage.removeItem('suap_user');
+    limparStorage();
     setUser(null);
     setIsLogged(false);
   };

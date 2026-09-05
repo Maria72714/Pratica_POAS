@@ -1,7 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchDisciplinas } from '../services/api';
 
 const SolicitacaoTAI = () => {
   const [suporte, setSuporte] = useState('');
+  const [disciplina, setDisciplina] = useState('');
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [usuario, setUsuario] = useState(null);
+
+  useEffect(() => {
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    if (!dados) return;
+    const parsed = JSON.parse(dados);
+    setUsuario(parsed);
+
+    if (parsed.disciplinas?.length) {
+      setDisciplinas(parsed.disciplinas);
+    } else if (parsed.curso_id && parsed.ano_letivo) {
+      fetchDisciplinas(parsed.curso_id, parsed.ano_letivo)
+        .then((res) => setDisciplinas(res.disciplinas))
+        .catch(() => setDisciplinas([]));
+    }
+  }, []);
 
   const opcoesSuporte = [
     {
@@ -46,16 +65,20 @@ const SolicitacaoTAI = () => {
           <p className="text-emerald-100 text-sm">
             Tutoria de Aprendizagem Inclusiva — atendimento especializado com mediador NAPNE.
           </p>
+          {usuario?.curso_nome && (
+            <p className="text-emerald-200 text-xs mt-2">
+              {usuario.curso_nome} • {usuario.ano_letivo}
+            </p>
+          )}
         </div>
 
-        {/* Banner Informativo Roxo (Com ícone SVG limpo) */}
+        {/* Banner Informativo Roxo */}
         <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-start gap-3 text-purple-900 text-sm">
           <svg className="w-5 h-5 text-purple-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p>
-            Qualquer aluno pode solicitar atendimento inclusivo (TAI). A aprovação fica a cargo da{' '}
-            <strong className="font-semibold">coordenação / NAPNE</strong>, que verificará sua elegibilidade e designará um mediador especializado.
+            Somente alunos TAI podem solicitar Centros de Aprendizagem. As disciplinas listadas abaixo correspondem ao seu curso e ano letivo — você só pode solicitar CA de matérias da sua grade.
           </p>
         </div>
 
@@ -102,16 +125,25 @@ const SolicitacaoTAI = () => {
               {/* Disciplina */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="text-sm font-medium text-gray-700">Disciplina (opcional)</label>
+                  <label className="text-sm font-medium text-gray-700">Disciplina</label>
                   <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                     ✓ disciplinas do seu curso
                   </span>
                 </div>
-                <select className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white">
-                  <option value="">Selecione (opcional)</option>
-                  <option value="poo">Programação Orientada a Objetos</option>
-                  <option value="bd">Banco de Dados</option>
+                <select
+                  value={disciplina}
+                  onChange={(e) => setDisciplina(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white"
+                  required
+                >
+                  <option value="">Selecione uma disciplina</option>
+                  {disciplinas.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
                 </select>
+                {disciplinas.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">Nenhuma disciplina encontrada para seu curso/ano.</p>
+                )}
               </div>
 
               {/* Data Preferencial */}
@@ -149,7 +181,8 @@ const SolicitacaoTAI = () => {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-[#8b3dff] text-white text-sm font-medium rounded-lg hover:bg-[#7a2eff] transition-colors shadow-sm"
+                disabled={!suporte || !disciplina}
+                className="px-6 py-2.5 bg-[#8b3dff] text-white text-sm font-medium rounded-lg hover:bg-[#7a2eff] disabled:opacity-50 transition-colors shadow-sm"
               >
                 Confirmar Solicitação
               </button>
