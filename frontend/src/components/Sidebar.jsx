@@ -26,6 +26,7 @@ const Sidebar = ({ itensMenu }) => {
       texto: "Histórico",
       link: "/"
     }
+   
   ];
 
   return (

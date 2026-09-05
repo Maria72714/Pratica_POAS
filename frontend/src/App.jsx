@@ -7,6 +7,7 @@ import DashboardProfessor from './components/DashboardProfessor';
 import SolicitacaoAtendimento from './components/SolicitacaoAtendimento';
 import Agendamentos from './pages/Agendamentos';
 import Historico from './pages/Historico';
+import Perfil from './pages/Perfil';
 // ── Rotas de autenticação OAuth2 SUAP ────────────────────────────────────────
 import Login from './pages/Login';
 import Callback from './pages/Callback';
@@ -65,7 +66,8 @@ function AppLayout({ children, isProfessor, requerTai = false }) {
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/" },
     { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Meus Agendamentos", link: "/Agendamentos" },
     ...(usuarioLogado?.necessidades_especiais ? [{ icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" }] : []),
-    { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/historico" }
+    { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/historico" },
+    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
 
   const iniciais = usuarioLogado?.nome 
@@ -108,6 +110,7 @@ function App() {
           <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false} requerTai={true}><SolicitacaoAtendimento /></AppLayout>} />
           <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
           <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
+          <Route path="/perfil" element={<AppLayout isProfessor={false}><Perfil /></AppLayout>} />
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
