@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { abrirNoGoogleCalendar } from '../utils/googleCalendar';
 
 const Agendamentos = () => {
   // Dados iniciais simulando o retorno do banco de dados
@@ -203,8 +204,14 @@ const Agendamentos = () => {
                   {/* Botões de Ação */}
                   {abaAtiva === 'proximos' && (
                     <div className="flex items-center gap-3 pt-1">
-                      <button className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
-                        Adicionar ao Calendário
+                      <button
+                        onClick={() => abrirNoGoogleCalendar(item)}
+                        className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19.5 3h-3V1.5h-1.5V3h-9V1.5H4.5V3h-3A1.5 1.5 0 000 4.5v15A1.5 1.5 0 001.5 21h18a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3zm0 16.5h-18v-11h18v11zM6 12h3v3H6v-3zm4.5 0h3v3h-3v-3zm4.5 0h3v3h-3v-3zM6 8.25h3V11H6V8.25zm4.5 0h3V11h-3V8.25zm4.5 0h3V11h-3V8.25z" />
+                        </svg>
+                        Adicionar ao Google Calendar
                       </button>
                       <button 
                         onClick={() => handleCancelarAgendamento(item.id)}

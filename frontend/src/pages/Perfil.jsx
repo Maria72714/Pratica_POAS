@@ -14,20 +14,6 @@ const Perfil = () => {
     }
   }, []);
 
-  const handleAlterarFoto = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const fotoUrl = reader.result;
-        const usuarioAtualizado = { ...usuario, foto: fotoUrl };
-        setUsuario(usuarioAtualizado);
-        localStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSair = () => {
     logout();
     navigate('/login', { replace: true });
@@ -76,27 +62,9 @@ const Perfil = () => {
             </div>
 
             {/* Email Cadastrado */}
-            <p className="text-sm text-gray-500 font-medium mb-4">
+            <p className="text-sm text-gray-500 font-medium">
               {usuario?.email || '20231101110048@academico.ifrn.edu.br'}
             </p>
-
-            {/* Botão de Alterar Foto */}
-            <div>
-              <label htmlFor="foto-upload" className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
-                <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l0.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l0.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Alterar foto
-              </label>
-              <input
-                id="foto-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAlterarFoto}
-              />
-            </div>
           </div>
         </div>
 
@@ -129,7 +97,7 @@ const Perfil = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="leading-relaxed">
-            Nome e e-mail são sincronizados automaticamente com o SUAP a cada login. Você pode alterar a foto de perfil aqui (salva localmente no dispositivo).{' '}
+            Nome, e-mail e foto são sincronizados automaticamente com o SUAP a cada login.{' '}
             <a href="https://suap.ifrn.edu.br" target="_blank" rel="noreferrer" className="underline font-semibold hover:text-blue-800">
               suap.ifrn.edu.br
             </a>
