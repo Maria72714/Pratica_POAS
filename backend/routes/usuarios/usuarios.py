@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from models.users.user import Usuario
 from pwdlib import PasswordHash
 from deps.deps import SessionDep
 from sqlmodel import select
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix='/usuarios',
@@ -11,29 +12,63 @@ router = APIRouter(
 
 senha_context = PasswordHash.recommended()
 
+class UserResponseModel(BaseModel):
+    nome_completo: str
+    matricula: str
+    email: str
+    senha: str
+
 @router.get('/')
-def listar(session: SessionDep) -> list[Usuario]:
-    usuarios  = session.exec(select(Usuario).all)
+def listar(session: SessionDep):
+    usuarios  = session.exec(select(Usuario)).all()
     return usuarios
 
-@router.post('/')
-def cadastrar(session:SessionDep, new_user:Usuario, nome:str, matricula:str, email:str, senha:str) -> Usuario:
+@router.post('/', response_model=UserResponseModel)
+def cadastrar(session:SessionDep, nome_completo:str, matricula:str, email:str, senha:str) -> UserResponseModel:
     senha_hash = senha_context.hash(senha)
-    new_user = Usuario(nome=nome, matricula=matricula, email=email, senha=senha_hash)
-    session.add(new_user)
+    usuario_existente = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
+    if usuario_existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Usuário já cadastrado"
+        )
+    
+    usuario = Usuario(nome=nome_completo, matricula=matricula, email=email, senha=senha_hash)
+    session.add(usuario)
     session.commit()
-    session.refresh(new_user)
-    return new_user
+    session.refresh(usuario)
+
+    return UserResponseModel(
+        nome_completo=usuario.nome,
+        matricula=usuario.matricula,
+        email=usuario.email,
+        senha=usuario.senha,
+    )
 
 @router.delete('/{matricula}')
 def deletar(session:SessionDep, matricula:str):
-    userDelet = session.get(Usuario, matricula)
+    userDelet = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
+    if not userDelet:
+        raise HTTPException(
+            status_code=400,
+            detail="Usuário não encontrado"
+        )
+    
     session.delete(userDelet)
-    session.commit(userDelet)
+    session.commit()
+    return {"message": "Usuário deletado com sucesso"}
 
-@router.put('/')
+@router.put('/{matricula}')
 def atualizar(session:SessionDep, nome:str, matricula:str, email:str) -> Usuario:
-    userUpdate = session.get(Usuario, matricula)
+    
+    userUpdate = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
+
+    if not userUpdate:
+            raise HTTPException(
+                status_code=400,
+                detail="Usuário não encontrado"
+            )
+
     userUpdate.nome = nome
     userUpdate.matricula = matricula
     userUpdate.email = email
