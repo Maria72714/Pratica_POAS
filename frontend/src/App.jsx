@@ -107,7 +107,7 @@ function App() {
 
           {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
           <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
-          <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false} requerTai={true}><SolicitacaoAtendimento /></AppLayout>} />
+          <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false} requerTai={false}><SolicitacaoAtendimento /></AppLayout>} />
           <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
           <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
           <Route path="/perfil" element={<AppLayout isProfessor={false}><Perfil /></AppLayout>} />

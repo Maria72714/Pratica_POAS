@@ -40,3 +40,25 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
         )
     session.delete(atendimento)
     session.commit()
+
+@router.patch("/{atendimento_id}", response_model=Atendimento)
+def editar_atendimento(atendimento_id: int,dados: Atendimento,session: SessionDep):
+
+    atendimento = session.get(Atendimento,atendimento_id)
+
+    if not atendimento:
+        raise HTTPException(
+            status_code=404,
+            detail="Atendimento não encontrado"
+        )
+
+    dados_update = dados.model_dump(exclude_unset=True)
+
+    for campo, valor in dados_update.items():
+        setattr(atendimento,campo,valor)
+        
+    session.add(atendimento)
+    session.commit()
+    session.refresh(atendimento)
+
+    return atendimento
