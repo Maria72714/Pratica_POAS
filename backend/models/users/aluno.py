@@ -13,9 +13,9 @@ class Aluno(SQLModel, table=True):
     id: int | None = Field(
         default=None,
         primary_key=True,
-        foreign_key="usuarios.id"
+        foreign_key="usuarios.id",
+        ondelete="CASCADE"
     )
-    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE", unique=True)
     curso_id: Optional[str] = Field(default=None, max_length=50)
     ano_letivo: Optional[str] = Field(default=None, max_length=20)
     necessidades_especiais: bool = Field(default=False)
