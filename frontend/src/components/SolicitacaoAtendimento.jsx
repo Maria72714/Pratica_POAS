@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDisciplinas } from '../services/api';
 import { cadastrarAtendimento } from '../services/atendimento';
+import { useNavigate } from 'react-router-dom';
+
 
 const SolicitacaoTAI = () => {
   const [suporte, setSuporte] = useState('');
@@ -34,6 +36,8 @@ const SolicitacaoTAI = () => {
     }
     cadastrarAtendimento(dados)
   }
+
+  const navigate = useNavigate()
 
   const opcoesSuporte = [
     {
@@ -198,6 +202,7 @@ const SolicitacaoTAI = () => {
                 type="submit"
                 disabled={!suporte || !disciplina}
                 className="px-6 py-2.5 bg-[#8b3dff] text-white text-sm font-medium rounded-lg hover:bg-[#7a2eff] disabled:opacity-50 transition-colors shadow-sm"
+                onClick={() => navigate('/')}
               >
                 Confirmar Solicitação
               </button>

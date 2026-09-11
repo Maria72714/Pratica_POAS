@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 from sqlmodel import SQLModel, Field, Relationship
 
 from models.associativas.professor_turma import ProfessorTurma
@@ -19,7 +19,13 @@ class Professor(SQLModel, table=True):
         foreign_key="usuarios.id"
     )
 
-    usuario: "Usuario" = Relationship(
+    usuario_id: int = Field(
+        foreign_key="usuarios.id",
+        ondelete="CASCADE",
+        unique=True
+    )
+
+    usuario: Optional["Usuario"] = Relationship(
         back_populates="professor"
     )
 
