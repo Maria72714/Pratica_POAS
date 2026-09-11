@@ -15,6 +15,7 @@ class Aluno(SQLModel, table=True):
         primary_key=True,
         foreign_key="usuarios.id"
     )
+    usuario_id: int = Field(foreign_key="usuarios.id", ondelete="CASCADE", unique=True)
     curso_id: Optional[str] = Field(default=None, max_length=50)
     ano_letivo: Optional[str] = Field(default=None, max_length=20)
     necessidades_especiais: bool = Field(default=False)
@@ -22,7 +23,7 @@ class Aluno(SQLModel, table=True):
     laudo_path: Optional[str] = Field(default=None, max_length=255)
     foto_suap: Optional[str] = Field(default=None, max_length=500)
 
-    usuario: "Usuario" = Relationship(back_populates="aluno")
+    usuario: Optional["Usuario"] = Relationship(back_populates="aluno")
 
     atendimentos: List["Atendimento"] = Relationship(
         back_populates="alunos",
