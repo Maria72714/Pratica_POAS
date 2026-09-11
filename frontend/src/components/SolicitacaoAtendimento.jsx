@@ -176,7 +176,7 @@ const SolicitacaoTAI = () => {
             {/* Descrição */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descreva sua necessidade (opcional)
+                Descreva sua dúvida (opcional)
               </label>
               <textarea
                 rows="3"
