@@ -140,30 +140,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* grafico de atendimentos por mes */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Meus Atendimentos por Mês</h2>
-          </div>
-          <div className="p-6">
-            {/* ResponsiveContainer faz o grafico responsivo (se adapta ao tamanho da tela) */}
-            <ResponsiveContainer width="100%" height={300}>
-              {/* BarChart é o componente principal do grafico de barras */}
-              <BarChart data={monthlyData}>
-                {/* CartesianGrid cria as linhas de fundo do grafico */}
-                <CartesianGrid strokeDasharray="3 3" />
-                {/* XAxis é o eixo X (horizontal) - mostra os meses */}
-                <XAxis dataKey="month" />
-                {/* YAxis é o eixo Y (vertical) - mostra os numeros */}
-                <YAxis />
-                {/* Tooltip mostra informacoes quando passa o mouse em cima da barra */}
-                <Tooltip />
-                {/* Bar é a barra do grafico - dataKey diz qual dado mostrar, fill é a cor*/}
-                <Bar dataKey="atendimentos" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        
       </div>
     </div>
   );
