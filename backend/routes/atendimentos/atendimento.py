@@ -7,16 +7,26 @@ from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.atendimento import Atendimento 
 from deps.deps import SessionDep
 from sqlmodel import select
-router = APIRouter()
+from pydantic import BaseModel
+from datetime import date
 
-@router.get('/atendimento', response_model=list[Atendimento])
+router = APIRouter(
+    prefix='/atendimentos',
+    tags=['Atendimentos']
+)
+
+class AtendimentoCreateModel(BaseModel):
+    data_atendimento: date
+    assunto:str | None = None
+
+@router.get('/', response_model=list[Atendimento])
 def listar_atendimento(session: SessionDep):
     atendimentos = session.exec(select(Atendimento)).all()
     return atendimentos
 
 @router.post("/", response_model=Atendimento)
 def criar_atendimento(
-    dados: Atendimento,
+    dados: AtendimentoCreateModel,
     session: SessionDep
 ):
 

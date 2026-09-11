@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDisciplinas } from '../services/api';
+import { cadastrarAtendimento } from '../services/atendimento';
 
 const SolicitacaoTAI = () => {
   const [suporte, setSuporte] = useState('');
   const [disciplina, setDisciplina] = useState('');
   const [disciplinas, setDisciplinas] = useState([]);
   const [usuario, setUsuario] = useState(null);
+  const [data, setData] = useState('');
+  const [desc, setDesc] = useState('');
 
   useEffect(() => {
     const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
@@ -21,6 +24,16 @@ const SolicitacaoTAI = () => {
         .catch(() => setDisciplinas([]));
     }
   }, []);
+
+  function handleSubmit(event){
+    event.preventDefault()
+
+    const dados = {
+      data_atendimento: data,
+      assunto: desc
+    }
+    cadastrarAtendimento(dados)
+  }
 
   const opcoesSuporte = [
     {
@@ -84,7 +97,7 @@ const SolicitacaoTAI = () => {
 
         {/* Card do Formulário */}
         <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             
             {/* Seção Qual tipo de suporte você precisa? */}
             <div>
@@ -154,6 +167,7 @@ const SolicitacaoTAI = () => {
                 <input
                   type="date"
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                  onChange={(e) => (setData(e.target.value))}
                 />
               </div>
 
@@ -168,6 +182,7 @@ const SolicitacaoTAI = () => {
                 rows="3"
                 placeholder="Informe detalhes para que o mediador possa se preparar adequadamente..."
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none"
+                onChange={(e) => (setDesc(e.target.value))}
               ></textarea>
             </div>
 
