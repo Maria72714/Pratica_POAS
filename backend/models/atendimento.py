@@ -20,7 +20,7 @@ class Atendimento(SQLModel, table=True):
     id_sala: int | None = Field(default=None, foreign_key="salas.id")
     data_atendimento: date
     tipo_atendimento: TipoAtendimento = Field(default=TipoAtendimento.TAI)
-    modalidade: ModalidadeAula = Field(default=ModalidadeAula.PRESENCIAL)
+    modalidade: ModalidadeAula = Field(default=ModalidadeAula.PRESENCIAL)   
     assunto: str | None = Field(max_length=250, default=None)
     relatorio: str | None = Field(max_length=500, default=None)
     status: StatusAtendimento = Field(default=StatusAtendimento.AGENDADO)

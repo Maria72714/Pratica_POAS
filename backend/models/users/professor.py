@@ -16,13 +16,8 @@ class Professor(SQLModel, table=True):
     id: int | None = Field(
         default=None,
         primary_key=True,
-        foreign_key="usuarios.id"
-    )
-
-    usuario_id: int = Field(
         foreign_key="usuarios.id",
-        ondelete="CASCADE",
-        unique=True
+        ondelete="CASCADE"
     )
 
     usuario: Optional["Usuario"] = Relationship(

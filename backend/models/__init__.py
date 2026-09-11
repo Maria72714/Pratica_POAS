@@ -9,6 +9,7 @@ from .turma import Turma
 from .solicitacao import Solicitacao
 from .atendimento import Atendimento
 from .sala import Sala
+from .curso import Curso
 from .associativas.aluno_atendimento import AlunoAtendimento
 from .associativas.professor_turma import ProfessorTurma
 from .associativas.professor_disciplina import ProfessorDisciplina

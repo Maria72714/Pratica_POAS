@@ -6,8 +6,9 @@ from models.associativas.professor_turma import ProfessorTurma
 class Turma(SQLModel, table=True):
     __tablename__ = 'turmas'
     id: int | None = Field(default=None, primary_key=True)
-    curso: str = Field(max_length=100, nullable=False)
+    curso_id: int | None = Field(default=None, foreign_key="cursos.id")
     ano: str
     turno: str = Field(max_length=10)
+    codigo: str | None = Field(default=None, max_length=2)
 
     professores: List[Professor] = Relationship(back_populates="turmas", link_model=ProfessorTurma)

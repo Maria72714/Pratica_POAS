@@ -7,8 +7,7 @@ if TYPE_CHECKING:
 
 class Mediador(SQLModel, table=True):
     __tablename__ = 'mediadores'
-    id: int | None = Field(default=None, primary_key=True, foreign_key="usuarios.id")
-    usuario_id = Field(foreign_key="usuarios.id", ondelete="CASCADE", unique=True)
+    id: int | None = Field(default=None, primary_key=True, foreign_key="usuarios.id", ondelete="CASCADE")
     tipo: TipoMediador
     apoio_descricao: str | None = Field(max_length=250)
 
