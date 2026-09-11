@@ -19,10 +19,10 @@ class Atendimento(SQLModel, table=True):
     id_horario: int | None = Field(foreign_key="horarios.id", default=None)
     id_sala: int | None = Field(default=None, foreign_key="salas.id")
     data_atendimento: date
-    tipo_atendimento: TipoAtendimento
-    modalidade: ModalidadeAula
+    tipo_atendimento: TipoAtendimento = Field(default=TipoAtendimento.TAI)
+    modalidade: ModalidadeAula = Field(default=ModalidadeAula.PRESENCIAL)
     assunto: str | None = Field(max_length=250, default=None)
-    relatorio: str = Field(max_length=500)
+    relatorio: str | None = Field(max_length=500, default=None)
     status: StatusAtendimento = Field(default=StatusAtendimento.AGENDADO)
 
     alunos: List["Aluno"] = Relationship(back_populates="atendimentos", link_model=AlunoAtendimento)
