@@ -1,37 +1,77 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchCursos, completarPerfil } from '../services/api';
+import { completarPerfil } from '../services/api';
 
-const ANOS = ['1º Ano', '2º Ano', '3º Ano', '4º Ano'];
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@escolar\.ifrn\.edu\.br$/;
+
+// Espelha CURSOS_TURMAS do backend — cursos e seus códigos de turma
+const CURSOS_TURMAS = [
+  { id: 'informatica_internet', nome: 'Informática para Internet', codigos: ['1M', '2M', '1V', '2V'] },
+  { id: 'eletrotecnica',        nome: 'Eletrotécnica',             codigos: ['1M', '1V'] },
+  { id: 'vestuario',            nome: 'Vestuário',                 codigos: ['1M', '1V'] },
+  { id: 'textil',               nome: 'Têxtil',                    codigos: ['1M', '1V'] },
+];
+
+const TURNO_LABEL = { M: 'Matutino', V: 'Vespertino' };
+
+function anoIngressoDaMatricula(matricula) {
+  if (!matricula || matricula.length < 4) return null;
+  const ano = parseInt(matricula.slice(0, 4), 10);
+  return isNaN(ano) ? null : ano;
+}
 
 export default function ComplementacaoPerfil() {
   const navigate = useNavigate();
+
   const [usuario, setUsuario] = useState(null);
-  const [cursos, setCursos] = useState([]);
-  const [email, setEmail] = useState('');
-  const [cursoId, setCursoId] = useState('');
-  const [anoLetivo, setAnoLetivo] = useState('');
-  const [isTai, setIsTai] = useState(false);
-  const [laudo, setLaudo] = useState(null);
-  const [erro, setErro] = useState('');
+  const [email, setEmail]     = useState('');
+  const [turmaId, setTurmaId] = useState('');
+  const [isTai, setIsTai]     = useState(false);
+  const [laudo, setLaudo]     = useState(null);
+  const [erro, setErro]       = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
-    if (!dados) {
-      navigate('/login', { replace: true });
-      return;
-    }
+    if (!dados) { navigate('/login', { replace: true }); return; }
     const parsed = JSON.parse(dados);
-    if (parsed.perfil_completo) {
-      navigate('/', { replace: true });
-      return;
-    }
+    if (parsed.perfil_completo) { navigate('/', { replace: true }); return; }
     setUsuario(parsed);
     setEmail(parsed.email?.endsWith('@escolar.ifrn.edu.br') ? parsed.email : '');
-    fetchCursos().then(setCursos).catch(() => setErro('Erro ao carregar cursos.'));
   }, [navigate]);
+
+  const anoIngresso = useMemo(
+    () => (usuario ? anoIngressoDaMatricula(usuario.matricula) : null),
+    [usuario]
+  );
+
+  // Gera todas as turmas a exibir: { id, label, turno }
+  const todasTurmas = useMemo(() => {
+    if (!anoIngresso) return [];
+    return CURSOS_TURMAS.flatMap((curso) =>
+      curso.codigos.map((cod) => {
+        const turnoLetra = cod.slice(-1);
+        return {
+          id: `${curso.id}_${anoIngresso}_${cod}`,
+          label: `${curso.nome} ${anoIngresso}.1 ${cod}`,
+          turno: turnoLetra,
+          turnoLabel: TURNO_LABEL[turnoLetra] || turnoLetra,
+          cod,
+          cursoNome: curso.nome,
+        };
+      })
+    );
+  }, [anoIngresso]);
+
+  // Agrupa por turno para exibição
+  const turmasPorTurno = useMemo(() => {
+    const grupos = {};
+    for (const t of todasTurmas) {
+      if (!grupos[t.turno]) grupos[t.turno] = [];
+      grupos[t.turno].push(t);
+    }
+    return grupos;
+  }, [todasTurmas]);
 
   function handleLaudoChange(e) {
     const file = e.target.files?.[0];
@@ -46,12 +86,8 @@ export default function ComplementacaoPerfil() {
       setErro('Use um e-mail terminado em @escolar.ifrn.edu.br');
       return;
     }
-    if (!cursoId) {
-      setErro('Selecione seu curso.');
-      return;
-    }
-    if (!anoLetivo) {
-      setErro('Selecione seu ano letivo.');
+    if (!turmaId) {
+      setErro('Selecione sua turma.');
       return;
     }
 
@@ -59,17 +95,25 @@ export default function ComplementacaoPerfil() {
     try {
       const formData = new FormData();
       formData.append('email', email.trim().toLowerCase());
-      formData.append('curso_id', cursoId);
-      formData.append('ano_letivo', anoLetivo);
+      formData.append('turma_id', turmaId);
       formData.append('necessidades_especiais', isTai ? 'true' : 'false');
       if (usuario.foto) formData.append('foto', usuario.foto);
       if (isTai && laudo) formData.append('laudo', laudo);
 
-      const perfil = await completarPerfil(usuario.matricula, formData);
+      await completarPerfil(usuario.matricula, formData);
       localStorage.setItem('suap_access_token', 'suap-oauth');
       localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
       navigate('/', { replace: true });
     } catch (err) {
+      // Se o usuário não foi encontrado no banco, a sessão do SUAP está desatualizada
+      if (err.message?.includes('não encontrado') || err.message?.includes('not found')) {
+        localStorage.removeItem('usuario');
+        localStorage.removeItem('suap_user');
+        localStorage.removeItem('suap_access_token');
+        localStorage.removeItem('suap_token_expiry');
+        navigate('/login', { replace: true });
+        return;
+      }
       setErro(err.message);
     } finally {
       setLoading(false);
@@ -79,12 +123,15 @@ export default function ComplementacaoPerfil() {
   if (!usuario) return null;
 
   const urlFoto = usuario.foto
-    ? (usuario.foto.startsWith('http') ? usuario.foto : `https://suap.ifrn.edu.br${usuario.foto}`)
+    ? usuario.foto.startsWith('http') ? usuario.foto : `https://suap.ifrn.edu.br${usuario.foto}`
     : null;
+
+  const turmaSelecionada = todasTurmas.find((t) => t.id === turmaId) || null;
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+
         {/* Cabeçalho */}
         <div className="flex items-center gap-4 mb-6">
           {urlFoto ? (
@@ -103,6 +150,7 @@ export default function ComplementacaoPerfil() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+
           {/* Email */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1.5">
@@ -119,45 +167,72 @@ export default function ComplementacaoPerfil() {
             <p className="text-xs text-gray-400 mt-1">Somente e-mails @escolar.ifrn.edu.br são aceitos.</p>
           </div>
 
-          {/* Curso */}
+          {/* Turma */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-              Curso Técnico / Graduação <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              Turma <span className="text-red-500">*</span>
             </label>
-            <select
-              value={cursoId}
-              onChange={(e) => setCursoId(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white"
-              required
-            >
-              <option value="">Selecione seu curso</option>
-              {cursos.map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-          </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Selecione a turma em que você está matriculado. O ano ({anoIngresso}) foi identificado automaticamente pela sua matrícula.
+            </p>
 
-          {/* Ano letivo */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Ano Letivo Atual <span className="text-red-500">*</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {ANOS.map((ano) => (
-                <button
-                  key={ano}
-                  type="button"
-                  onClick={() => setAnoLetivo(ano)}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium border transition-all ${
-                    anoLetivo === ano
-                      ? 'bg-emerald-700 text-white border-emerald-700'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-400'
-                  }`}
-                >
-                  {ano}
-                </button>
-              ))}
-            </div>
+            {/* Matutino */}
+            {turmasPorTurno['M'] && (
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Matutino</p>
+                <div className="flex flex-wrap gap-2">
+                  {turmasPorTurno['M'].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTurmaId(t.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all text-left ${
+                        turmaId === t.id
+                          ? 'bg-emerald-700 text-white border-emerald-700'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Vespertino */}
+            {turmasPorTurno['V'] && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Vespertino</p>
+                <div className="flex flex-wrap gap-2">
+                  {turmasPorTurno['V'].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTurmaId(t.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all text-left ${
+                        turmaId === t.id
+                          ? 'bg-emerald-700 text-white border-emerald-700'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Confirmação */}
+            {turmaSelecionada && (
+              <div className="mt-3 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm text-emerald-800">
+                  Turma selecionada: <strong>{turmaSelecionada.label}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* TAI */}

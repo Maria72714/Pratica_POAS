@@ -50,6 +50,23 @@ export async function fetchDisciplinas(cursoId, anoLetivo) {
   return res.json();
 }
 
+export async function fetchTurmas(anoIngresso) {
+  const url = anoIngresso
+    ? `${API_BASE}/turmas?ano_ingresso=${anoIngresso}`
+    : `${API_BASE}/turmas`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Erro ao carregar turmas');
+  return res.json();
+}
+
+export async function fetchTurmaSugestao(matricula, turno) {
+  const res = await fetch(
+    `${API_BASE}/turmas/sugestao/${matricula}?turno=${turno}`
+  );
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function fetchPerfilAluno(matricula) {
   const res = await fetch(`${API_BASE}/alunos/perfil/${matricula}`);
   if (!res.ok) throw new Error('Erro ao carregar perfil');

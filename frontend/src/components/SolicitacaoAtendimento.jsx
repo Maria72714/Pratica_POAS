@@ -18,23 +18,32 @@ const SolicitacaoTAI = () => {
     const parsed = JSON.parse(dados);
     setUsuario(parsed);
 
+    // Disciplinas vêm do localStorage (preenchidas no login/perfil) ou da API como fallback
     if (parsed.disciplinas?.length) {
       setDisciplinas(parsed.disciplinas);
     } else if (parsed.curso_id && parsed.ano_letivo) {
       fetchDisciplinas(parsed.curso_id, parsed.ano_letivo)
-        .then((res) => setDisciplinas(res.disciplinas))
+        .then((res) => setDisciplinas(res.disciplinas ?? []))
         .catch(() => setDisciplinas([]));
     }
   }, []);
 
-  function handleSubmit(event){
-    event.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (!usuario?.matricula) return;
 
-    const dados = {
-      data_atendimento: data,
-      assunto: desc
+    try {
+      await cadastrarAtendimento({
+        matricula: usuario.matricula,
+        disciplina,
+        tipo_suporte: suporte,
+        descricao: desc || undefined,
+        data_atendimento: data || new Date().toISOString().split('T')[0],
+      });
+      navigate('/');
+    } catch (err) {
+      console.error('Erro ao solicitar CA:', err);
     }
-    cadastrarAtendimento(dados)
   }
 
   const navigate = useNavigate()
@@ -82,9 +91,9 @@ const SolicitacaoTAI = () => {
           <p className="text-emerald-100 text-sm">
             Tutoria de Aprendizagem Inclusiva — atendimento especializado com mediador NAPNE.
           </p>
-          {usuario?.curso_nome && (
+          {usuario?.turma_nome && (
             <p className="text-emerald-200 text-xs mt-2">
-              {usuario.curso_nome} • {usuario.ano_letivo}
+              {usuario.turma_nome} • {usuario.ano_letivo}
             </p>
           )}
         </div>
@@ -202,7 +211,6 @@ const SolicitacaoTAI = () => {
                 type="submit"
                 disabled={!suporte || !disciplina}
                 className="px-6 py-2.5 bg-[#8b3dff] text-white text-sm font-medium rounded-lg hover:bg-[#7a2eff] disabled:opacity-50 transition-colors shadow-sm"
-                onClick={() => navigate('/')}
               >
                 Confirmar Solicitação
               </button>
