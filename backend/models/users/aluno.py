@@ -18,6 +18,7 @@ class Aluno(SQLModel, table=True):
     )
     curso_id: Optional[str] = Field(default=None, max_length=50)
     ano_letivo: Optional[str] = Field(default=None, max_length=20)
+    turma_id: Optional[str] = Field(default=None, max_length=60)
     necessidades_especiais: bool = Field(default=False)
     perfil_completo: bool = Field(default=False)
     laudo_path: Optional[str] = Field(default=None, max_length=255)
