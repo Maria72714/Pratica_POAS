@@ -25,21 +25,18 @@ SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
 SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(atendimento.router, prefix="/api")
-app.include_router(usuarios.router, prefix="/api")
-app.include_router(alunos.router, prefix="/api")
-
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(atendimento.router, prefix="/api")
+app.include_router(usuarios.router, prefix="/api")
+app.include_router(alunos.router, prefix="/api")
 
 
 class AuthCode(BaseModel):
@@ -180,6 +177,11 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     # Busca perfil acadêmico se for aluno
     aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
     perfil_completo = True
+    turma_id = None
+    turma_nome = None
+    turma_codigo = None
+    turno = None
+    turno_label = None
     curso_id = None
     curso_nome = None
     ano_letivo = None
@@ -187,10 +189,24 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
     if aluno:
         from data.cursos import get_curso
+        from data.turmas import get_turma as _get_turma
         perfil_completo = aluno.perfil_completo
+        turma_id = aluno.turma_id
         curso_id = aluno.curso_id
         ano_letivo = aluno.ano_letivo
         necessidades_especiais = aluno.necessidades_especiais
+        # Enriquece com dados da turma se disponível
+        turma = _get_turma(turma_id) if turma_id else None
+        if turma:
+            turma_nome = turma["nome"]
+            turma_codigo = turma["codigo"]
+            turno = turma["turno"]
+            turno_label = turma["turno_label"]
+            # turma é a fonte primária de curso
+            curso_id = turma["curso_id"]
+        # Deriva ano_letivo automaticamente pela turma
+        from data.turmas import ano_letivo_da_turma as _ano_letivo_da_turma
+        ano_letivo = _ano_letivo_da_turma(turma_id) if turma_id else aluno.ano_letivo
         curso = get_curso(curso_id) if curso_id else None
         curso_nome = curso["nome"] if curso else None
         if foto and not aluno.foto_suap:
@@ -206,17 +222,22 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
     # Retornamos apenas as chaves necessárias estruturadas de forma consistente
     return {
-        "nome":          nome,
-        "nome_completo": nome_completo,
-        "matricula":     matricula,
-        "email":         db_user.email,
-        "tipo_vinculo":  tipo_vinculo,
-        "foto":          foto_resposta,
-        "is_aluno":      is_aluno,
-        "perfil_completo": perfil_completo if is_aluno else True,
-        "curso_id":      curso_id,
-        "curso_nome":    curso_nome,
-        "ano_letivo":    ano_letivo,
+        "nome":                   nome,
+        "nome_completo":          nome_completo,
+        "matricula":              matricula,
+        "email":                  db_user.email,
+        "tipo_vinculo":           tipo_vinculo,
+        "foto":                   foto_resposta,
+        "is_aluno":               is_aluno,
+        "perfil_completo":        perfil_completo if is_aluno else True,
+        "turma_id":               turma_id,
+        "turma_nome":             turma_nome,
+        "turma_codigo":           turma_codigo,
+        "turno":                  turno,
+        "turno_label":            turno_label,
+        "curso_id":               curso_id,
+        "curso_nome":             curso_nome,
+        "ano_letivo":             ano_letivo,
         "necessidades_especiais": necessidades_especiais,
-        "disciplinas":   disciplinas,
+        "disciplinas":            disciplinas,
     }
