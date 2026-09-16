@@ -1,6 +1,31 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { buscarAtendimentos } from "../services/agendamento";
 
+
+// useEffect(() => {
+//   async function carregarHistorico() {
+//     try {
+//       const usuario = JSON.parse(
+//         localStorage.getItem("usuario")
+//       );
+
+//       if (!usuario?.matricula) return;
+
+//       const dados = await buscarAtendimentosAluno(
+//         usuario.matricula
+//       );
+
+//       setAtendimentos(dados);
+//     } catch (erro) {
+//       console.error(erro);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }
+
+//   carregarHistorico();
+// }, []);
 
 export default function Historico(){
   const navigate = useNavigate()
@@ -14,11 +39,14 @@ export default function Historico(){
   }
 
   const infoCA = {
-    Total: 0,
-    Concluídos: 0,
-    Agendados: 0
-  }
-
+  Total: atendimentos.length,
+  Concluídos: atendimentos.filter(
+    a => a.status === "CONCLUIDO"
+  ).length,
+  Agendados: atendimentos.filter(
+    a => a.status === "AGENDADO"
+  ).length
+};
   const caData = {
     status: ["Agendado", "Concluído", "Cancelado"],
     tipos: ["TAL", "TAI"],
