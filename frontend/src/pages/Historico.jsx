@@ -3,40 +3,42 @@ import { useNavigate } from "react-router-dom"
 import { buscarAtendimentos } from "../services/agendamento";
 
 
-// useEffect(() => {
-//   async function carregarHistorico() {
-//     try {
-//       const usuario = JSON.parse(
-//         localStorage.getItem("usuario")
-//       );
-
-//       if (!usuario?.matricula) return;
-
-//       const dados = await buscarAtendimentosAluno(
-//         usuario.matricula
-//       );
-
-//       setAtendimentos(dados);
-//     } catch (erro) {
-//       console.error(erro);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   carregarHistorico();
-// }, []);
-
 export default function Historico(){
   const navigate = useNavigate()
 
   const [status, setStatus] = useState('')
   const [tipo, setTipo] = useState('')
   const [modalidade, setModalidade] = useState('')
+  const [atendimentos, setAtendimentos] = useState([])
+  const [loading, setLoading] = useState(true)
 
   function backDashboard(){
     navigate('/')
   }
+
+  useEffect(() => {
+  async function carregarHistorico() {
+    try {
+      const usuario = JSON.parse(
+        localStorage.getItem("usuario")
+      );
+
+      if (!usuario?.matricula) return;
+
+      const dados = await buscarAtendimentos(
+        usuario.matricula
+      );
+
+      setAtendimentos(dados);
+    } catch (erro) {
+      console.error(erro);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  carregarHistorico();
+}, []);
 
   const infoCA = {
   Total: atendimentos.length,
