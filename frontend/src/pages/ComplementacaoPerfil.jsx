@@ -78,6 +78,20 @@ export default function ComplementacaoPerfil() {
     if (file) setLaudo(file);
   }
 
+  // seleciona as turmas com base no ano da matricula
+  function setTurmasByAno(ano){
+    const turmas = []
+    CURSOS_TURMAS.map((curso) => {
+      if (ano % 2 === 0){
+        if (curso.nome === 'Informática para Internet') turmas.push(curso.nome + '.1M', curso.nome + '.2M')
+        turmas.push(curso.nome + '.1V')
+      }
+      if (curso.nome === 'Informática para Internet') turmas.push(curso.nome + '.1M', curso.nome + '.2M')
+      turmas.push(curso.nome + '.1V')
+    })
+    return turmas;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setErro('');
