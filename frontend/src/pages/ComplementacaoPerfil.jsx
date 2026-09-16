@@ -67,7 +67,7 @@ export default function ComplementacaoPerfil() {
   const turmasPorTurno = useMemo(() => {
     const grupos = {};
     for (const t of todasTurmas) {
-      if (!grupos[t.turno]) grupos[t.turno] = [];
+      if (!grupos[t.turno]) grupos[t.turno] = []; // se nao existir a chave de turno, cria e sem {M: [id: ]}
       grupos[t.turno].push(t);
     }
     return grupos;
@@ -76,20 +76,6 @@ export default function ComplementacaoPerfil() {
   function handleLaudoChange(e) {
     const file = e.target.files?.[0];
     if (file) setLaudo(file);
-  }
-
-  // seleciona as turmas com base no ano da matricula
-  function setTurmasByAno(ano){
-    const turmas = []
-    CURSOS_TURMAS.map((curso) => {
-      if (ano % 2 === 0){
-        if (curso.nome === 'Informática para Internet') turmas.push(curso.nome + '.1M', curso.nome + '.2M')
-        turmas.push(curso.nome + '.1V')
-      }
-      if (curso.nome === 'Informática para Internet') turmas.push(curso.nome + '.1M', curso.nome + '.2M')
-      turmas.push(curso.nome + '.1V')
-    })
-    return turmas;
   }
 
   async function handleSubmit(e) {
@@ -141,6 +127,7 @@ export default function ComplementacaoPerfil() {
     : null;
 
   const turmaSelecionada = todasTurmas.find((t) => t.id === turmaId) || null;
+  const turnoAlunoAtual = anoIngresso % 2 === 0 ? 'V' : 'M'; // Determina o turno do aluno com base no ano de ingresso'
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -190,51 +177,20 @@ export default function ComplementacaoPerfil() {
               Selecione a turma em que você está matriculado. O ano ({anoIngresso}) foi identificado automaticamente pela sua matrícula.
             </p>
 
-            {/* Matutino */}
-            {turmasPorTurno['M'] && (
+            {turmasPorTurno[turnoAlunoAtual] && (
               <div className="mb-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Matutino</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Seu turno: {TURNO_LABEL[turnoAlunoAtual]}</p>
                 <div className="flex flex-wrap gap-2">
-                  {turmasPorTurno['M'].map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setTurmaId(t.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all text-left ${
-                        turmaId === t.id
-                          ? 'bg-emerald-700 text-white border-emerald-700'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+                  <select name="" id="" value={turmaId} onChange={(e) => setTurmaId(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                    <option value="">Selecione a turma</option>
+                      {turmasPorTurno[turnoAlunoAtual]?.map((t) => (
+                        <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
-
-            {/* Vespertino */}
-            {turmasPorTurno['V'] && (
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Vespertino</p>
-                <div className="flex flex-wrap gap-2">
-                  {turmasPorTurno['V'].map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setTurmaId(t.id)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all text-left ${
-                        turmaId === t.id
-                          ? 'bg-emerald-700 text-white border-emerald-700'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
 
             {/* Confirmação */}
             {turmaSelecionada && (
