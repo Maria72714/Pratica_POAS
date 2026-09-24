@@ -86,4 +86,15 @@ export async function completarPerfil(matricula, formData) {
   return merged;
 }
 
+export async function solicitarAcessoMediador(payload) {
+  const res = await fetch(`${API_BASE}/usuarios/mediador/solicitar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Erro ao enviar solicitação');
+  return data;
+}
+
 export { salvarUsuarioLocal };
