@@ -68,8 +68,17 @@ export default function SolicitacaoMediador() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800 px-4 py-10 flex items-center justify-center relative overflow-hidden">
       <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.45),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(20,184,166,0.28),transparent_24%)]" />
 
-      <div className="relative z-10 w-full max-w-3xl rounded-[2rem] bg-white shadow-2xl overflow-hidden border border-white/40">
-        <div className="h-2 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
+      <div className="relative z-10 w-full max-w-3xl">
+        <div className="mb-5 flex justify-center">
+          <img
+            src="/images/logo_branca_pratica_vetorizada.png"
+            alt="pratiCA"
+            className="h-16 w-auto drop-shadow-lg"
+          />
+        </div>
+
+        <div className="rounded-[2rem] bg-white shadow-2xl overflow-hidden border border-white/40">
+          <div className="h-2 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
 
         <div className="px-6 py-8 sm:px-8 sm:py-10">
           <div className="mb-6">
@@ -148,6 +157,7 @@ export default function SolicitacaoMediador() {
               </button>
             </div>
           </form>
+          </div>
         </div>
       </div>
     </div>
