@@ -94,69 +94,85 @@ export default function SolicitacaoMediador() {
             </div>
           )}
 
-          {submitted && (
-            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              Solicitação enviada com sucesso. Agora você pode acessar o sistema com suas credenciais de mediador.
-            </div>
-          )}
+          {submitted ? (
+            <div className="flex flex-col items-center text-center py-6">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
+                ✓
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Nome Completo" name="nome" value={form.nome} onChange={handleChange} placeholder="Seu nome completo" required />
-              <Field label="E-mail" name="email" value={form.email} onChange={handleChange} placeholder="seuemail@escolar.ifrn.edu.br" type="email" required />
-              <Field label="Nome de Usuário" name="usuario" value={form.usuario} onChange={handleChange} placeholder="Seu nome de usuário" required />
-              <Field label="Matrícula (opcional)" name="matricula" value={form.matricula} onChange={handleChange} placeholder="Seu número de matrícula (se tiver)" />
-              <Field label="Senha" name="senha" value={form.senha} onChange={handleChange} placeholder="Mínimo 6 caracteres" type="password" required />
-              <Field label="Confirmar Senha" name="confirmarSenha" value={form.confirmarSenha} onChange={handleChange} placeholder="Repita sua senha" type="password" required />
-            </div>
+              <h2 className="text-2xl font-bold text-slate-900">Solicitação enviada com sucesso!</h2>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Tipo de Mediação</label>
-              <select
-                name="tipoMediacao"
-                value={form.tipoMediacao}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-              >
-                <option value="acompanhamento">Acompanhamento</option>
-                <option value="libras">Libras</option>
-                <option value="braile">Braile</option>
-                <option value="mobilidade">Mobilidade</option>
-                <option value="transtornos_especificos">Transtornos específicos</option>
-                <option value="outro">Outro</option>
-              </select>
-            </div>
+              <p className="mt-4 max-w-lg text-sm leading-6 text-slate-600">
+                Sua candidatura foi registrada e será analisada pelo administrador. Seu acesso será liberado somente após a aprovação do perfil de mediador.
+              </p>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Descrição do Apoio (opcional)</label>
-              <textarea
-                name="descricao"
-                value={form.descricao}
-                onChange={handleChange}
-                rows={5}
-                placeholder="Descreva brevemente sua experiência ou o tipo de apoio que você pode oferecer..."
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 resize-none"
-              />
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="mt-8 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500"
               >
-                Cancelar
-              </button>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
+                Voltar para login
               </button>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Nome Completo" name="nome" value={form.nome} onChange={handleChange} placeholder="Seu nome completo" required />
+                <Field label="E-mail" name="email" value={form.email} onChange={handleChange} placeholder="seuemail@escolar.ifrn.edu.br" type="email" required />
+                <Field label="Nome de Usuário" name="usuario" value={form.usuario} onChange={handleChange} placeholder="Seu nome de usuário" required />
+                <Field label="Matrícula (opcional)" name="matricula" value={form.matricula} onChange={handleChange} placeholder="Seu número de matrícula (se tiver)" />
+                <Field label="Senha" name="senha" value={form.senha} onChange={handleChange} placeholder="Mínimo 6 caracteres" type="password" required />
+                <Field label="Confirmar Senha" name="confirmarSenha" value={form.confirmarSenha} onChange={handleChange} placeholder="Repita sua senha" type="password" required />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Tipo de Mediação</label>
+                <select
+                  name="tipoMediacao"
+                  value={form.tipoMediacao}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                >
+                  <option value="acompanhamento">Acompanhamento</option>
+                  <option value="libras">Libras</option>
+                  <option value="braile">Braile</option>
+                  <option value="mobilidade">Mobilidade</option>
+                  <option value="transtornos_especificos">Transtornos específicos</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Descrição do Apoio (opcional)</label>
+                <textarea
+                  name="descricao"
+                  value={form.descricao}
+                  onChange={handleChange}
+                  rows={5}
+                  placeholder="Descreva brevemente sua experiência ou o tipo de apoio que você pode oferecer..."
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Enviando...' : 'Enviar Solicitação'}
+                </button>
+              </div>
+            </form>
+          )}
           </div>
         </div>
       </div>
