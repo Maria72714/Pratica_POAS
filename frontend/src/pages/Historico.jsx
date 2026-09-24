@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { buscarAtendimentos } from "../services/agendamento";
+import { buscarAtendimentos, excluirAtendimento, editarAtendimento } from "../services/agendamento";
 
 const STATUS_LABELS = {
   AGENDADO: "Agendado",
@@ -85,6 +85,32 @@ export default function Historico() {
   function backDashboard() {
     navigate("/");
   }
+  async function handleExcluir(atendimentoId) {
+      const confirmar = window.confirm(
+        "Tem certeza que deseja excluir esta solicitação de atendimento? Essa ação não pode ser desfeita."
+      );
+      if (!confirmar) return;
+
+      try {
+        await excluirAtendimento(atendimentoId);
+        setAtendimentos((atuais) => atuais.filter((a) => a.id !== atendimentoId));
+      } catch (erro) {
+        console.error(erro);
+        alert("Não foi possível excluir o atendimento. Tente novamente.");
+      }
+    }
+  
+  async function handleEditar(atendimentoId, dadosAtualizados) {
+    try {
+      await editarAtendimento(atendimentoId, dadosAtualizados);
+      setAtendimentos((atuais) =>
+        atuais.map((a) => (a.id === atendimentoId ? { ...a, ...dadosAtualizados } : a))
+      );
+    } catch (erro) {
+      console.error(erro);
+      alert("Não foi possível editar o atendimento. Tente novamente.");
+    }
+  }
 
   useEffect(() => {
     async function carregarHistorico() {
@@ -102,7 +128,6 @@ export default function Historico() {
         setLoading(false);
       }
     }
-
     carregarHistorico();
   }, []);
 
@@ -256,13 +281,30 @@ export default function Historico() {
                       </div>
                     )}
                   </div>
+                  <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExcluir(atendimento.id)}
+                    className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                    >
+                    Excluir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/editar-atendimento/${atendimento.id}`)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    Editar
+                  </button>
+                  
+                </div>
                 </article>
               );
             })}
           </div>
         )}
       </section>
-
+      
       <button className="ml-7 text-gray-500 text-sm" onClick={backDashboard}>
         {"<"} Voltar ao dashboard
       </button>
