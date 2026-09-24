@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Callback from './pages/Callback';
 import DashboardAuth from './pages/DashboardAuth';
 import ComplementacaoPerfil from './pages/ComplementacaoPerfil';
+import SolicitacaoMediador from './pages/SolicitacaoMediador';
 
 import { useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -105,6 +106,7 @@ function App() {
           <Route path="/callback"  element={<Callback />} />
           <Route path="/complementar-perfil" element={<ComplementacaoPerfil />} />
           <Route path="/dashboard" element={<DashboardAuth />} />
+          <Route path="/solicitar-mediador" element={<SolicitacaoMediador />} />
 
           {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
           <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
