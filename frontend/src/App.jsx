@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import DashboardProfessor from './components/DashboardProfessor';
 import SolicitacaoAtendimento from './components/SolicitacaoAtendimento';
 import Agendamentos from './pages/Agendamentos';
-
+import EditarSolicitacao from './components/Editarsolicitacao';
 import Historico from './pages/Historico';
 import Perfil from './pages/Perfil';
 // ── Rotas de autenticação OAuth2 SUAP ────────────────────────────────────────
@@ -114,6 +114,7 @@ function App() {
           <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
           <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
           <Route path="/perfil" element={<AppLayout isProfessor={false}><Perfil /></AppLayout>} />
+          <Route path="/solicitacoes/editar/" element={<AppLayout isProfessor={false}><EditarSolicitacao /></AppLayout>} />
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
