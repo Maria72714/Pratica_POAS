@@ -291,7 +291,7 @@ export default function Historico() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate(`/editar-atendimento/${atendimento.id}`)}
+                    onClick={() => navigate(`/solicitacoes/editar/${atendimento.id}`)}
                     className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
                   >
                     Editar

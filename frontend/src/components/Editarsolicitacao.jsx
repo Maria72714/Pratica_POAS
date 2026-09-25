@@ -71,7 +71,7 @@ export default function EditarSolicitacao() {
 
   return (
     <div className="min-h-screen bg-white px-4 py-10 flex items-center justify-center">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-6xl">
 
         <div className="mb-5 flex justify-center">
           <img
@@ -81,7 +81,7 @@ export default function EditarSolicitacao() {
           />
         </div>
 
-        <div className="rounded-[2rem] bg-white shadow-xl border border-slate-200 overflow-hidden">
+        <div className=" min-h-[700px] rounded-[2rem] bg-white shadow-xl border border-slate-200 overflow-hidden justify-center">
 
           <div className="h-2 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
 

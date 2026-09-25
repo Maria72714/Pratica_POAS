@@ -114,7 +114,7 @@ function App() {
           <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
           <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
           <Route path="/perfil" element={<AppLayout isProfessor={false}><Perfil /></AppLayout>} />
-          <Route path="/solicitacoes/editar/" element={<AppLayout isProfessor={false}><EditarSolicitacao /></AppLayout>} />
+          <Route path="/solicitacoes/editar/:id" element={<AppLayout isProfessor={false}><EditarSolicitacao /></AppLayout>} />
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
