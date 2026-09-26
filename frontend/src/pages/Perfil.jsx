@@ -116,6 +116,16 @@ const Perfil = () => {
           </p>
         </div>
 
+        {/* Botão de Complemento de Perfil para Professor */}
+        {isProfessor && (
+          <button
+            onClick={() => navigate('/professor/completar-perfil')}
+            className="w-full py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md"
+          >
+            <span>📚 Editar / Vincular Minhas Disciplinas e Turmas</span>
+          </button>
+        )}
+
         {/* Botões de Ação Inferiores */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <button

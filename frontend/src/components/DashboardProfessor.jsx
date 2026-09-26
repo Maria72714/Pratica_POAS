@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const DashboardProfessor = () => {
+  const navigate = useNavigate();
   const estatisticas = [
     { rotulo: 'Próximos Atendimentos', valor: '3', icone: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', corIcone: 'text-emerald-500', fundoIcone: 'bg-emerald-50' },
     { rotulo: 'Atendimentos (Mês)', valor: '36', icone: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', corIcone: 'text-blue-500', fundoIcone: 'bg-blue-50' },
@@ -94,6 +96,14 @@ const DashboardProfessor = () => {
         <h2 className="text-xl font-bold text-gray-800 mb-4">Ações Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
+          <button 
+            onClick={() => navigate('/professor/completar-perfil')}
+            className="flex flex-col items-start p-4 border border-emerald-600 bg-emerald-700 text-white rounded-lg text-left hover:bg-emerald-800 transition-all shadow-md"
+          >
+            <span className="font-bold text-white mb-1">📚 Vincular Minhas Disciplinas e Turmas</span>
+            <span className="text-xs text-emerald-100">Selecione as matérias que você leciona e as turmas atendidas no pratiCA</span>
+          </button>
+
           <button className="flex flex-col items-start p-4 border border-emerald-500 bg-emerald-50 rounded-lg text-left hover:bg-emerald-100 transition-colors">
             <span className="font-semibold text-emerald-700 mb-1">Criar Novo Atendimento</span>
             <span className="text-sm text-emerald-600/80">Adicione horários disponíveis para atendimento</span>

@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import Callback from './pages/Callback';
 import DashboardAuth from './pages/DashboardAuth';
 import ComplementacaoPerfil from './pages/ComplementacaoPerfil';
+import ComplementacaoPerfilProfessor from './pages/ComplementacaoPerfilProfessor';
 import SolicitacaoMediador from './pages/SolicitacaoMediador';
 
 import { AuthProvider } from './context/AuthContext';
@@ -150,6 +151,8 @@ function App() {
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
+          <Route path="/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
+          <Route path="/teste/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
           <Route path="/preview/professor" element={
             <div className="flex min-h-screen bg-gray-50">
               <Sidebar itensMenu={[
