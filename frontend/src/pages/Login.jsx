@@ -168,7 +168,7 @@ const Login = () => {
                 onClick={() => setShowDevLogin(!showDevLogin)}
                 className="flex-shrink mx-4 flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
               >
-                <span>Login Local (Dev)</span>
+                <span>Login Local</span>
                 <svg className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -214,7 +214,7 @@ const Login = () => {
                     disabled={devLoading}
                     className="w-full py-3.5 px-6 bg-[#212b36] hover:bg-[#161c24] active:bg-[#0f131a] text-white font-medium text-sm rounded-2xl transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                   >
-                    {devLoading ? 'Entrando...' : 'Entrar (Dev)'}
+                    {devLoading ? 'Entrando...' : 'Entrar'}
                   </button>
 
                   <p className="text-center text-xs text-gray-400 pt-1">
