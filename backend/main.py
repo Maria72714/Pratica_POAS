@@ -34,12 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routes import notificacoes
+from routes import notificacoes, professores
 
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
 app.include_router(alunos.router, prefix="/api")
 app.include_router(notificacoes.router, prefix="/api")
+app.include_router(professores.router, prefix="/api")
 
 
 from models.users.mediador import Mediador

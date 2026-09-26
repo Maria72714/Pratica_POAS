@@ -67,11 +67,21 @@ def _make_turma(curso_id: str, curso_info: dict, ano_ingresso: int, serie: int, 
     }
 
 
+def _turno_do_ano(ano_ingresso: int) -> str:
+    """
+    Regra de negocio do IFRN Caico:
+      - Ano impar  (2023, 2025, ...) -> turno Matutino  (M)
+      - Ano par    (2024, 2026, ...) -> turno Vespertino (V)
+    """
+    return "M" if ano_ingresso % 2 != 0 else "V"
+
+
 def get_turmas(ano_ingresso: int | None = None) -> list[dict]:
     """
     Retorna todas as turmas ativas.
+    Regra de turno: ano impar -> M, ano par -> V.
     Se ano_ingresso for informado, filtra apenas as turmas daquele ano.
-    Considera os últimos 4 anos de ingresso (cursos de 4 anos).
+    Considera os ultimos 4 anos de ingresso (cursos de 4 anos).
     """
     ano_atual = date.today().year
     anos = (
@@ -83,22 +93,23 @@ def get_turmas(ano_ingresso: int | None = None) -> list[dict]:
     turmas = []
     for curso_id, info in CURSOS_TURMAS.items():
         for ano in anos:
-            for turno in info["turnos"]:
-                for serie in range(1, info["series_por_turno"] + 1):
-                    turmas.append(_make_turma(curso_id, info, ano, serie, turno))
+            turno = _turno_do_ano(ano)
+            # So gera a turma se o turno calculado for valido para este curso
+            if turno not in info["turnos"]:
+                continue
+            for serie in range(1, info["series_por_turno"] + 1):
+                turmas.append(_make_turma(curso_id, info, ano, serie, turno))
     return turmas
 
 
 def get_turma(turma_id: str) -> dict | None:
     """
     Busca uma turma pelo ID.
-    O ID tem formato: "<curso_id>_<ano_ingresso>_<serie><turno>"
-    Reconstrói o objeto sem depender do range de anos de get_turmas().
+    Formato: "<curso_id>_<ano_ingresso>_<serie><turno>"
+    Valida a regra de turno: ano impar -> M, ano par -> V.
     """
     if not turma_id:
         return None
-    # Tenta parsear o ID diretamente: split no último '_' para separar código, e penúltimo para ano
-    # Formato esperado: "informatica_internet_2023_2M"
     parts = turma_id.rsplit("_", 2)  # ["informatica_internet", "2023", "2M"]
     if len(parts) != 3:
         return None
@@ -120,6 +131,9 @@ def get_turma(turma_id: str) -> dict | None:
     if turno not in info["turnos"]:
         return None
     if serie < 1 or serie > info["series_por_turno"]:
+        return None
+    # Valida a regra de turno pelo ano de ingresso
+    if turno != _turno_do_ano(ano_ingresso):
         return None
     return _make_turma(curso_id, info, ano_ingresso, serie, turno)
 
