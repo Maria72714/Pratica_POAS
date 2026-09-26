@@ -8,7 +8,7 @@ const Perfil = () => {
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    const dados = localStorage.getItem('usuario');
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
     if (dados) {
       setUsuario(JSON.parse(dados));
     }
@@ -19,9 +19,21 @@ const Perfil = () => {
     navigate('/login', { replace: true });
   };
 
+  const isMediador = usuario?.tipo === 'mediador';
+  const isProfessor = usuario?.tipo === 'professor' || usuario?.tipo_vinculo === 'professor';
+  const papelFormatado = isMediador ? 'Mediador' : (isProfessor ? 'Professor' : (usuario?.tipo_vinculo || usuario?.tipo || 'Aluno'));
+
   const iniciais = usuario?.nome
     ? usuario.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : '??';
+    : (isMediador ? 'MD' : 'U');
+
+  const bannerBg = isMediador
+    ? 'bg-gradient-to-r from-[#4a1575] via-[#5b1f86] to-[#6b259d]'
+    : (isProfessor ? 'bg-emerald-800' : 'bg-[#004d34]');
+
+  const avatarBg = isMediador
+    ? 'bg-purple-800'
+    : (isProfessor ? 'bg-emerald-800' : 'bg-[#1d4d38]');
 
   return (
     <div className="flex-1 bg-gray-100 min-h-screen p-8 overflow-y-auto">
@@ -31,14 +43,14 @@ const Perfil = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Meu Perfil</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Informações da sua conta institucional
+            {isMediador ? 'Informações do seu perfil de Mediador' : 'Informações da sua conta no sistema'}
           </p>
         </div>
 
         {/* Card do Perfil / Banner */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* Banner Verde Superior */}
-          <div className="bg-[#004d34] h-32 w-full"></div>
+          {/* Banner Superior */}
+          <div className={`${bannerBg} h-32 w-full`}></div>
 
           {/* Conteúdo do Perfil */}
           <div className="px-6 pb-6 pt-0 relative">
@@ -46,7 +58,7 @@ const Perfil = () => {
               
               {/* Avatar com Iniciais ou Foto */}
               <div className="relative">
-                <div className="w-24 h-24 rounded-2xl bg-[#1d4d38] border-4 border-white flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
+                <div className={`w-24 h-24 rounded-2xl ${avatarBg} border-4 border-white flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden`}>
                   {usuario?.foto ? (
                     <img src={usuario.foto} alt="Foto de Perfil" className="w-full h-full object-cover" />
                   ) : (
@@ -56,14 +68,15 @@ const Perfil = () => {
               </div>
 
               {/* Badge de Vínculo */}
-              <span className="bg-gray-100 text-gray-600 font-medium text-xs px-3 py-1 rounded-full border border-gray-200">
-                {usuario?.tipo_vinculo || 'Aluno'}
+              <span className={`font-semibold text-xs px-3 py-1 rounded-full border ${isMediador ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                {papelFormatado}
               </span>
             </div>
 
-            {/* Email Cadastrado */}
+            {/* Nome e Email Cadastrado */}
+            <h2 className="text-xl font-bold text-gray-800 mb-0.5">{usuario?.nome || papelFormatado}</h2>
             <p className="text-sm text-gray-500 font-medium">
-              {usuario?.email || '20231101110048@academico.ifrn.edu.br'}
+              {usuario?.email || 'E-mail não informado'}
             </p>
           </div>
         </div>
@@ -71,8 +84,8 @@ const Perfil = () => {
         {/* Tabela / Lista de Dados da Conta */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-100">
           <div className="p-4 sm:px-6 flex justify-between items-center text-sm">
-            <span className="text-gray-500 font-medium">Matrícula</span>
-            <span className="font-bold text-gray-800">{usuario?.matricula || '20231101110048'}</span>
+            <span className="text-gray-500 font-medium">Identificação / Matrícula</span>
+            <span className="font-bold text-gray-800">{usuario?.matricula || 'Cadastro Local'}</span>
           </div>
 
           <div className="p-4 sm:px-6 flex justify-between items-center text-sm">
@@ -82,25 +95,24 @@ const Perfil = () => {
 
           <div className="p-4 sm:px-6 flex justify-between items-center text-sm">
             <span className="text-gray-500 font-medium">Tipo de vínculo</span>
-            <span className="font-bold text-gray-800">{usuario?.tipo_vinculo || 'Aluno'}</span>
+            <span className="font-bold text-gray-800">{papelFormatado}</span>
           </div>
 
           <div className="p-4 sm:px-6 flex justify-between items-center text-sm">
-            <span className="text-gray-500 font-medium">Modalidade</span>
-            <span className="font-bold text-gray-800">{usuario?.modalidade || 'TAL'}</span>
+            <span className="text-gray-500 font-medium">Área de Atuação / Modalidade</span>
+            <span className="font-bold text-gray-800">{isMediador ? 'Mediação Inclusiva (NAPNE)' : (usuario?.modalidade || 'Presencial')}</span>
           </div>
         </div>
 
-        {/* Alerta Informativo SUAP */}
-        <div className="bg-blue-50/60 border border-blue-200/60 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-700">
-          <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* Alerta Informativo */}
+        <div className={`border rounded-xl p-4 flex items-start gap-3 text-xs ${isMediador ? 'bg-purple-50/60 border-purple-200/60 text-purple-800' : 'bg-blue-50/60 border-blue-200/60 text-blue-700'}`}>
+          <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="leading-relaxed">
-            Nome, e-mail e foto são sincronizados automaticamente com o SUAP a cada login.{' '}
-            <a href="https://suap.ifrn.edu.br" target="_blank" rel="noreferrer" className="underline font-semibold hover:text-blue-800">
-              suap.ifrn.edu.br
-            </a>
+            {isMediador 
+              ? 'Perfil cadastrado na plataforma pratiCA para acompanhamento e suporte inclusivo aos estudantes.' 
+              : 'Seus dados de conta e credenciais estão integrados à plataforma pratiCA.'}
           </p>
         </div>
 
