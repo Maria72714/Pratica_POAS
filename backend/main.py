@@ -39,8 +39,70 @@ app.include_router(usuarios.router, prefix="/api")
 app.include_router(alunos.router, prefix="/api")
 
 
+from models.users.mediador import Mediador
+
+
 class AuthCode(BaseModel):
     code: str
+
+
+class LoginInput(BaseModel):
+    matricula: str
+    senha: str
+
+
+@app.post("/api/login")
+def login_local(payload: LoginInput, session: SessionDep):
+    identificador = (payload.matricula or "").strip()
+    senha = (payload.senha or "").strip()
+
+    if not identificador or not senha:
+        raise HTTPException(status_code=400, detail="Informe a matrícula/e-mail e a senha.")
+
+    # Procura o usuário por matrícula ou e-mail no banco Neon
+    db_user = session.exec(
+        select(Usuario).where(
+            (Usuario.matricula == identificador) | (Usuario.email == identificador)
+        )
+    ).first()
+
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+
+    # Valida senha com hash ou texto plano de fallback
+    senha_valida = False
+    try:
+        from pwdlib import PasswordHash
+        senha_context = PasswordHash.recommended()
+        senha_valida = senha_context.verify(senha, db_user.senha)
+    except Exception:
+        senha_valida = (db_user.senha == senha)
+
+    if not senha_valida and db_user.senha != senha:
+        raise HTTPException(status_code=400, detail="Senha incorreta.")
+
+    # Identifica papel do usuário no sistema
+    tipo_usuario = "aluno"
+    if session.exec(select(Professor).where(Professor.id == db_user.id)).first():
+        tipo_usuario = "professor"
+    elif session.exec(select(Mediador).where(Mediador.id == db_user.id)).first():
+        tipo_usuario = "mediador"
+    elif (db_user.matricula or "").lower() == "admin":
+        tipo_usuario = "admin"
+
+    aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
+
+    return {
+        "id": db_user.id,
+        "nome": db_user.nome,
+        "email": db_user.email,
+        "matricula": db_user.matricula,
+        "tipo_usuario": tipo_usuario,
+        "perfil_completo": True if tipo_usuario in ["mediador", "professor", "admin"] else (aluno.perfil_completo if aluno else False),
+        "necessidades_especiais": aluno.necessidades_especiais if aluno else False,
+        "curso": aluno.curso_id if aluno else None,
+        "id_turma": aluno.turma_id if aluno else None,
+    }
 
 
 @app.post("/api/auth/suap")

@@ -32,7 +32,16 @@ function AppLayout({ children, isProfessor, requerTai = false }) {
       navigate('/login');
       return;
     }
-    if (!isProfessor && !usuarioLogado.perfil_completo) {
+    const isDocenteOuMediador = usuarioLogado.tipo === 'professor' || 
+                                usuarioLogado.tipo_vinculo === 'professor' || 
+                                usuarioLogado.tipo === 'mediador' || 
+                                usuarioLogado.tipo === 'admin';
+    if (isDocenteOuMediador && !isProfessor) {
+      navigate('/professor');
+      return;
+    }
+    const isAluno = usuarioLogado.tipo === 'aluno' || usuarioLogado.is_aluno || (!usuarioLogado.tipo && !usuarioLogado.tipo_vinculo);
+    if (isAluno && usuarioLogado.perfil_completo === false) {
       navigate('/complementar-perfil');
       return;
     }
