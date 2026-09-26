@@ -27,18 +27,23 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
     return dados ? JSON.parse(dados) : null;
   });
 
+  const isMediadorUser = isMediador || usuarioLogado?.tipo === 'mediador';
+  const isProfessorUser = isProfessor || usuarioLogado?.tipo === 'professor' || usuarioLogado?.tipo_vinculo === 'professor';
+
   React.useEffect(() => {
     if (!usuarioLogado) {
       navigate('/login');
       return;
     }
 
-    if (usuarioLogado.tipo === 'mediador' && !isMediador) {
+    const path = window.location.pathname;
+
+    if (usuarioLogado.tipo === 'mediador' && !path.startsWith('/mediador') && path !== '/perfil') {
       navigate('/mediador');
       return;
     }
 
-    if ((usuarioLogado.tipo === 'professor' || usuarioLogado.tipo_vinculo === 'professor') && !isProfessor) {
+    if ((usuarioLogado.tipo === 'professor' || usuarioLogado.tipo_vinculo === 'professor') && !path.startsWith('/professor') && path !== '/perfil') {
       navigate('/professor');
       return;
     }
@@ -71,7 +76,7 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
 
   const mediadorMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/mediador" },
-    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Solicitações TAI", link: "/mediador" },
+    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Solicitações TAI", link: "/mediador/solicitacoes" },
     { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
 
@@ -95,9 +100,9 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
     ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : 'U';
 
-  const menuAtivo = isMediador ? mediadorMenu : (isProfessor ? professorMenu : alunoMenu);
-  const corAvatar = isMediador ? "bg-purple-700" : (isProfessor ? "bg-emerald-700" : "bg-emerald-600");
-  const papelTexto = isMediador ? "Mediador" : (isProfessor ? "Professor" : "Aluno");
+  const menuAtivo = isMediadorUser ? mediadorMenu : (isProfessorUser ? professorMenu : alunoMenu);
+  const corAvatar = isMediadorUser ? "bg-purple-700" : (isProfessorUser ? "bg-emerald-700" : "bg-emerald-600");
+  const papelTexto = isMediadorUser ? "Mediador" : (isProfessorUser ? "Professor" : "Aluno");
 
   const usuarioInfo = {
     nome: usuarioLogado?.nome || papelTexto,
@@ -141,6 +146,7 @@ function App() {
 
           {/* ── Rotas do Mediador ───────────────────────────────────────── */}
           <Route path="/mediador" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />
+          <Route path="/mediador/solicitacoes" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
