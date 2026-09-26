@@ -51,7 +51,7 @@ function AppLayout({ children, isProfessor, requerTai = false }) {
           setUsuarioLogado(atualizado);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [usuarioLogado]);
 
   if (!usuarioLogado) return null;
@@ -72,8 +72,8 @@ function AppLayout({ children, isProfessor, requerTai = false }) {
     { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
 
-  const iniciais = usuarioLogado?.nome 
-    ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() 
+  const iniciais = usuarioLogado?.nome
+    ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : 'U';
 
   const usuarioInfo = {
@@ -102,8 +102,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
-          <Route path="/login"     element={<Login />} />
-          <Route path="/callback"  element={<Callback />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/callback" element={<Callback />} />
           <Route path="/complementar-perfil" element={<ComplementacaoPerfil />} />
           <Route path="/dashboard" element={<DashboardAuth />} />
           <Route path="/solicitar-mediador" element={<SolicitacaoMediador />} />
@@ -111,8 +111,8 @@ function App() {
           {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
           <Route path="/" element={<AppLayout isProfessor={false}><Dashboard /></AppLayout>} />
           <Route path="/solicitar-atendimento" element={<AppLayout isProfessor={false} requerTai={false}><SolicitacaoAtendimento /></AppLayout>} />
-          <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>}/>
-          <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos/></AppLayout>}/>
+          <Route path="/historico" element={<AppLayout isProfessor={false}> <Historico /></AppLayout>} />
+          <Route path="/Agendamentos" element={<AppLayout isProfessor={false}><Agendamentos /></AppLayout>} />
           <Route path="/perfil" element={<AppLayout isProfessor={false}><Perfil /></AppLayout>} />
           <Route path="/solicitacoes/editar/:id" element={<AppLayout isProfessor={false}><EditarSolicitacao /></AppLayout>} />
 

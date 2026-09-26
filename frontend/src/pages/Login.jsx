@@ -28,7 +28,7 @@ const Login = () => {
     e.preventDefault();
     setDevError('');
     setDevLoading(true);
-    
+
     try {
       const data = await loginLocal(matricula, senha);
 
@@ -61,13 +61,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 flex flex-col items-center justify-center p-4 relative">
-      
+
       {/* Container principal com cantos arredondados */}
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row relative z-10">
-        
+
         {/* Painel Esquerdo - Verde escuro */}
         <div className="lg:w-1/2 bg-gradient-to-br from-emerald-800 to-emerald-900 p-10 lg:p-14 flex flex-col justify-between">
-          
+
           {/* Logo */}
           <div className="flex items-center gap-4 mb-8">
             <img
@@ -87,7 +87,7 @@ const Login = () => {
               Bem-vindo(a) de volta!
             </h2>
             <p className="text-emerald-100 text-lg leading-relaxed">
-              Plataforma de gerenciamento de Centro de Aprendizagem do IFRN Campus Caicó. 
+              Plataforma de gerenciamento de Centro de Aprendizagem do IFRN Campus Caicó.
               Acesse para gerenciar seus atendimentos, inscrições e disciplinas.
             </p>
           </div>
@@ -155,50 +155,103 @@ const Login = () => {
                 <span className="text-white text-xs font-bold">i</span>
               </div>
               <p className="text-sm text-emerald-800 leading-relaxed">
-                Use sua <strong>matrícula</strong>, <strong>nome de usuário ou email</strong> 
+                Use sua <strong>matrícula</strong>, <strong>nome de usuário ou email</strong>
                 e sua <strong>senha</strong>. O sistema detectará automaticamente seu tipo de usuário.
               </p>
             </div>
 
-            {/* Login Local (Dev) */}
-            <div className="mb-4">
+            {/* Divider Login Local (Dev) */}
+            <div className="relative flex py-2 items-center my-2">
+              <div className="flex-grow border-t border-gray-200"></div>
               <button
-                 type="button"
+                type="button"
                 onClick={() => setShowDevLogin(!showDevLogin)}
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium transition-colors"
+                className="flex-shrink mx-4 flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
               >
-                <span>Login Local</span>
-                <svg className={`w-4 h-4 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
+                <span>Login Local (Dev)</span>
+                <svg className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              {showDevLogin && (
-                <div className="space-y-3 mb-6">
-                  <button type="button" className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left">
-                    <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+              <div className="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            {/* Form de dev apenas se showDevLogin for true */}
+            {showDevLogin && (
+              <div className="space-y-4 mb-4 pt-2">
+                <form onSubmit={handleDevLogin} className="space-y-3">
+                  {devError && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-2xl text-center">
+                      {devError}
                     </div>
-                    <span className="text-sm text-gray-700 font-medium">Acesso Administrativo</span>
-                  </button>
+                  )}
+
+                  <div>
+                    <input
+                      type="text"
+                      value={matricula}
+                      onChange={(e) => setMatricula(e.target.value)}
+                      placeholder="Matrícula, Nome de Usuário ou Email"
+                      className="w-full px-5 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-gray-400 transition-all"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      type="password"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      placeholder="Senha"
+                      className="w-full px-5 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-gray-400 transition-all"
+                      required
+                    />
+                  </div>
 
                   <button
-                    type="button"
-                    onClick={() => navigate('/solicitar-mediador')}
-                    className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left"
+                    type="submit"
+                    disabled={devLoading}
+                    className="w-full py-3.5 px-6 bg-[#212b36] hover:bg-[#161c24] active:bg-[#0f131a] text-white font-medium text-sm rounded-2xl transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                   >
-                    <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-700 font-medium">+ Quero ser Mediador</span>
+                    {devLoading ? 'Entrando...' : 'Entrar (Dev)'}
                   </button>
-                </div>
-              )}
+
+                  <p className="text-center text-xs text-gray-400 pt-1">
+                    Senha padrão dos usuários de teste: <span className="font-bold text-gray-500">123456</span>
+                  </p>
+                </form>
+              </div>
+            )}
+
+            {/* Links sempre visíveis abaixo do Login Local (Dev) */}
+            <div className="flex flex-col items-center gap-2.5 my-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDevLogin(true);
+                  setMatricula('admin');
+                  setSenha('123456');
+                }}
+                className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors py-1"
+              >
+                <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Acesso Administrativo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/solicitar-mediador')}
+                className="flex items-center justify-center gap-2 text-xs text-gray-600 hover:text-emerald-700 transition-colors py-1"
+              >
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                <span>Quero ser Mediador</span>
+              </button>
             </div>
 
             {/* Links SUAP */}
