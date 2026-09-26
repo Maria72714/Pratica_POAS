@@ -110,6 +110,59 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
     session.commit()
     session.refresh(atendimento)
 
+    # ── disparo automático de notificações no neon db ──────────────
+    try:
+        from models.notificacao import Notificacao
+        from models.associativas.usuario_notificacao import UsuarioNotificacao
+        from models.users.professor import Professor
+        from models.users.mediador import Mediador
+
+        data_str = dados.data_atendimento.strftime("%d/%m/%Y")
+
+        # 1. Notificação automática para o Aluno
+        notif_aluno = Notificacao(
+            titulo=f"Atendimento em {dados.disciplina} Solicitado",
+            mensagem=f"Sua solicitação de atendimento para {data_str} foi registrada com sucesso.",
+            lida=False,
+        )
+        session.add(notif_aluno)
+        session.commit()
+        session.refresh(notif_aluno)
+        session.add(UsuarioNotificacao(usuario_id=usuario.id, notificacao_id=notif_aluno.id))
+
+        # 2. Notificação automática para Professores e Mediadores
+        notif_docente = Notificacao(
+            titulo=f"Novo Agendamento: {dados.disciplina}",
+            mensagem=f"O aluno {usuario.nome} solicitou atendimento de CA em {dados.disciplina} para {data_str}.",
+            lida=False,
+        )
+        session.add(notif_docente)
+        session.commit()
+        session.refresh(notif_docente)
+
+        # Dispara para professores
+        professores = session.exec(select(Professor)).all()
+        for p in professores:
+            session.add(UsuarioNotificacao(usuario_id=p.id, notificacao_id=notif_docente.id))
+
+        # Se houver tipo de suporte (TAI/NAPNE), notifica também os Mediadores
+        if dados.tipo_suporte:
+            notif_mediador = Notificacao(
+                titulo=f"Nova Demanda TAI: {dados.tipo_suporte}",
+                mensagem=f"O aluno {usuario.nome} solicitou suporte inclusivo ({dados.tipo_suporte}) para o atendimento de {dados.disciplina}.",
+                lida=False,
+            )
+            session.add(notif_mediador)
+            session.commit()
+            session.refresh(notif_mediador)
+            mediadores = session.exec(select(Mediador)).all()
+            for m in mediadores:
+                session.add(UsuarioNotificacao(usuario_id=m.id, notificacao_id=notif_mediador.id))
+
+        session.commit()
+    except Exception as e:
+        print(f"[NOTIFICAÇÕES] Erro ao disparar notificação automática: {e}")
+
     return atendimento
 
 

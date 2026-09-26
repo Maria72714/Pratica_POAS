@@ -117,6 +117,23 @@ def solicitar_mediador(session: SessionDep, payload: SolicitarMediadorInput):
     session.commit()
     session.refresh(mediador)
 
+    # Notificação automática para o novo Mediador no Neon DB
+    try:
+        from models.notificacao import Notificacao
+        from models.associativas.usuario_notificacao import UsuarioNotificacao
+        notif = Notificacao(
+            titulo="Perfil de Mediador Registrado",
+            mensagem="Sua solicitação de cadastro como Mediador foi recebida com sucesso no pratiCA.",
+            lida=False,
+        )
+        session.add(notif)
+        session.commit()
+        session.refresh(notif)
+        session.add(UsuarioNotificacao(usuario_id=usuario_novo.id, notificacao_id=notif.id))
+        session.commit()
+    except Exception as e:
+        print(f"[NOTIFICAÇÕES] Erro ao notificar novo mediador: {e}")
+
     return {
         'message': 'Solicitação de mediador enviada com sucesso.',
         'tipo_mediacao': mediador.tipo.value,

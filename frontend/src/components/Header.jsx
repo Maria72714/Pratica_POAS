@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { 
+  fetchNotificacoes, 
+  marcarNotificacaoComoLida, 
+  marcarTodasNotificacoesComoLidas, 
+  deletarNotificacao 
+} from '../services/api';
 
 const Header = ({ usuario }) => {
   const navigate = useNavigate();
@@ -8,39 +14,30 @@ const Header = ({ usuario }) => {
   const dropdownRef = useRef(null);
   const [dropdownAberto, setDropdownAberto] = useState(false);
   
-  // Mock de notificações padrão (aluno e professor)
-  const [notificacoes, setNotificacoes] = useState([
-    {
-      id: 1,
-      titulo: 'Atendimento Confirmado',
-      mensagem: 'Seu agendamento com o Prof. Roberto Santos foi confirmado para amanhã às 14:00.',
-      data: 'Há 5 min',
-      lida: false,
-      tipo: 'success'
-    },
-    {
-      id: 2,
-      titulo: 'Novo Horário Disponível',
-      mensagem: 'A Prof. Maria Oliveira adicionou novos horários de atendimento de Estrutura de Dados.',
-      data: 'Há 1 hora',
-      lida: false,
-      tipo: 'info'
-    },
-    {
-      id: 3,
-      titulo: 'Documento Pendente',
-      mensagem: 'Lembre-se de anexar seu histórico acadêmico na solicitação de orientação.',
-      data: 'Ontem',
-      lida: true,
-      tipo: 'warning'
+  const [notificacoes, setNotificacoes] = useState([]);
+
+  // Busca notificações reais vinculadas ao usuário no banco Neon
+  useEffect(() => {
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    const u = dados ? JSON.parse(dados) : (usuario || {});
+    const identificador = u.matricula || u.id || u.email;
+
+    if (identificador) {
+      fetchNotificacoes(identificador)
+        .then(data => {
+          if (data && Array.isArray(data)) {
+            setNotificacoes(data);
+          }
+        })
+        .catch(() => {});
     }
-  ]);
+  }, [usuario]);
 
   // Informações do usuário logado
   const usuarioInfo = usuario || {
-    nome: "Ana Carolina Silva",
-    descricao: "Aluno - Mat. 20231145678",
-    iniciais: "AC",
+    nome: "Usuário",
+    descricao: "pratiCA",
+    iniciais: "U",
     corAvatar: "bg-emerald-600",
     foto: null,
     email: null
@@ -68,19 +65,33 @@ const Header = ({ usuario }) => {
     navigate('/login', { replace: true });
   }
 
-  function marcarComoLida(id) {
+  async function handleMarcarComoLida(id) {
     setNotificacoes(prev =>
       prev.map(n => (n.id === id ? { ...n, lida: true } : n))
     );
+    try {
+      await marcarNotificacaoComoLida(id);
+    } catch (err) {}
   }
 
-  function marcarTodasComoLidas() {
+  async function handleMarcarTodasComoLidas() {
     setNotificacoes(prev => prev.map(n => ({ ...n, lida: true })));
+    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    const u = dados ? JSON.parse(dados) : (usuario || {});
+    const identificador = u.matricula || u.id || u.email;
+    if (identificador) {
+      try {
+        await marcarTodasNotificacoesComoLidas(identificador);
+      } catch (err) {}
+    }
   }
 
-  function excluirNotificacao(id, e) {
+  async function handleExcluirNotificacao(id, e) {
     e.stopPropagation();
     setNotificacoes(prev => prev.filter(n => n.id !== id));
+    try {
+      await deletarNotificacao(id);
+    } catch (err) {}
   }
 
   return (
@@ -134,7 +145,7 @@ const Header = ({ usuario }) => {
                   <h3 className="font-semibold text-gray-800">Notificações</h3>
                   {naoLidas > 0 && (
                     <button 
-                      onClick={marcarTodasComoLidas}
+                      onClick={handleMarcarTodasComoLidas}
                       className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                     >
                       Marcar todas como lidas
@@ -151,7 +162,7 @@ const Header = ({ usuario }) => {
                     notificacoes.map((notif) => (
                       <div 
                         key={notif.id}
-                        onClick={() => marcarComoLida(notif.id)}
+                        onClick={() => handleMarcarComoLida(notif.id)}
                         className={`p-4 border-b border-gray-50 flex gap-3 cursor-pointer transition-colors hover:bg-gray-50 ${!notif.lida ? 'bg-emerald-50/30' : ''}`}
                       >
                         {/* Indicador de Tipo */}
@@ -180,7 +191,7 @@ const Header = ({ usuario }) => {
 
                         {/* Botão de excluir individual */}
                         <button 
-                          onClick={(e) => excluirNotificacao(notif.id, e)}
+                          onClick={(e) => handleExcluirNotificacao(notif.id, e)}
                           className="text-gray-300 hover:text-gray-500 self-center"
                           title="Remover"
                         >

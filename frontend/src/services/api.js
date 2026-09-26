@@ -97,4 +97,34 @@ export async function solicitarAcessoMediador(payload) {
   return data;
 }
 
+export async function fetchNotificacoes(matriculaOuId) {
+  const res = await fetch(`${API_BASE}/notificacoes/${encodeURIComponent(matriculaOuId)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function marcarNotificacaoComoLida(notificacaoId) {
+  const res = await fetch(`${API_BASE}/notificacoes/${notificacaoId}/ler`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Erro ao marcar notificação como lida');
+  return res.json();
+}
+
+export async function marcarTodasNotificacoesComoLidas(matriculaOuId) {
+  const res = await fetch(`${API_BASE}/notificacoes/ler-todas/${encodeURIComponent(matriculaOuId)}`, {
+    method: 'PUT',
+  });
+  if (!res.ok) throw new Error('Erro ao marcar todas notificações como lidas');
+  return res.json();
+}
+
+export async function deletarNotificacao(notificacaoId) {
+  const res = await fetch(`${API_BASE}/notificacoes/${notificacaoId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Erro ao excluir notificação');
+  return res.json();
+}
+
 export { salvarUsuarioLocal };
