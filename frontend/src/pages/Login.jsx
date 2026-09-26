@@ -51,8 +51,13 @@ const Login = () => {
       localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
 
       setAuthenticatedUser(userData);
-      const isDocenteOuMediador = data.tipo_usuario === 'professor' || data.tipo_usuario === 'mediador' || data.tipo_usuario === 'admin';
-      navigate(isDocenteOuMediador ? '/professor' : '/', { replace: true });
+      if (data.tipo_usuario === 'mediador') {
+        navigate('/mediador', { replace: true });
+      } else if (data.tipo_usuario === 'professor') {
+        navigate('/professor', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
       setDevError(err.message || 'Erro ao fazer login');
     } finally {
