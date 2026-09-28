@@ -84,11 +84,10 @@ function EtapaTurmas({ todasAsTurmas, turmasSelecionadas, onToggle, onAvancar })
                     key={turma.id}
                     type="button"
                     onClick={() => onToggle(turma.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${
-                      sel
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-all ${sel
                         ? 'bg-emerald-700 border-emerald-700 text-white font-semibold shadow-sm'
                         : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
-                    }`}
+                      }`}
                   >
                     <span className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${sel ? 'bg-white border-white text-emerald-700' : 'border-gray-300 text-transparent'}`}>
                       {sel && <CheckIcon />}
@@ -170,11 +169,10 @@ function EtapaDisciplinas({ vinculos, todasAsTurmas, dadosPorTurma, onToggleDisc
                 key={v.turma_id}
                 type="button"
                 onClick={() => setTurmaAtiva(v.turma_id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl border text-xs transition-all ${
-                  ativo
+                className={`w-full text-left px-3 py-2.5 rounded-xl border text-xs transition-all ${ativo
                     ? 'bg-emerald-700 border-emerald-700 text-white font-semibold shadow-sm'
                     : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50'
-                }`}
+                  }`}
               >
                 <div className="font-bold text-xs leading-tight">
                   {info.nome}
@@ -182,9 +180,8 @@ function EtapaDisciplinas({ vinculos, todasAsTurmas, dadosPorTurma, onToggleDisc
                 <div className={`text-[10px] mt-0.5 ${ativo ? 'text-emerald-200' : 'text-gray-400'}`}>
                   {info.turno_label}
                 </div>
-                <div className={`text-[10px] mt-0.5 font-semibold ${
-                  ativo ? 'text-emerald-100' : (temDisc ? 'text-emerald-600' : 'text-amber-500')
-                }`}>
+                <div className={`text-[10px] mt-0.5 font-semibold ${ativo ? 'text-emerald-100' : (temDisc ? 'text-emerald-600' : 'text-amber-500')
+                  }`}>
                   {temDisc ? `${v.disciplinas.length} disciplina${v.disciplinas.length > 1 ? 's' : ''}` : 'Nenhuma selecionada'}
                 </div>
               </button>
@@ -220,11 +217,10 @@ function EtapaDisciplinas({ vinculos, todasAsTurmas, dadosPorTurma, onToggleDisc
                             key={disc}
                             type="button"
                             onClick={() => onToggleDisciplina(turmaAtiva, disc)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-all ${
-                              sel
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-all ${sel
                                 ? 'bg-emerald-700 border-emerald-700 text-white font-semibold shadow-sm'
                                 : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
-                            }`}
+                              }`}
                           >
                             {sel && <CheckIcon />}
                             {disc}
@@ -296,7 +292,7 @@ export default function ComplementacaoPerfilProfessor() {
 
   useEffect(() => {
     const dadosLocal = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
-    const u = dadosLocal ? JSON.parse(dadosLocal) : { matricula: '20241001', nome: 'Prof. Teste', id: '20241001' };
+    const u = dadosLocal ? JSON.parse(dadosLocal) : { matricula: '999999', nome: 'Professor Teste AI', id: 27 };
     setUsuario(u);
 
     async function carregar() {
@@ -362,8 +358,8 @@ export default function ComplementacaoPerfilProfessor() {
     );
     setDadosPorTurma(prev => {
       const novo = { ...prev };
-      resultados.forEach(({ tid, data }) => { 
-        novo[tid] = data || { disciplinas_por_ano: [] }; 
+      resultados.forEach(({ tid, data }) => {
+        novo[tid] = data || { disciplinas_por_ano: [] };
       });
       return novo;
     });

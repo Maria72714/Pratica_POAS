@@ -192,7 +192,7 @@ def complementar_perfil_professor(
             parts = turma_id_str.rsplit("_", 2)
             ano_str = parts[1] if len(parts) >= 3 else "2026"
             codigo_str = parts[2] if len(parts) >= 3 else turma_id_str[-2:]
-            db_turma = Turma(ano=ano_str, turno="Flexível", codigo=turma_id_str)
+            db_turma = Turma(ano=ano_str, turno="Flexível", codigo=codigo_str)
             session.add(db_turma)
             session.commit()
             session.refresh(db_turma)
