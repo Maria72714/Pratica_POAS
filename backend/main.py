@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from routes.atendimentos import atendimento
 from routes.usuarios import usuarios
 from routes.alunos import alunos
+from fastapi.staticfiles import StaticFiles
 from deps.deps import lifespan, SessionDep
 from sqlmodel import select
 from models.users.user import Usuario
@@ -41,6 +42,14 @@ app.include_router(usuarios.router, prefix="/api")
 app.include_router(alunos.router, prefix="/api")
 app.include_router(notificacoes.router, prefix="/api")
 app.include_router(professores.router, prefix="/api")
+
+from routes import pets
+app.include_router(pets.router, prefix="/api")
+
+# Serve a pasta de uploads estaticamente
+import os
+os.makedirs("uploads/pets", exist_ok=True)
+app.mount("/api/pets/imagem", StaticFiles(directory="uploads/pets"), name="imagens_pets")
 
 
 from models.users.mediador import Mediador
