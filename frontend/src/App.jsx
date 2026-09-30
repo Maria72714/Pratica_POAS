@@ -17,6 +17,7 @@ import DashboardAuth from './pages/DashboardAuth';
 import ComplementacaoPerfil from './pages/ComplementacaoPerfil';
 import ComplementacaoPerfilProfessor from './pages/ComplementacaoPerfilProfessor';
 import SolicitacaoMediador from './pages/SolicitacaoMediador';
+import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './context/AuthContext';
 import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
@@ -168,6 +169,9 @@ function App() {
               </div>
             </div>
           } />
+          
+          {/* ── Rota 404 - Fallback ──────────────────────────────────────── */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
