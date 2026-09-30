@@ -18,6 +18,10 @@ import ComplementacaoPerfil from './pages/ComplementacaoPerfil';
 import ComplementacaoPerfilProfessor from './pages/ComplementacaoPerfilProfessor';
 import SolicitacaoMediador from './pages/SolicitacaoMediador';
 import NotFound from './pages/NotFound';
+import ProfessorAtendimentos from './pages/ProfessorAtendimentos';
+import ProfessorHorarios from './pages/ProfessorHorarios';
+import ProfessorIndicadores from './pages/ProfessorIndicadores';
+import ProfessorRelatorios from './pages/ProfessorRelatorios';
 
 import { AuthProvider } from './context/AuthContext';
 import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
@@ -84,10 +88,11 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
 
   const professorMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/professor" },
-    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Meus Atendimentos", link: "/professor" },
-    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Horários Disponíveis", link: "/professor" },
-    { icone: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", texto: "Dashboard de<br/>Indicadores", link: "/professor" },
-    { icone: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Relatórios", link: "/professor" }
+    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Meus Atendimentos", link: "/professor/atendimentos" },
+    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Horários Disponíveis", link: "/professor/horarios" },
+    { icone: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", texto: "Dashboard de<br/>Indicadores", link: "/professor/indicadores" },
+    { icone: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Relatórios", link: "/professor/relatorios" },
+    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
 
   const alunoMenu = [
@@ -152,6 +157,10 @@ function App() {
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
+          <Route path="/professor/atendimentos" element={<AppLayout isProfessor={true}><ProfessorAtendimentos /></AppLayout>} />
+          <Route path="/professor/horarios" element={<AppLayout isProfessor={true}><ProfessorHorarios /></AppLayout>} />
+          <Route path="/professor/indicadores" element={<AppLayout isProfessor={true}><ProfessorIndicadores /></AppLayout>} />
+          <Route path="/professor/relatorios" element={<AppLayout isProfessor={true}><ProfessorRelatorios /></AppLayout>} />
           <Route path="/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
           <Route path="/teste/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
           <Route path="/preview/professor" element={
