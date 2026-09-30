@@ -10,9 +10,9 @@ import os
 from alembic import context
 
 from models import *
+from database import DATABASE_URL
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
