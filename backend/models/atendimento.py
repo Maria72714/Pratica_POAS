@@ -15,7 +15,7 @@ class Atendimento(SQLModel, table=True):
     id_professor: int | None = Field(foreign_key="professores.id", default=None)
     id_turma: int | None = Field(foreign_key="turmas.id", default=None)
     id_disciplina: int | None = Field(default=None, foreign_key="disciplinas.id")
-    id_solicitacao: int | None = Field(default=None, foreign_key="solicitacoes.id", unique=True)
+    id_solicitacao: int | None = Field(default=None, foreign_key="solicitacoes.id", unique=True, ondelete='CASCADE')
     id_horario: int | None = Field(foreign_key="horarios.id", default=None)
     id_sala: int | None = Field(default=None, foreign_key="salas.id")
     data_atendimento: date
