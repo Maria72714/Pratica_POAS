@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from routes.atendimentos import atendimento
 from routes.usuarios import usuarios
 from routes.alunos import alunos
+from routes import solicitacao
 from fastapi.staticfiles import StaticFiles
 from deps.deps import lifespan, SessionDep
 from sqlmodel import select
@@ -42,6 +43,7 @@ app.include_router(usuarios.router, prefix="/api")
 app.include_router(alunos.router, prefix="/api")
 app.include_router(notificacoes.router, prefix="/api")
 app.include_router(professores.router, prefix="/api")
+app.include_router(solicitacao.router, prefix="/api")
 
 from routes import pets
 app.include_router(pets.router, prefix="/api")
