@@ -40,6 +40,24 @@ def listar_atendimento(session: SessionDep):
     return atendimentos
 
 
+@router.get("/{atendimento_id}", response_model=Atendimento)
+def buscar_atendimento_por_id(
+    atendimento_id: int,
+    session: SessionDep
+):
+    atendimento = session.get(
+        Atendimento,
+        atendimento_id
+    )
+
+    if not atendimento:
+        raise HTTPException(
+            status_code=404,
+            detail="Atendimento não encontrado"
+        )
+
+    return atendimento
+
 @router.get('/aluno/{matricula}')
 def listar_atendimentos_aluno(matricula: str, session: SessionDep):
     """Retorna todos os atendimentos vinculados ao aluno."""

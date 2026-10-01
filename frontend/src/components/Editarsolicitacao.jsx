@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { buscarAtendimentos, editarAtendimento } from "../services/agendamento";
+import { buscarAtendimentoPorId, editarAtendimento } from "../services/agendamento";
 
 export default function EditarSolicitacao() {
   const { id } = useParams();
@@ -17,7 +17,7 @@ export default function EditarSolicitacao() {
   useEffect(() => {
     async function carregarSolicitacao() {
       try {
-        const dados = await buscarSolicitacaoPorId(id);
+        const dados = await buscarAtendimentoPorId(id);
 
         setForm({
           observacoes: dados.observacoes || "",
@@ -48,7 +48,7 @@ export default function EditarSolicitacao() {
     try {
       setSalvando(true);
 
-      await editarSolicitacao(id, form);
+      await editarAtendimento(id, form);
 
       alert("Solicitação atualizada com sucesso!");
 
