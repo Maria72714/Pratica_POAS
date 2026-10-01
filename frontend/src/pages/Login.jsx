@@ -442,3 +442,127 @@ const Login = () => {
 };
 
 export default Login;
+        navigate('/mediador', { replace: true });
+      } else if (data.tipo_usuario === 'professor') {
+        navigate('/professor', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } catch (err) {
+      setDevError(err.message || 'Erro ao fazer login');
+    } finally {
+      setDevLoading(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Layout Mobile - Visível apenas em telas pequenas */}
+      <div className="lg:hidden min-h-screen bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 p-4 flex flex-col justify-center relative">
+        {/* Ícone de acessibilidade no canto superior direito */}
+        <div className="absolute top-6 right-6 z-10">
+          <button className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Cartão principal centralizado */}
+        <div className="w-full max-w-sm mx-auto bg-white rounded-3xl shadow-2xl p-8 relative z-10">
+          
+          {/* Logo e título */}
+          <div className="flex items-center gap-3 mb-8">
+            <img
+              src="/images/pratiCA_logo_vetorizada (1).png"
+              alt="pratiCA"
+              className="h-12 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">pratiCA</h1>
+              <p className="text-emerald-600 text-sm font-medium">IFRN — Campus Caicó</p>
+            </div>
+          </div>
+
+          {/* Título da seção */}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">
+              Entrar na plataforma
+            </h2>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Acesse com sua conta institucional do SUAP.
+            </p>
+          </div>
+
+          {/* Botão SUAP */}
+          <button
+            onClick={login}
+            className="w-full flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 shadow-lg mb-6"
+          ></button>
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Entrar com SUAP</span>
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Box informativo verde claro */}
+          <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 mb-6">
+            <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-white text-xs font-bold">i</span>
+            </div>
+            <p className="text-sm text-emerald-800 leading-relaxed">
+              Use sua <strong>matrícula, nome de usuário</strong> ou <strong>email</strong> e sua senha. O
+              sistema detectará automaticamente seu tipo de usuário.
+            </p>
+          </div>
+
+          {/* Divider Login Local (Dev) */}
+          <div className="relative flex py-2 items-center my-4">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <button
+              type="button"
+              onClick={() => setShowDevLogin(!showDevLogin)}
+              className="flex-shrink mx-4 flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
+            >
+              <span>Login Local (Dev)</span>
+              <svg className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          {/* Form de dev */}
+          {showDevLogin && (
+            <div className="space-y-4 mb-4">
+              <form onSubmit={handleDevLogin} className="space-y-3">
+                {devError && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-2xl text-center">
+                    {devError}
+                  </div>
+                )}
+                <div>
+                  <input
+                    type="text"
+                    value={matricula}
+                    onChange={(e) => setMatricula(e.target.value)}
+                    placeholder="Matrícula, Nome de Usuário ou Email"
+                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-gray-400 transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Senha"
+                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-gray-400 transition-all"
+                    required
+                  />
+                </div>
