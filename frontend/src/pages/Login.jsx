@@ -262,7 +262,6 @@ const Login = () => {
 
             {/* Links SUAP */}
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-400 font-medium mb-4 text-center">SUAP IFRN</p>
               <div className="flex justify-center gap-6">
                 <a href="https://suap.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
                   className="text-xs text-gray-400 hover:text-emerald-600 transition-colors">Portal SUAP</a>
