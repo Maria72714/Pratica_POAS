@@ -72,11 +72,18 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
     usuario = session.exec(
         select(Usuario).where(Usuario.matricula == dados.matricula)
     ).first()
+
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
     aluno = session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
     if not aluno:
         raise HTTPException(status_code=404, detail="Aluno não encontrado.")
+
+    # Cria a solicitação associada
+    solicitacao = Solicitacao(id_aluno=aluno.id)
+    session.add(solicitacao)
+    session.commit()
+    session.refresh(solicitacao)
 
     # Monta o assunto com disciplina + tipo de suporte
     partes = [f"Disciplina: {dados.disciplina}"]
@@ -97,12 +104,6 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
     # Vincula o aluno ao atendimento
     link = AlunoAtendimento(aluno_id=aluno.id, atendimento_id=atendimento.id)
     session.add(link)
-
-    # Cria a solicitação associada
-    solicitacao = Solicitacao(id_aluno=aluno.id)
-    session.add(solicitacao)
-    session.commit()
-    session.refresh(solicitacao)
 
     # Atualiza o atendimento com o id da solicitação
     atendimento.id_solicitacao = solicitacao.id
