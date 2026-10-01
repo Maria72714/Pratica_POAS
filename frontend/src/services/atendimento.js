@@ -18,3 +18,4 @@ export async function cadastrarAtendimento(dados){
 
   return response.json();
 }
+

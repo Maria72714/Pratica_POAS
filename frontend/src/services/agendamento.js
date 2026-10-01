@@ -8,6 +8,18 @@ export async function buscarAtendimentos(matricula) {
     return response.json();
 }
 
+export async function buscarAtendimentoPorId(id) {
+    const response = await fetch(
+        `${API_BASE}/${id}`
+    );
+
+    if (!response.ok) {
+        throw new Error("Erro ao buscar atendimento");
+    }
+
+    return response.json();
+}
+
 export async function excluirAtendimento(atendimentoId) {
     const response = await fetch(`${API_BASE}/${atendimentoId}`, {
         method: "DELETE",
