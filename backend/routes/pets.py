@@ -9,8 +9,10 @@ from typing import List
 
 router = APIRouter(prefix="/pets", tags=["pets"])
 
-# Garante que a pasta de uploads exista
-UPLOAD_DIR = "uploads/pets"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "..", "uploads", "pets")
+UPLOAD_DIR = os.path.normpath(UPLOAD_DIR)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/")

@@ -47,9 +47,10 @@ from routes import pets
 app.include_router(pets.router, prefix="/api")
 
 # Serve a pasta de uploads estaticamente
-import os
-os.makedirs("uploads/pets", exist_ok=True)
-app.mount("/api/pets/imagem", StaticFiles(directory="uploads/pets"), name="imagens_pets")
+import pathlib
+_UPLOADS_PETS = pathlib.Path(__file__).parent / "uploads" / "pets"
+_UPLOADS_PETS.mkdir(parents=True, exist_ok=True)
+app.mount("/api/pets/imagem", StaticFiles(directory=str(_UPLOADS_PETS)), name="imagens_pets")
 
 
 from models.users.mediador import Mediador
