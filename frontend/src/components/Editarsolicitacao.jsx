@@ -10,9 +10,10 @@ export default function EditarSolicitacao() {
   const [salvando, setSalvando] = useState(false);
 
   const [form, setForm] = useState({
-    observacoes: "",
-    status: "",
-  });
+  necessidade_aluno: "",
+  disciplina: "",
+  observacoes: "",
+});
 
   useEffect(() => {
     async function carregarSolicitacao() {
@@ -20,8 +21,9 @@ export default function EditarSolicitacao() {
         const dados = await buscarAtendimentoPorId(id);
 
         setForm({
+          necessidade_aluno: dados.necessidade_aluno || "",
+          disciplina: dados.disciplina || "",
           observacoes: dados.observacoes || "",
-          status: dados.status || "PENDENTE",
         });
       } catch (error) {
         console.error(error);
@@ -101,9 +103,34 @@ export default function EditarSolicitacao() {
             >
               <div>
                 <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Necessidade do Aluno
+                </label>
+                <input
+                  type="text"
+                  name="necessidade_aluno"
+                  value={form.necessidade_aluno}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
+                  Disciplina
+                </label>
+                <input
+                  type="text"
+                  name="disciplina"
+                  value={form.disciplina}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-semibold text-slate-700">
                   Observações
                 </label>
-
                 <textarea
                   name="observacoes"
                   value={form.observacoes}
@@ -111,23 +138,6 @@ export default function EditarSolicitacao() {
                   rows={5}
                   className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                 />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-slate-700">
-                  Status
-                </label>
-
-                <select
-                  name="status"
-                  value={form.status}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                >
-                  <option value="PENDENTE">Pendente</option>
-                  <option value="APROVADA">Aprovada</option>
-                  <option value="REJEITADA">Rejeitada</option>
-                </select>
               </div>
 
               <div className="flex justify-between pt-4">
