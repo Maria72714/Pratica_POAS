@@ -87,7 +87,7 @@ const SolicitacaoTAI = () => {
         
         {/* Banner Superior Verde Escuro */}
         <div className="bg-[#004d34] text-white p-6 rounded-xl shadow-sm">
-          <h1 className="text-2xl font-bold mb-1">Solicitação TAI</h1>
+          <h1 className="text-2xl font-bold mb-1">Solicitação de Atendimento TAI</h1>
           <p className="text-emerald-100 text-sm">
             Tutoria de Aprendizagem Inclusiva — atendimento especializado com mediador NAPNE.
           </p>
@@ -104,7 +104,7 @@ const SolicitacaoTAI = () => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p>
-            Somente alunos TAI podem solicitar Centros de Aprendizagem. As disciplinas listadas abaixo correspondem ao seu curso e ano letivo — você só pode solicitar CA de matérias da sua grade.
+            Somente alunos PNEE (com atendimento TAI) podem solicitar Centros de Aprendizagem. As disciplinas listadas abaixo correspondem ao seu curso e ano letivo — você só pode solicitar CA de matérias da sua grade.
           </p>
         </div>
 
