@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from routes.atendimentos import atendimento
 from routes.usuarios import usuarios
 from routes.alunos import alunos
-from routes import solicitacao
 from fastapi.staticfiles import StaticFiles
 from deps.deps import lifespan, SessionDep
 from sqlmodel import select
@@ -36,7 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routes import notificacoes, professores
+from routes import notificacoes, professores, solicitacao
 
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")

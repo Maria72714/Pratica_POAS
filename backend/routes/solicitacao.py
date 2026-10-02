@@ -25,6 +25,7 @@ class SolicitacaoCreateModel(BaseModel):
 
 class SolicitacaoResponse(BaseModel):
     id: int
+    id_disciplina: int
     tipo_suporte: str
     descricao: Optional[str]
     status: str
@@ -33,7 +34,7 @@ class SolicitacaoResponse(BaseModel):
         from_attributes = True
   
 
-router.post('/', response_model=SolicitacaoResponse)
+@router.post('/', response_model=SolicitacaoResponse)
 def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
     aluno = session.exec(select(Aluno).where(Aluno.matricula == dados.matricula)).first()
     if not aluno:
