@@ -205,7 +205,7 @@ export default function ComplementacaoPerfil() {
             )}
           </div>
 
-          {/* TAI */}
+          {/* PNEE / TAI */}
           <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-3">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -216,10 +216,10 @@ export default function ComplementacaoPerfil() {
               />
               <div>
                 <span className="text-sm font-semibold text-emerald-900">
-                  Sou Aluno TAI (Tutoria / Atendimento Individualizado / Necessidades Especiais)
+                  Sou PNEE (Pessoa com Necessidade Educacional Específica)
                 </span>
                 <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-                  Marque esta opção se necessita de acompanhamento TAI. Sua solicitação será enviada para validação do Administrador. Enquanto aguarda, você acessa e solicita atendimentos normalmente.
+                  Marque esta opção se você possui necessidade educacional específica e necessita de atendimento TAI. Sua solicitação será enviada para validação do Administrador. Enquanto aguarda, você acessa e solicita atendimentos normalmente.
                 </p>
               </div>
             </label>
@@ -244,7 +244,7 @@ export default function ComplementacaoPerfil() {
 
           {!isTai && (
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800">
-              Apenas alunos TAI podem solicitar Centros de Aprendizagem (CA). Você poderá acessar a plataforma normalmente, mas a solicitação de CA ficará indisponível.
+              Apenas alunos PNEE com atendimento TAI podem solicitar Centros de Aprendizagem (CA). Você poderá acessar a plataforma normalmente, mas a solicitação de CA ficará indisponível.
             </div>
           )}
 

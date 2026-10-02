@@ -19,7 +19,7 @@ const DashboardMediador = () => {
       <div className="bg-gradient-to-r from-[#4a1575] via-[#5b1f86] to-[#6b259d] text-white px-8 py-8 rounded-2xl mb-8 shadow-md">
         <h1 className="text-3xl font-bold mb-2">Área do Mediador — {nomeMediador}</h1>
         <p className="text-purple-100 text-base">
-          Gerencie as solicitações de atendimento inclusivo (TAI) pendentes.
+          Gerencie as solicitações de atendimento TAI de alunos PNEE pendentes.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ const DashboardMediador = () => {
           </>
         ) : (
           <div className="w-full text-left">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Solicitações TAI para Atendimento</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Solicitações TAI — Alunos PNEE</h3>
             {/* Lista renderizada quando houver dados */}
           </div>
         )}
