@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000/api/solicitacoes/'
+const API_BASE = 'http://localhost:8000/api/solicitacao/'
 
 export async function cadastrarSolicitacao(dados){
   const response = await fetch(
