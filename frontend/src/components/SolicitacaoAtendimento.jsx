@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDisciplinas } from '../services/api';
-import { cadastrarAtendimento } from '../services/atendimento';
+import { cadastrarSolicitacao } from '../services/solicitacao';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -33,12 +33,11 @@ const SolicitacaoTAI = () => {
     if (!usuario?.matricula) return;
 
     try {
-      await cadastrarAtendimento({
+      await cadastrarSolicitacao({
         matricula: usuario.matricula,
         disciplina,
         tipo_suporte: suporte,
-        descricao: desc || undefined,
-        data_atendimento: data || new Date().toISOString().split('T')[0],
+        descricao: desc || undefined
       });
       navigate('/');
     } catch (err) {
