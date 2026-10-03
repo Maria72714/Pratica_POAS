@@ -78,7 +78,7 @@ const Dashboard = () => {
   return (
     <div className="flex-1 bg-gray-50 min-h-screen">
       {/* Header Mobile com hambúrguer, logo e avatar */}
-      <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
         {/* Menu hambúrguer */}
         <button className="w-10 h-10 flex items-center justify-center">
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,13 +87,11 @@ const Dashboard = () => {
         </button>
 
         {/* Logo central */}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
+        <img
+          src="/images/pratiCA_logo_vetorizada (1).png"
+          alt="pratiCA"
+          className="h-8 w-auto"
+        />
 
         {/* Direita com notificação e avatar */}
         <div className="flex items-center gap-3">
@@ -103,46 +101,48 @@ const Dashboard = () => {
             </svg>
           </button>
           <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-bold">EM</span>
+            <span className="text-white text-xs font-bold">EM</span>
           </div>
         </div>
       </div>
 
       {/* Container Mobile */}
-      <div className="lg:hidden p-4">
+      <div className="lg:hidden p-4 space-y-4 pb-8">
         {/* Banner de boas vindas - Mobile */}
-        <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white rounded-2xl p-6 mb-6">
-          <h1 className="text-xl font-bold mb-2">Bem-vindo, Eduardo!</h1>
+        <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white rounded-3xl p-6">
+          <h1 className="text-2xl font-bold mb-2">Bem-vindo, Eduardo!</h1>
           <p className="text-emerald-100 text-sm leading-relaxed">
             Agende atendimentos e acompanhe seu desenvolvimento acadêmico.
           </p>
         </div>
 
-        {/* Cards de estatísticas em grid 2x2 */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-gray-600 text-xs font-medium mb-1">Atendimentos Agendados</p>
-            <p className="text-2xl font-bold text-gray-800">3</p>
+        {/* Cards de estatísticas */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <p className="text-gray-600 text-xs font-medium mb-2">Atendimentos Agendados</p>
+            <p className="text-3xl font-bold text-gray-800">3</p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-gray-600 text-xs font-medium mb-1">Próximo Atendimento</p>
-            <p className="text-xl font-bold text-emerald-600">22/12/2026</p>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <p className="text-gray-600 text-xs font-medium mb-2">Próximo Atendimento</p>
+            <p className="text-2xl font-bold text-emerald-600">22/12/2026</p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-gray-600 text-xs font-medium mb-1">Disciplinas</p>
-            <p className="text-2xl font-bold text-gray-800">1</p>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <p className="text-gray-600 text-xs font-medium mb-2">Disciplinas</p>
+            <p className="text-3xl font-bold text-gray-800">1</p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            {/* Espaço vazio ou outro card */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.646 7.23a2 2 0 01-1.789 1.106H2a2 2 0 01-2-2V8a2 2 0 012-2h15a2 2 0 012 2v2" />
+            </svg>
           </div>
         </div>
 
         {/* Card de CAs disponíveis */}
-        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6">
+        <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-4">
           <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <div className="flex-1">
@@ -150,7 +150,7 @@ const Dashboard = () => {
               <p className="text-emerald-700 text-xs leading-relaxed mb-3">
                 Veja os atendimentos abertos pelos seus professores.
               </p>
-              <button className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium">
+              <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors">
                 Ver CAs
               </button>
             </div>
@@ -159,40 +159,39 @@ const Dashboard = () => {
 
         {/* Seção Meus Agendamentos */}
         <div>
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Meus Agendamentos</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-3">Meus Agendamentos</h2>
           
           {/* Lista de agendamentos em cards mobile */}
           {appointments.map((appointment, index) => (
-            <div key={index} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-              <div className="flex justify-between items-start mb-2">
+            <div key={index} className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
+              <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold text-gray-800 text-sm leading-tight flex-1 pr-2">
                   {appointment.subject}
                 </h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${appointment.statusColor}`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${appointment.statusColor}`}>
                   {appointment.status}
                 </span>
               </div>
               <p className="text-gray-600 text-xs mb-3">{appointment.professor}</p>
               
-              <div className="space-y-1 text-xs text-gray-500">
+              <div className="space-y-2 text-xs text-gray-600">
                 <div className="flex items-center gap-2">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>{appointment.time}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span>{appointment.date}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>{appointment.location}</span>
+                  <span className="truncate">{appointment.location}</span>
                 </div>
               </div>
             </div>
