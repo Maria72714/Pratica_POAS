@@ -49,11 +49,8 @@ const Sidebar = ({ itensMenu }) => {
         {/* logo e info do campus */}
         <div className="p-4 sm:p-6 border-b border-emerald-800">
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Logo mobile - cores normais */}
-            <img src="/images/pratiCA_logo_vetorizada (1).png" alt="Logo Prática" className="lg:hidden w-9 h-auto flex-shrink-0 object-contain" />
-            
-            {/* Logo desktop - branca */}
-            <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="hidden lg:block w-10 h-auto flex-shrink-0 object-contain" />
+            {/* Logo branca - todos os tamanhos na sidebar */}
+            <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="w-9 sm:w-10 h-auto flex-shrink-0 object-contain" />
             
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-white truncate">pratiCA</h1>
