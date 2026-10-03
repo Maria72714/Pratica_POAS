@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSidebar } from '../context/SidebarContext';
 import { 
   fetchNotificacoes, 
   marcarNotificacaoComoLida, 
@@ -11,6 +12,7 @@ import {
 const Header = ({ usuario }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { toggleSidebar } = useSidebar();
   const dropdownRef = useRef(null);
   const [dropdownAberto, setDropdownAberto] = useState(false);
   
@@ -102,7 +104,7 @@ const Header = ({ usuario }) => {
         <div className="flex items-center gap-2 lg:hidden">
           {/* Hambúrguer */}
           <button
-            onClick={() => {}}
+            onClick={toggleSidebar}
             className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

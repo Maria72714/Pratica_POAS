@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSidebar } from '../context/SidebarContext';
 
 const Sidebar = ({ itensMenu }) => {
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setIsOpen } = useSidebar();
 
   // Se não passar itens, usa os itens padrão do aluno
   const itens = itensMenu || [
@@ -31,20 +32,6 @@ const Sidebar = ({ itensMenu }) => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-lg flex items-center justify-center shadow-lg transition-colors"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {isOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
       {/* Overlay para mobile */}
       {isOpen && (
         <div 
