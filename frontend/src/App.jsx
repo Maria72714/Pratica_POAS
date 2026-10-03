@@ -123,9 +123,11 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar itensMenu={menuAtivo} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         <Header usuario={usuarioInfo} />
-        {children}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

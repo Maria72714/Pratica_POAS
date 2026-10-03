@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ itensMenu }) => {
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
   // Se não passar itens, usa os itens padrão do aluno
   const itens = itensMenu || [
@@ -26,55 +27,84 @@ const Sidebar = ({ itensMenu }) => {
       texto: "Histórico",
       link: "/"
     }
-   
   ];
 
   return (
-    <aside className="w-72 bg-emerald-900 min-h-screen flex flex-col">
-      {/* logo e info do campus */}
-      <div className="p-6 border-b border-emerald-800">
-        <div className="flex items-center gap-3">
-          <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="w-10 h-10 flex-shrink-0 object-contain" />
-          <h1 className="text-2xl font-bold text-white">pratiCA</h1>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-emerald-900 text-white rounded-lg flex items-center justify-center shadow-lg"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {isOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
+      {/* Overlay para mobile */}
+      {isOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40 w-72 bg-emerald-900 min-h-screen flex flex-col
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* logo e info do campus */}
+        <div className="p-6 border-b border-emerald-800">
+          <div className="flex items-center gap-3">
+            <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="w-10 h-10 flex-shrink-0 object-contain" />
+            <h1 className="text-2xl font-bold text-white">pratiCA</h1>
+          </div>
+          <p className="text-emerald-200 text-sm mt-1">Centro de Aprendizagem</p>
+          <p className="text-emerald-300 text-xs mt-2">IFRN - Campus Caicó</p>
         </div>
-        <p className="text-emerald-200 text-sm mt-1">Centro de Aprendizagem</p>
-        <p className="text-emerald-300 text-xs mt-2">IFRN - Campus Caicó</p>
-      </div>
 
-      {/* menu de navegacao */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {itens.map((item, index) => {
-            // Verifica se a rota atual é igual ao link do item para marcá-lo como ativo
-            const isAtivo = location.pathname === item.link;
+        {/* menu de navegacao */}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {itens.map((item, index) => {
+              // Verifica se a rota atual é igual ao link do item para marcá-lo como ativo
+              const isAtivo = location.pathname === item.link;
 
-            return (
-              <li key={index}>
-                <Link
-                  to={item.link || '#'}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isAtivo
-                      ? 'bg-emerald-800 text-white'
-                      : 'text-emerald-50 hover:bg-emerald-800'
-                    }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icone} />
-                  </svg>
-                  <span dangerouslySetInnerHTML={{ __html: item.texto }}></span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+              return (
+                <li key={index}>
+                  <Link
+                    to={item.link || '#'}
+                    onClick={() => setIsOpen(false)} // Fecha o menu mobile ao clicar
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isAtivo
+                        ? 'bg-emerald-800 text-white'
+                        : 'text-emerald-50 hover:bg-emerald-800'
+                      }`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icone} />
+                    </svg>
+                    <span dangerouslySetInnerHTML={{ __html: item.texto }}></span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-      {/* rodapé com nome do instituto */}
-      <div className="p-4 border-t border-emerald-800">
-        <p className="text-emerald-300 text-xs text-center leading-relaxed">
-          Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte
-        </p>
-      </div>
-    </aside>
+        {/* rodapé com nome do instituto */}
+        <div className="p-4 border-t border-emerald-800">
+          <p className="text-emerald-300 text-xs text-center leading-relaxed">
+            Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte
+          </p>
+        </div>
+      </aside>
+    </>
   );
 };
 
