@@ -52,95 +52,96 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="flex-1 bg-gray-50">
-      {/* banner de boas vindas */}
-      <div className="bg-emerald-900 text-white px-8 py-10 ml-6 mr-6 rounded-xl mb-8 mt-10">
-        <h1 className="text-3xl font-bold mb-2">Bem-vindo ao Centro de Aprendizagem</h1>
-        <p className="text-emerald-100 text-lg">
+    <div className="flex-1 bg-gray-50 min-h-screen">
+      {/* Banner de boas vindas - Responsivo */}
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white mx-4 sm:mx-6 rounded-xl mb-6 mt-4 lg:mt-10 p-6 lg:p-10">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">
+          Bem-vindo ao Centro de Aprendizagem
+        </h1>
+        <p className="text-emerald-100 text-sm sm:text-base lg:text-lg leading-relaxed">
           Agende atendimentos com monitores e acompanhe seu desenvolvimento acadêmico
         </p>
       </div>
-
-      <div className="p-8">
-        {/* cards com as estatisticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          
-          {/* o map() percorre o array stats e renderiza um card para cada item */}
-          {/* o key={index} é obrigatorio no React para identificar cada elemento na lista */}
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Cards com as estatisticas - Grid responsivo */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div key={index} className="bg-white rounded-xl shadow-sm p-4 lg:p-6 border border-gray-100 hover:shadow-md transition-shadow">
               <div>
-                <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
-                <p className={`text-4xl font-bold mt-2 ${stat.value === 'Hoje' ? 'text-emerald-600' : 'text-gray-800'}`}>{stat.value}</p>
+                <p className="text-gray-600 text-xs sm:text-sm font-medium leading-tight">{stat.label}</p>
+                <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold mt-2 ${stat.value === 'Hoje' ? 'text-emerald-600' : 'text-gray-800'}`}>
+                  {stat.value}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* secao de agendamentos */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Meus Agendamentos</h2>
+        {/* Seção de agendamentos - Responsiva */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Header responsivo */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-b border-gray-100 gap-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Meus Agendamentos</h2>
             <button
               onClick={() => window.location.href = "/solicitar-atendimento"}
-              className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
->
+              className="w-full sm:w-auto bg-emerald-600 text-white px-4 sm:px-5 py-2.5 rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm sm:text-base"
+            >
               Solicitar Novo Atendimento
             </button>
           </div>
 
-          {/* lista de agendamentos */}
-          <div className="p-6 space-y-4">
-            {/* percorrendo o array de agendamentos com map() */}
-            {/* cada agendamento vira um card na tela */}
+          {/* Lista de agendamentos - Layout mobile-first */}
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             {appointments.map((appointment, index) => (
               <div
                 key={index}
-                className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow bg-white"
+                className="border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-white"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 lg:gap-4">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 text-lg mb-1">
+                    <h3 className="font-semibold text-gray-800 text-base sm:text-lg mb-1 leading-tight">
                       {appointment.subject}
                     </h3>
                     <p className="text-gray-600 text-sm mb-3">
                       {appointment.professor}
                     </p>
-                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
+                    
+                    {/* Informações em mobile - Stack vertical */}
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 lg:gap-6 text-xs sm:text-sm text-gray-500">
                       <span className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        {appointment.time}
+                        <span>{appointment.time}</span>
                       </span>
                       <span className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" />
                         </svg>
-                        {appointment.date}
+                        <span>{appointment.date}</span>
                       </span>
                       <span className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        {appointment.location}
+                        <span>{appointment.location}</span>
                       </span>
                     </div>
                   </div>
-                  {/* badge de status - a cor muda dependendo do status (confirmado/pendente) */}
-                  <span
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${appointment.statusColor}`}
-                  >
-                    {appointment.status}
-                  </span>
+                  
+                  {/* Badge de status - Responsivo */}
+                  <div className="flex justify-start lg:justify-end mt-2 lg:mt-0">
+                    <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${appointment.statusColor} inline-block`}>
+                      {appointment.status}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        
       </div>
     </div>
   );
