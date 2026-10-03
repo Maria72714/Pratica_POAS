@@ -566,3 +566,35 @@ export default Login;
                     required
                   />
                 </div>
+      {/* Layout Desktop - Visível apenas em telas grandes */}
+      <div className="hidden lg:flex min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 items-center justify-center p-4 relative">
+        
+        {/* Container principal com cantos arredondados */}
+        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-row relative z-10">
+
+          {/* Painel Esquerdo - Verde escuro */}
+          <div className="w-1/2 bg-gradient-to-br from-emerald-800 to-emerald-900 p-14 flex flex-col justify-between">
+
+            {/* Logo */}
+            <div className="flex items-center gap-4 mb-8">
+              <img
+                src="/images/logo_branca_pratica_vetorizada.png"
+                alt="pratiCA"
+                className="h-14 w-auto"
+              />
+              <div>
+                <h1 className="text-3xl font-bold text-white tracking-tight">pratiCA</h1>
+                <p className="text-emerald-200 text-sm font-medium">Gerenciamento de CA</p>
+              </div>
+            </div>
+
+            {/* Mensagem de boas-vindas */}
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold text-white mb-4 leading-tight">
+                Bem-vindo(a) de volta!
+              </h2>
+              <p className="text-emerald-100 text-lg leading-relaxed">
+                Plataforma de gerenciamento de Centro de Aprendizagem do IFRN Campus Caicó.
+                Acesse para gerenciar seus atendimentos, inscrições e disciplinas.
+              </p>
+            </div>
