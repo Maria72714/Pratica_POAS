@@ -21,10 +21,11 @@ export default function EditarSolicitacao() {
         const dados = await buscarAtendimentoPorId(id);
 
         setForm({
-          necessidade_aluno: dados.necessidade_aluno || "",
-          disciplina: dados.disciplina || "",
-          observacoes: dados.observacoes || "",
+        necessidade_aluno: dados.tipo_suporte || "",
+        disciplina: dados.id_disciplina || "",
+        observacoes: dados.descricao || "",
         });
+
       } catch (error) {
         console.error(error);
       } finally {
