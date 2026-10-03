@@ -34,7 +34,7 @@ const Sidebar = ({ itensMenu }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-emerald-900 text-white rounded-lg flex items-center justify-center shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-lg flex items-center justify-center shadow-lg transition-colors"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {isOpen ? (
