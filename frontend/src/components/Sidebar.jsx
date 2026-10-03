@@ -60,36 +60,37 @@ const Sidebar = ({ itensMenu }) => {
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* logo e info do campus */}
-        <div className="p-6 border-b border-emerald-800">
-          <div className="flex items-center gap-3">
-            <img src="/images/logo_branca_pratica_vetorizada.png" alt="Logo Prática" className="w-10 h-10 flex-shrink-0 object-contain" />
-            <h1 className="text-2xl font-bold text-white">pratiCA</h1>
+        <div className="p-4 sm:p-6 border-b border-emerald-800">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <img src="/images/pratiCA_logo_vetorizada (1).png" alt="Logo Prática" className="w-9 sm:w-10 h-auto flex-shrink-0 object-contain" />
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">pratiCA</h1>
+              <p className="text-emerald-200 text-xs sm:text-sm mt-0.5">Centro de Aprendizagem</p>
+            </div>
           </div>
-          <p className="text-emerald-200 text-sm mt-1">Centro de Aprendizagem</p>
-          <p className="text-emerald-300 text-xs mt-2">IFRN - Campus Caicó</p>
+          <p className="text-emerald-300 text-xs mt-1 sm:mt-2">IFRN - Campus Caicó</p>
         </div>
 
         {/* menu de navegacao */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
+        <nav className="flex-1 p-2 sm:p-4">
+          <ul className="space-y-1 sm:space-y-2">
             {itens.map((item, index) => {
-              // Verifica se a rota atual é igual ao link do item para marcá-lo como ativo
               const isAtivo = location.pathname === item.link;
 
               return (
                 <li key={index}>
                   <Link
                     to={item.link || '#'}
-                    onClick={() => setIsOpen(false)} // Fecha o menu mobile ao clicar
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${isAtivo
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base transition-colors ${isAtivo
                         ? 'bg-emerald-800 text-white'
                         : 'text-emerald-50 hover:bg-emerald-800'
                       }`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icone} />
                     </svg>
-                    <span dangerouslySetInnerHTML={{ __html: item.texto }}></span>
+                    <span className="truncate" dangerouslySetInnerHTML={{ __html: item.texto }}></span>
                   </Link>
                 </li>
               );
@@ -98,7 +99,7 @@ const Sidebar = ({ itensMenu }) => {
         </nav>
 
         {/* rodapé com nome do instituto */}
-        <div className="p-4 border-t border-emerald-800">
+        <div className="p-2 sm:p-4 border-t border-emerald-800">
           <p className="text-emerald-300 text-xs text-center leading-relaxed">
             Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte
           </p>
