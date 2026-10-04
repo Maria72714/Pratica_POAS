@@ -20,7 +20,6 @@ class SolicitacaoCreateModel(BaseModel):
   descricao: Optional[str] = None
   matricula: str
   disciplina: str
-  data_atendimento: date
 
 
 class SolicitacaoResponse(BaseModel):
@@ -36,7 +35,10 @@ class SolicitacaoResponse(BaseModel):
 
 @router.post('/', response_model=SolicitacaoResponse)
 def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
-    aluno = session.exec(select(Aluno).where(Aluno.matricula == dados.matricula)).first()
+    usuario = session.exec(select(Usuario).where(Usuario.matricula == dados.matricula)).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    aluno = session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
     if not aluno:
         raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
