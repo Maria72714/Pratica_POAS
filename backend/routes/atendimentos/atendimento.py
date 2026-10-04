@@ -40,23 +40,23 @@ def listar_atendimento(session: SessionDep):
     return atendimentos
 
 
-@router.get("/{atendimento_id}", response_model=Atendimento)
+@router.get("/{solicitacao_id}", response_model=Solicitacao)
 def buscar_atendimento_por_id(
-    atendimento_id: int,
+    solicitacao_id: int,
     session: SessionDep
 ):
-    atendimento = session.get(
-        Atendimento,
-        atendimento_id
+    solicitacao = session.get(
+        Solicitacao,
+        solicitacao_id
     )
 
-    if not atendimento:
+    if not solicitacao:
         raise HTTPException(
             status_code=404,
-            detail="Atendimento não encontrado"
+            detail="Solicitacao não encontrada"
         )
 
-    return atendimento
+    return solicitacao
 
 @router.get('/aluno/{matricula}')
 def listar_atendimentos_aluno(matricula: str, session: SessionDep):
@@ -195,17 +195,17 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
     return {"ok": True}
 
 
-@router.patch("/{atendimento_id}", response_model=Atendimento)
-def editar_atendimento(atendimento_id: int, dados: Atendimento, session: SessionDep):
-    atendimento = session.get(Atendimento, atendimento_id)
-    if not atendimento:
-        raise HTTPException(status_code=404, detail="Atendimento não encontrado")
+@router.patch("/{solicitacao_id}", response_model= Solicitacao)
+def editar_atendimento(solicitacao_id: int, dados: Solicitacao, session: SessionDep):
+    solicitacao = session.get(Solicitacao, solicitacao_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitacao não encontrada")
 
     dados_update = dados.model_dump(exclude_unset=True)
     for campo, valor in dados_update.items():
-        setattr(atendimento, campo, valor)
+        setattr(solicitacao, campo, valor)
 
-    session.add(atendimento)
+    session.add(solicitacao)
     session.commit()
-    session.refresh(atendimento)
-    return atendimento
+    session.refresh(solicitacao)
+    return solicitacao

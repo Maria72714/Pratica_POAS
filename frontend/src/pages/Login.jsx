@@ -49,6 +49,7 @@ const Login = () => {
       localStorage.setItem('suap_user', JSON.stringify(userData));
       localStorage.setItem('suap_access_token', 'dev-local');
       localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+
       setAuthenticatedUser(userData);
       if (data.tipo_usuario === 'mediador') {
         navigate('/mediador', { replace: true });
@@ -63,7 +64,6 @@ const Login = () => {
       setDevLoading(false);
     }
   }
-
   return (
     <>
       {/* Layout Mobile - Visível apenas em telas pequenas */}
@@ -145,7 +145,7 @@ const Login = () => {
             <div className="flex-grow border-t border-gray-200"></div>
           </div>
 
-          {/* Form de dev apenas se showDevLogin for true */}
+          {/* Form de dev */}
           {showDevLogin && (
             <div className="space-y-4 mb-4">
               <form onSubmit={handleDevLogin} className="space-y-3">
@@ -176,6 +176,7 @@ const Login = () => {
                     required
                   />
                 </div>
+
                 <button
                   type="submit"
                   disabled={devLoading}
@@ -345,6 +346,7 @@ const Login = () => {
                 </button>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
+
               {/* Form de dev apenas se showDevLogin for true */}
               {showDevLogin && (
                 <div className="space-y-4 mb-4 pt-2">
@@ -406,6 +408,7 @@ const Login = () => {
                   </svg>
                   <span>Acesso Administrativo</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => navigate('/solicitar-mediador')}

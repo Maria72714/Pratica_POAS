@@ -24,6 +24,7 @@ import ProfessorIndicadores from './pages/ProfessorIndicadores';
 import ProfessorRelatorios from './pages/ProfessorRelatorios';
 
 import { AuthProvider } from './context/AuthContext';
+import { SidebarProvider } from './context/SidebarContext';
 import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
 
 function AppLayout({ children, isProfessor = false, isMediador = false, requerTai = false }) {
@@ -122,11 +123,15 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar itensMenu={menuAtivo} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header usuario={usuarioInfo} />
-        {children}
-      </div>
+      <SidebarProvider>
+        <Sidebar itensMenu={menuAtivo} />
+        <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+          <Header usuario={usuarioInfo} />
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </div>
+      </SidebarProvider>
     </div>
   );
 }
