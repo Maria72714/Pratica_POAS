@@ -4,6 +4,7 @@ from models.users.user import Usuario
 from models.users.aluno import Aluno
 from models.solicitacao import Solicitacao
 from models.disciplina import Disciplina
+from models.solicitacao import Solicitacao
 from deps.deps import SessionDep
 from sqlmodel import select
 from pydantic import BaseModel
@@ -56,4 +57,44 @@ def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
     session.commit()
     session.refresh(solicitacao)
 
+    return solicitacao
+
+
+@router.get('/', response_model=list[Solicitacao])
+def listar_solicitacoes(session: SessionDep):
+    solicitacoes = session.exec(select(Solicitacao)).all()
+    return solicitacoes
+
+
+@router.get("/{solicitacao_id}", response_model=Solicitacao)
+def buscar_solicitacao_por_id(
+    solicitacao_id: int,
+    session: SessionDep
+):
+    solicitacao = session.get(
+        Solicitacao,
+        solicitacao_id
+    )
+
+    if not solicitacao:
+        raise HTTPException(
+            status_code=404,
+            detail="Solicitacao não encontrada"
+        )
+
+    return solicitacao
+
+@router.patch("/{solicitacao_id}", response_model= Solicitacao)
+def editar_solicitacao(solicitacao_id: int, dados: Solicitacao, session: SessionDep):
+    solicitacao = session.get(Solicitacao, solicitacao_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitacao não encontrada")
+
+    dados_update = dados.model_dump(exclude_unset=True)
+    for campo, valor in dados_update.items():
+        setattr(solicitacao, campo, valor)
+
+    session.add(solicitacao)
+    session.commit()
+    session.refresh(solicitacao)
     return solicitacao
