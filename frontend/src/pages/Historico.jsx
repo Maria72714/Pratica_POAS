@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { buscarAtendimentos, excluirAtendimento, editarAtendimento } from "../services/agendamento";
+import { excluirSolicitacao, editarSolicitacao } from "../services/solicitacao";
+import { buscarSolicitacoes } from "../services/solicitacao";
 
 const STATUS_LABELS = {
   AGENDADO: "Agendado",
@@ -25,18 +26,18 @@ function formatarHora(hora) {
   return hora ? String(hora).slice(0, 5) : null;
 }
 
-function extrairAssunto(atendimento) {
+function extrairAssunto(solicitacao) {
   const assunto =
-    atendimento.assunto || atendimento.disciplina || "Atendimento";
+    solicitacao.assunto || solicitacao.disciplina || "Atendimento";
   return assunto.match(/Disciplina:\s*([^|]+)/i)?.[1]?.trim() || assunto;
 }
 
-function extrairObservacoes(atendimento) {
-  if (atendimento.observacoes || atendimento.relatorio) {
-    return atendimento.observacoes || atendimento.relatorio;
+function extrairObservacoes(solicitacao) {
+  if (solicitacao.observacoes || solicitacao.relatorio) {
+    return solicitacao.observacoes || solicitacao.relatorio;
   }
 
-  return atendimento.assunto?.match(/Obs:\s*([^|]+)/i)?.[1]?.trim();
+  return solicitacao.assunto?.match(/Obs:\s*([^|]+)/i)?.[1]?.trim();
 }
 
 function normalizarStatus(status) {
@@ -92,7 +93,7 @@ export default function Historico() {
       if (!confirmar) return;
 
       try {
-        await excluirAtendimento(atendimentoId);
+        await excluirSolicitacao(atendimentoId);
         setAtendimentos((atuais) => atuais.filter((a) => a.id !== atendimentoId));
       } catch (erro) {
         console.error(erro);
@@ -102,7 +103,7 @@ export default function Historico() {
   
   async function handleEditar(atendimentoId, dadosAtualizados) {
     try {
-      await editarAtendimento(atendimentoId, dadosAtualizados);
+      await editarSolicitacao(atendimentoId, dadosAtualizados);
       setAtendimentos((atuais) =>
         atuais.map((a) => (a.id === atendimentoId ? { ...a, ...dadosAtualizados } : a))
       );
@@ -119,9 +120,9 @@ export default function Historico() {
 
         if (!usuario?.matricula) return;
 
-        const dados = await buscarAtendimentos(usuario.matricula);
+        const dados = await buscarSolicitacoes(usuario.matricula);
 
-        setAtendimentos(dados);
+        setSolicitacoes(dados);
       } catch (erro) {
         console.error(erro);
       } finally {

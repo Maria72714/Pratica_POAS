@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { buscarAtendimentoPorId, editarAtendimento } from "../services/agendamento";
+import { buscarSolicitacaoPorId, editarSolicitacao } from "../services/solicitacao";
 
 export default function EditarSolicitacao() {
   const { id } = useParams();
@@ -18,7 +18,7 @@ export default function EditarSolicitacao() {
   useEffect(() => {
     async function carregarSolicitacao() {
       try {
-        const dados = await buscarAtendimentoPorId(id);
+        const dados = await buscarSolicitacaoPorId(id);
 
         setForm({
         necessidade_aluno: dados.tipo_suporte || "",
@@ -50,12 +50,16 @@ export default function EditarSolicitacao() {
 
     try {
       setSalvando(true);
-
-      await editarAtendimento(id, form);
+      const dadosAtualizados = {
+      tipo_suporte: form.necessidade_aluno,
+      id_disciplina: Number(form.disciplina),
+      descricao: form.observacoes,
+    };
+      await editarSolicitacao(id, dadosAtualizados);
 
       alert("Solicitação atualizada com sucesso!");
 
-      navigate("/historico-solicitacoes");
+      navigate("/historico");
     } catch (error) {
       console.error(error);
       alert("Erro ao atualizar solicitação.");
