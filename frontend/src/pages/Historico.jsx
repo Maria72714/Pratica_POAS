@@ -28,7 +28,7 @@ function formatarHora(hora) {
 
 function extrairAssunto(solicitacao) {
   const assunto =
-    solicitacao.assunto || solicitacao.disciplina || "Atendimento";
+    solicitacao.assunto || solicitacao.disciplina || "Solicitacao";
   return assunto.match(/Disciplina:\s*([^|]+)/i)?.[1]?.trim() || assunto;
 }
 
@@ -80,36 +80,36 @@ export default function Historico() {
   const [status, setStatus] = useState("");
   const [tipo, setTipo] = useState("");
   const [modalidade, setModalidade] = useState("");
-  const [atendimentos, setAtendimentos] = useState([]);
+  const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   function backDashboard() {
     navigate("/");
   }
-  async function handleExcluir(atendimentoId) {
+  async function handleExcluir(solicitacaoId) {
       const confirmar = window.confirm(
         "Tem certeza que deseja excluir esta solicitação de atendimento? Essa ação não pode ser desfeita."
       );
       if (!confirmar) return;
 
       try {
-        await excluirSolicitacao(atendimentoId);
-        setAtendimentos((atuais) => atuais.filter((a) => a.id !== atendimentoId));
+        await excluirSolicitacao(solicitacaoId);
+        setSolicitacoes((atuais) => atuais.filter((a) => a.id !== solicitacaoId));
       } catch (erro) {
         console.error(erro);
-        alert("Não foi possível excluir o atendimento. Tente novamente.");
+        alert("Não foi possível excluir a solicitação. Tente novamente.");
       }
     }
   
-  async function handleEditar(atendimentoId, dadosAtualizados) {
+  async function handleEditar(solicitacaoId, dadosAtualizados) {
     try {
-      await editarSolicitacao(atendimentoId, dadosAtualizados);
-      setAtendimentos((atuais) =>
-        atuais.map((a) => (a.id === atendimentoId ? { ...a, ...dadosAtualizados } : a))
+      await editarSolicitacao(solicitacaoId, dadosAtualizados);
+      setSolicitacoes((atuais) =>
+        atuais.map((a) => (a.id === solicitacaoId ? { ...a, ...dadosAtualizados } : a))
       );
     } catch (erro) {
       console.error(erro);
-      alert("Não foi possível editar o atendimento. Tente novamente.");
+      alert("Não foi possível editar a solicitação. Tente novamente.");
     }
   }
 
@@ -133,9 +133,9 @@ export default function Historico() {
   }, []);
 
   const infoCA = {
-    Total: atendimentos.length,
-    Concluídos: atendimentos.filter((a) => a.status === "Concluido").length,
-    Agendados: atendimentos.filter((a) => a.status === "Agendado").length,
+    Total: solicitacoes.length,
+    Concluídos: solicitacoes.filter((a) => a.status === "Concluido").length,
+    Agendados: solicitacoes.filter((a) => a.status === "Agendado").length,
   };
   const caData = {
     status: ["Agendado", "Concluído", "Cancelado"],
@@ -146,9 +146,9 @@ export default function Historico() {
   return (
     <div>
       <div className="bg-emerald-900 text-white font-sans rounded-xl m-[20px_20px_0_20px] px-5 py-8">
-        <h1 className="text-3xl font-bold pb-1">Histórico de Atendimentos</h1>
+        <h1 className="text-3xl font-bold pb-1">Histórico de Solicitações</h1>
         <p className="font-normal text-sm text-emerald-100">
-          Todos os CA's em que você está ou esteve inscrito.
+          Todas as solicitações de atendimento em que você está ou esteve inscrito.
         </p>
       </div>
 
@@ -199,49 +199,49 @@ export default function Historico() {
 
         {loading ? (
           <div className="py-10 text-center text-sm text-slate-500">
-            Carregando atendimentos...
+            Carregando solicitações...
           </div>
-        ) : atendimentos.length === 0 ? (
+        ) : solicitacoes.length === 0 ? (
           <div className="py-10 text-center text-sm font-semibold text-slate-500">
             Nenhum atendimento encontrado.
           </div>
         ) : (
           <div className="space-y-3">
-            {atendimentos.map((atendimento) => {
-              const statusAtual = normalizarStatus(atendimento.status);
+            {solicitacoes.map((solicitacao) => {
+              const statusAtual = normalizarStatus(solicitacao.status);
               const statusLabel =
-                STATUS_LABELS[statusAtual] || atendimento.status || "Agendado";
+                STATUS_LABELS[statusAtual] || solicitacao.status || "Agendado";
               const horaInicio = formatarHora(
-                atendimento.horario_inicio || atendimento.hora_inicio,
+                solicitacao.horario_inicio || solicitacao.hora_inicio,
               );
               const horaFim = formatarHora(
-                atendimento.horario_termino || atendimento.hora_fim,
+                solicitacao.horario_termino || solicitacao.hora_fim,
               );
               const professor =
-                atendimento.professor_nome ||
-                atendimento.professor ||
+                solicitacao.professor_nome ||
+                solicitacao.professor ||
                 "Professor não informado";
               const sala =
-                atendimento.sala_nome ||
-                atendimento.sala ||
-                atendimento.local ||
+                solicitacao.sala_nome ||
+                solicitacao.sala ||
+                solicitacao.local ||
                 "Sala não informada";
-              const observacoes = extrairObservacoes(atendimento);
+              const observacoes = extrairObservacoes(solicitacao);
 
               return (
                 <article
-                  key={atendimento.id}
+                  key={solicitacao.id}
                   className="rounded-xl border border-slate-200 px-4 py-4 transition-shadow hover:shadow-sm sm:px-5"
                 >
                   <div className="flex flex-col gap-3">
                     <div>
                       <h3 className="text-base font-bold text-slate-800">
-                        {extrairAssunto(atendimento)}
+                        {extrairAssunto(solicitacao)}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] font-bold">
                         <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700">
-                          {atendimento.tipo_atendimento ||
-                            atendimento.tipo ||
+                          {solicitacao.tipo_solicitacao ||
+                            solicitacao.tipo ||
                             "TAL"}
                         </span>
                         <span
@@ -260,7 +260,7 @@ export default function Historico() {
                       <span className="flex items-center gap-2">
                         <Icone tipo="calendario" />
                         {formatarData(
-                          atendimento.data_atendimento || atendimento.data,
+                          solicitacao.data_solicitacao || solicitacao.data,
                         )}
                       </span>
                       <span className="flex items-center gap-2">
@@ -282,23 +282,23 @@ export default function Historico() {
                       </div>
                     )}
                   </div>
-                  <div className="flex justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleExcluir(atendimento.id)}
-                    className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/solicitacoes/editar/${solicitacao.id}`)}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors"
                     >
-                    Excluir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/solicitacoes/editar/${atendimento.id}`)}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                  >
-                    Editar
-                  </button>
-                  
-                </div>
+                      Editar Solicitação
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleExcluir(solicitacao.id)}
+                      className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </article>
               );
             })}
