@@ -60,9 +60,41 @@ def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
     return solicitacao
 
 
-@router.get('/', response_model=list[Solicitacao])
-def listar_solicitacoes(session: SessionDep):
-    solicitacoes = session.exec(select(Solicitacao)).all()
+@router.get("/aluno/{matricula}", response_model=list[Solicitacao])
+def listar_solicitacoes_aluno(
+    matricula: str,
+    session: SessionDep
+):
+    usuario = session.exec(
+        select(Usuario).where(
+            Usuario.matricula == matricula
+        )
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    aluno = session.exec(
+        select(Aluno).where(
+            Aluno.id == usuario.id
+        )
+    ).first()
+
+    if not aluno:
+        raise HTTPException(
+            status_code=404,
+            detail="Aluno não encontrado"
+        )
+
+    solicitacoes = session.exec(
+        select(Solicitacao).where(
+            Solicitacao.id_aluno == aluno.id
+        )
+    ).all()
+
     return solicitacoes
 
 
@@ -98,3 +130,13 @@ def editar_solicitacao(solicitacao_id: int, dados: Solicitacao, session: Session
     session.commit()
     session.refresh(solicitacao)
     return solicitacao
+
+
+@router.delete("/{solicitacao_id}")
+def deletar_solicitacao(solicitacao_id: int, session: SessionDep):
+    solicitacao = session.get(Solicitacao, solicitacao_id)
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitacao não encontrada")
+    session.delete(solicitacao)
+    session.commit()
+    return {"ok": True}
