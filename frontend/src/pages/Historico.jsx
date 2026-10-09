@@ -242,7 +242,7 @@ export default function Historico() {
                         <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700">
                           {solicitacao.tipo_solicitacao ||
                             solicitacao.tipo ||
-                            "TAL"}
+                            "TAI"}
                         </span>
                         <span
                           className={`rounded px-2 py-0.5 ${statusAtual === "CONCLUIDO" ? "bg-emerald-100 text-emerald-700" : statusAtual === "CANCELADO" || statusAtual === "FALTA" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}
