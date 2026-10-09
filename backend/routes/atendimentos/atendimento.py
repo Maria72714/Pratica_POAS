@@ -3,7 +3,6 @@ from models.atendimento import Atendimento
 from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.users.user import Usuario
 from models.users.aluno import Aluno
-from models.solicitacao import Solicitacao
 from deps.deps import SessionDep
 from sqlmodel import select
 from pydantic import BaseModel
@@ -40,23 +39,23 @@ def listar_atendimento(session: SessionDep):
     return atendimentos
 
 
-@router.get("/{solicitacao_id}", response_model=Solicitacao)
+@router.get("/{atendimento_id}", response_model=Atendimento)
 def buscar_atendimento_por_id(
-    solicitacao_id: int,
+    atendimento_id: int,
     session: SessionDep
 ):
-    solicitacao = session.get(
-        Solicitacao,
-        solicitacao_id
+    atendimento = session.get(
+        Atendimento,
+        atendimento_id
     )
 
-    if not solicitacao:
+    if not atendimento:
         raise HTTPException(
             status_code=404,
-            detail="Solicitacao não encontrada"
+            detail="Atendimento não encontrado"
         )
 
-    return solicitacao
+    return atendimento
 
 @router.get('/aluno/{matricula}')
 def listar_atendimentos_aluno(matricula: str, session: SessionDep):
