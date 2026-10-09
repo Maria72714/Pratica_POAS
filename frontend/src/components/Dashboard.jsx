@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { buscarAtendimentos } from '../services/agendamento';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CardEstatisticas from './CardEstatisticas';
 import CardAgendamento from './CardAgendamento';
