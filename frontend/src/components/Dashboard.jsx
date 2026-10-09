@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { buscarAtendimentos } from '../services/agendamento';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CardEstatisticas from './CardEstatisticas';
@@ -8,13 +8,22 @@ const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
+  const usuarioSalvo = localStorage.getItem('usuario');
+  const suapSalvo = localStorage.getItem('suap_user');
 
-  const stats = [
-    {
-    titulo: 'Meus agendamentos',
-    valor: appointments.length,
-    },
-  ];  
+  const usuario = usuarioSalvo
+    ? JSON.parse(usuarioSalvo)
+    : suapSalvo
+      ? JSON.parse(suapSalvo)
+      : null;
+
+  const userName = usuario?.nome || 'Aluno';
+    const stats = [
+      {
+      titulo: 'Meus agendamentos',
+      valor: appointments.length,
+      },
+    ];  
   useEffect(() => {
   async function carregarAgendamentos() {
     try {
