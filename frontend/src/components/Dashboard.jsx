@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { buscarAtendimentos } from '../services/agendamento';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CardEstatisticas from './CardEstatisticas';
@@ -63,7 +63,7 @@ const Dashboard = () => {
       {/* Banner de boas vindas - Responsivo */}
       <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white mx-2 sm:mx-4 lg:mx-6 rounded-lg sm:rounded-xl mb-3 sm:mb-4 lg:mb-6 mt-2 sm:mt-3 lg:mt-4 p-4 sm:p-6 lg:p-8">
         <h1 className="text-base sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-2">
-          Bem-vindo!
+          Bem-vindo, {userName}!
         </h1>
         <p className="text-emerald-100 text-xs sm:text-sm lg:text-base leading-relaxed">
           Agende atendimentos e acompanhe seu desenvolvimento acadêmico.
@@ -80,19 +80,6 @@ const Dashboard = () => {
           }
         </div>
 
-        {/* Seção CAs disponíveis */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-          </svg>
-          <div className="flex-1">
-            <h3 className="font-semibold text-emerald-900 text-sm mb-1">CAs disponíveis para inscrição</h3>
-            <p className="text-emerald-700 text-xs mb-3">Veja os atendimentos abertos pelos seus professores.</p>
-            <button className="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-emerald-700 transition-colors">
-              Ver CAs
-            </button>
-          </div>
-        </div>
 
         {/* Seção de agendamentos - Responsiva */}
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">

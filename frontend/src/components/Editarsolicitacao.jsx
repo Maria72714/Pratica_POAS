@@ -77,7 +77,7 @@ export default function EditarSolicitacao() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-10 flex items-center justify-center">
+    <div className="min-h-screen bg-white px-4 pt-0 pb-10 flex items-start justify-center">
       <div className="w-full max-w-6xl">
 
         <div className="mb-5 flex justify-center">

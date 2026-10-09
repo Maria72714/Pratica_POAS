@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from models.atendimento import Atendimento
 from models.associativas.aluno_atendimento import AlunoAtendimento
+from models.solicitacao import Solicitacao
 from models.users.user import Usuario
 from models.users.aluno import Aluno
 from deps.deps import SessionDep
@@ -189,7 +190,7 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
     return {"ok": True}
 
 
-@router.patch("/{atendimento_id}", response_model= Atendimento)
+@router.patch("/{atendimento_id}", response_model=Atendimento)
 def editar_atendimento(atendimento_id: int, dados: Atendimento, session: SessionDep):
     atendimento = session.get(Atendimento, atendimento_id)
     if not atendimento:
