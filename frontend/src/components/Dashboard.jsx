@@ -5,50 +5,51 @@ import CardEstatisticas from './CardEstatisticas';
 import CardAgendamento from './CardAgendamento';
 
 const Dashboard = () => {
-  const stats = [
-    { 
-      label: 'Atendimentos Agendados', 
-      value: '3',
-    },
-    { 
-      label: 'Próximo Atendimento', 
-      value: '22/12/2026',
-    },
-    { 
-      label: 'Disciplinas', 
-      value: '1',
-    },
-  ];
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
 
-  const appointments = [
+  const stats = [
     {
-      subject: 'Programação Orientada a Objetos (TAL)',
-      professor: 'Prof. Roberto Santos',
-      time: '14:00 - 15:00',
-      date: '28 Abr 2026',
-      location: 'Sala CA-01',
-      status: 'Confirmado',
-      statusColor: 'bg-green-100 text-green-800',
+    titulo: 'Meus agendamentos',
+    valor: appointments.length,
     },
-    {
-      subject: 'Banco de Dados (TAL)',
-      professor: 'Profa. Carla Oliveira',
-      time: '10:00 - 11:00',
-      date: '29 Abr 2026',
-      location: 'Laboratório de Informática 2',
-      status: 'Pendente',
-      statusColor: 'bg-yellow-100 text-yellow-800',
-    },
-    {
-      subject: 'Matemática Aplicada (TAI)',
-      professor: 'Prof. Fernando Lima',
-      time: '16:00 - 17:00',
-      date: '30 Abr 2026',
-      location: 'Sala CA-03 (Acessível)',
-      status: 'Confirmado',
-      statusColor: 'bg-green-100 text-green-800',
-    },
-  ];
+  ];  
+  useEffect(() => {
+  async function carregarAgendamentos() {
+    try {
+      setErro('');
+
+      const usuarioSalvo = localStorage.getItem('usuario');
+      const suapSalvo = localStorage.getItem('suap_user');
+
+      const usuario = usuarioSalvo
+        ? JSON.parse(usuarioSalvo)
+        : suapSalvo
+          ? JSON.parse(suapSalvo)
+          : null;
+
+      if (!usuario?.matricula) {
+        setErro('Matrícula do aluno não encontrada.');
+        return;
+      }
+
+      const dados = await buscarAtendimentos(usuario.matricula);
+      console.log(
+        "Dados completos do atendimento:",
+        JSON.stringify(dados, null, 2)
+      );
+      setAppointments(Array.isArray(dados) ? dados : []);
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      setErro('Não foi possível carregar os agendamentos.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  carregarAgendamentos();
+}, []);
 
   const monthlyData = [
     { month: 'Jan', atendimentos: 2 },
@@ -101,16 +102,30 @@ const Dashboard = () => {
           </div>
 
           {/* Componente para Listagem de agendamentos - Layout mobile-first */}
-          <div className="p-3 sm:p-4 lg:p-4 space-y-2 sm:space-y-3">
-            {
-            appointments.map((appointment, index) => (
-              <CardAgendamento
-                key={appointment.subject}
-                appointment={appointment}
-                index={index}
-              />
-            ))}
-          </div>
+          <div className="p-3 sm:p-4">
+          {loading ? (
+            <p className="text-gray-500 text-sm">
+              Carregando agendamentos...
+            </p>
+          ) : erro ? (
+            <p className="text-red-600 text-sm">
+              {erro}
+            </p>
+          ) : appointments.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              Você ainda não possui agendamentos.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {appointments.map((atendimento) => (
+                <CardAgendamento
+                  key={atendimento.id}
+                  atendimento={atendimento}
+                />
+              ))}
+            </div>
+          )}
+        </div>
           
         </div>
       </div>

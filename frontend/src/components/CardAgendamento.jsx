@@ -1,7 +1,8 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faCalendarDay, faLocationDot } from '@fortawesome/free-solid-svg-icons';
 
-export default function CardAgendamento({ appointment, index }) {
+export default function CardAgendamento({ agendamento }) {
+  const appointment = agendamento;
   if (!appointment) {
     return (
       <p className="text-gray-500 text-xs text-center py-6">
