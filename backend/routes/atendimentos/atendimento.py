@@ -194,17 +194,17 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
     return {"ok": True}
 
 
-@router.patch("/{solicitacao_id}", response_model= Solicitacao)
-def editar_atendimento(solicitacao_id: int, dados: Solicitacao, session: SessionDep):
-    solicitacao = session.get(Solicitacao, solicitacao_id)
-    if not solicitacao:
-        raise HTTPException(status_code=404, detail="Solicitacao não encontrada")
+@router.patch("/{atendimento_id}", response_model= Atendimento)
+def editar_atendimento(atendimento_id: int, dados: Atendimento, session: SessionDep):
+    atendimento = session.get(Atendimento, atendimento_id)
+    if not atendimento:
+        raise HTTPException(status_code=404, detail="Atendimento não encontrado")
 
     dados_update = dados.model_dump(exclude_unset=True)
     for campo, valor in dados_update.items():
-        setattr(solicitacao, campo, valor)
+        setattr(atendimento, campo, valor)
 
-    session.add(solicitacao)
+    session.add(atendimento)
     session.commit()
-    session.refresh(solicitacao)
-    return solicitacao
+    session.refresh(atendimento)
+    return atendimento
