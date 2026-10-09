@@ -69,14 +69,7 @@ const Login = () => {
       {/* Layout Mobile - Visível apenas em telas pequenas */}
       <div className="lg:hidden min-h-screen bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 p-4 flex flex-col justify-center relative">
         {/* Ícone de acessibilidade no canto superior direito */}
-        <div className="absolute top-6 right-6 z-10">
-          <button className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </button>
-        </div>
-
+        
         {/* Cartão principal centralizado */}
         <div className="w-full max-w-sm mx-auto bg-white rounded-3xl shadow-2xl p-8 relative z-10">
           
@@ -220,7 +213,7 @@ const Login = () => {
 
           {/* Links SUAP no rodapé do cartão */}
           <div className="pt-4 border-t border-gray-100 text-center">
-            <p className="text-xs font-semibold text-gray-600 mb-2">SUAP IFRN</p>
+         
             <div className="flex justify-center gap-4">
               <a href="https://suap.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
                 className="text-xs text-gray-500 hover:text-emerald-600 transition-colors font-medium">Portal SUAP</a>
