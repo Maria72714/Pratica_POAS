@@ -111,15 +111,17 @@ const DashboardProfessor = () => {
         <div className="bg-white rounded-lg sm:rounded-xl
           shadow-sm border border-gray-100 overflow-hidden">
 
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-base lg:text-lg font-bold text-gray-800">
-              Meus Agendamentos
-            </h2>
+          
+        <div className="px-4 py-5 sm:px-5 sm:py-6 border-b border-gray-100">
+          <h2 className="text-base lg:text-lg font-bold text-gray-800 mb-2">
+            Meus Agendamentos
+          </h2>
 
-            <p className="text-sm text-gray-500 mt-1">
-              Consulte os detalhes dos atendimentos agendados.
-            </p>
-          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Consulte os detalhes dos atendimentos agendados.
+          </p>
+        </div>
+
 
           <div className="p-3 sm:p-4">
 
@@ -162,17 +164,17 @@ const DashboardProfessor = () => {
                         text-xs sm:text-sm text-gray-600">
 
                         <span className="inline-flex items-center gap-1">
-                          <span aria-hidden="true">📅</span>
+                          <span aria-hidden="true"></span>
                           {formatarData(atendimento.data_atendimento)}
                         </span>
 
                         <span className="inline-flex items-center gap-1">
-                          <span aria-hidden="true">📍</span>
+                          <span aria-hidden="true"></span>
                           {formatarTexto(atendimento.modalidade)}
                         </span>
 
                         <span className="inline-flex items-center gap-1">
-                          <span aria-hidden="true">📋</span>
+                          <span aria-hidden="true"></span>
                           {formatarTexto(atendimento.tipo_atendimento)}
                         </span>
 
