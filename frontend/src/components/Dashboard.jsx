@@ -82,11 +82,13 @@ const Dashboard = () => {
       <div className="p-2 sm:p-3 lg:p-6">
         {/* Cards com as estatisticas - Grid responsivo */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
-            {
-            stats.map((stat, index) => (
-              <CardEstatisticas stat={stat} index={index}/>
-            ))
-          }
+            {stats.map((stat, index) => (
+              <CardEstatisticas
+                key={index}
+                stat={stat}
+                index={index}
+              />
+            ))}
         </div>
 
 
@@ -116,7 +118,7 @@ const Dashboard = () => {
               {appointments.map((atendimento) => (
                 <CardAgendamento
                   key={atendimento.id}
-                  atendimento={atendimento}
+                  appointment={atendimento}
                 />
               ))}
             </div>
