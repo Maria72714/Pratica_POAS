@@ -8,6 +8,17 @@ export async function buscarAtendimentos(matricula) {
     return response.json();
 }
 
+export async function buscarAtendimentosProfessor(professor_matricula) {
+    const response = await fetch(`${API_BASE}/professor/${professor_matricula}`);
+    if (!response.ok) {
+        throw new Error("Erro ao buscar atendimentos");
+    }
+    return response.json();
+}
+
+
+
+
 export async function buscarAtendimentoPorId(id) {
     const response = await fetch(
         `${API_BASE}/${id}`
