@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { buscarAtendimentosProfessor } from '../services/agendamento';
+import { buscarAtendimentosProfessor } from '../../services/professor/agendamento';
 
 
 const DashboardProfessor = () => {

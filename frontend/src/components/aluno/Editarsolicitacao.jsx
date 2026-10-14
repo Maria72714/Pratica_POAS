@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { buscarSolicitacaoPorId, editarSolicitacao } from "../services/solicitacao";
+import { buscarSolicitacaoPorId, editarSolicitacao } from "../../services/aluno/solicitacao";
 
 export default function EditarSolicitacao() {
   const { id } = useParams();

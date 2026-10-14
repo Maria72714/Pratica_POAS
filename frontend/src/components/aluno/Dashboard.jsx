@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { buscarAtendimentos } from '../services/agendamento';
+import { buscarAtendimentos } from '../../services/aluno/agendamento';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import CardEstatisticas from './CardEstatisticas';
-import CardAgendamento from './CardAgendamento';
+import CardEstatisticas from '../CardEstatisticas';
+import CardAgendamento from '../CardAgendamento';
 
 const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);

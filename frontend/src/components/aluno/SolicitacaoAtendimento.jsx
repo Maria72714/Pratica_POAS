@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchDisciplinas } from '../services/api';
-import { cadastrarSolicitacao } from '../services/solicitacao';
+import { fetchDisciplinas } from '../../services/api';
+import { cadastrarSolicitacao } from '../../services/aluno/solicitacao';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -39,7 +39,7 @@ const SolicitacaoTAI = () => {
         tipo_suporte: suporte,
         descricao: desc || undefined
       });
-      navigate('/');
+      navigate('/historico');
     } catch (err) {
       console.error('Erro ao solicitar CA:', err);
     }

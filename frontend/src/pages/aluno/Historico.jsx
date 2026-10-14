@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirSolicitacao, editarSolicitacao } from "../services/solicitacao";
-import { buscarSolicitacoes } from "../services/solicitacao";
+import { excluirSolicitacao, editarSolicitacao } from "../../services/aluno/solicitacao";
+import { buscarSolicitacoes } from "../../services/aluno/solicitacao";
 
 const STATUS_LABELS = {
   AGENDADO: "Agendado",

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { completarPerfil } from '../services/api';
+import { completarPerfil } from '../../services/api';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@escolar\.ifrn\.edu\.br$/;
 

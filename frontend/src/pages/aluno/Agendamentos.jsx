@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { abrirNoGoogleCalendar } from '../utils/googleCalendar';
+import { abrirNoGoogleCalendar } from '../../utils/googleCalendar';
 
 const Agendamentos = () => {
   // Dados iniciais simulando o retorno do banco de dados
