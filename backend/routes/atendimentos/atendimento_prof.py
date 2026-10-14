@@ -54,3 +54,5 @@ def listar_atendimentos_professor(professor_matricula: str,session: SessionDep):
     atendimentos = session.exec(statement).all()
 
     return atendimentos
+
+

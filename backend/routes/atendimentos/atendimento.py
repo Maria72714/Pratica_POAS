@@ -3,7 +3,7 @@ from models.atendimento import Atendimento
 from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.solicitacao import Solicitacao
 from models.users.user import Usuario
-from models.users.aluno import Aluno
+from models.users.professor import Professor
 from deps.deps import SessionDep
 from sqlmodel import select
 from pydantic import BaseModel
@@ -58,18 +58,18 @@ def buscar_atendimento_por_id(
 
     return atendimento
 
-@router.get('/aluno/{matricula}')
-def listar_atendimentos_aluno(matricula: str, session: SessionDep):
-    """Retorna todos os atendimentos vinculados ao aluno."""
+@router.get('/professor/{matricula}')
+def listar_atendimentos_professor(matricula: str, session: SessionDep):
+    """Retorna todos os atendimentos vinculados ao professor."""
     usuario = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
-    aluno = session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
-    if not aluno:
-        raise HTTPException(status_code=404, detail="Aluno não encontrado.")
+    professor = session.exec(select(Professor).where(Professor.id == usuario.id)).first()
+    if not professor:
+        raise HTTPException(status_code=404, detail="Professor não encontrado.")
 
     links = session.exec(
-        select(AlunoAtendimento).where(AlunoAtendimento.aluno_id == aluno.id)
+        select(Atendimento).where(Atendimento.professor_id == professor.id)
     ).all()
     ids = [l.atendimento_id for l in links]
     if not ids:
@@ -93,9 +93,9 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
 
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
-    aluno = session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
-    if not aluno:
-        raise HTTPException(status_code=404, detail="Aluno não encontrado.")
+    professor = session.exec(select(Professor).where(Professor.id == usuario.id)).first()
+    if not professor:
+        raise HTTPException(status_code=404, detail="Professor não encontrado.")
 
 
     # Monta o assunto com disciplina + tipo de suporte
@@ -114,9 +114,10 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
     session.commit()
     session.refresh(atendimento)
 
-    # Vincula o aluno ao atendimento
-    link = AlunoAtendimento(aluno_id=aluno.id, atendimento_id=atendimento.id)
-    session.add(link)
+    # Vincula o professor ao atendimento
+    # parte a revisar
+    # link = AlunoAtendimento(professor_id=professor.id, atendimento_id=atendimento.id)
+    # session.add(link)
 
     # Atualiza o atendimento com o id da solicitação
     # atendimento.id_solicitacao = solicitacao.id
@@ -128,7 +129,6 @@ def criar_atendimento(dados: AtendimentoCreateModel, session: SessionDep):
     try:
         from models.notificacao import Notificacao
         from models.associativas.usuario_notificacao import UsuarioNotificacao
-        from models.users.professor import Professor
         from models.users.mediador import Mediador
 
         data_str = dados.data_atendimento.strftime("%d/%m/%Y")

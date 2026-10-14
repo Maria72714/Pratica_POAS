@@ -228,3 +228,5 @@ def complementar_perfil_professor(
         "turmas": todas_turmas_salvas,
         "perfil_completo": True
     }
+
+
