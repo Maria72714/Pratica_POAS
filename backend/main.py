@@ -25,6 +25,7 @@ REDIRECT_URI  = os.getenv("REDIRECT_URI",  "http://localhost:5173/callback")
 SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
 SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
 
+
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
