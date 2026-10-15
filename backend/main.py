@@ -19,12 +19,12 @@ from services.usuario_service import UsuarioService
 load_dotenv()
 
 # Configurações do cliente OAuth2 do SUAP
-CLIENT_ID     = os.getenv("CLIENT_ID",     "6IPsGy1xSQlxdmEydLEfygqTVwoH06vkxdCwyZQa")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET", "7h9WemkRNQXy0is2iCHdieq75ZR0DRHu8ONqzhqaWRmdjksAN7TeGh4yZYKNRDXxQrpGVVZkfNaBqeDG6jKpNF43epS3b4z2d6zNDr1QzTPPDmgnFUmwRHEQ9fWbMf6E")
-REDIRECT_URI  = os.getenv("REDIRECT_URI",  "http://localhost:5173/callback")
+CLIENT_ID     = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI  = os.getenv("REDIRECT_URI")
 
-SUAP_TOKEN_URL   = "https://suap.ifrn.edu.br/o/token/"
-SUAP_PROFILE_URL = "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
+SUAP_TOKEN_URL   = os.getenv("SUAP_TOKEN_URL")
+SUAP_PROFILE_URL = os.getenv("SUAP_PROFILE_URL")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -112,7 +112,7 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         print(f"[SUAP] Buscando perfil em {SUAP_PROFILE_URL}")
         
         profile_response = None
-        SUAP_RH_EU = "https://suap.ifrn.edu.br/api/rh/eu/"
+        SUAP_RH_EU = os.getenv("SUAP_RH_EU")
         
         # Testamos combinações de URLs e esquemas (Bearer/JWT) pois variam entre as versões do SUAP
         tentativas = [
