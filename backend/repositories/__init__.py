@@ -1,0 +1,4 @@
+from .usuario_repository import UsuarioRepository
+from .aluno_repository import AlunoRepository
+from .atendimento_repository import AtendimentoRepository
+from .solicitacao_repository import SolicitacaoRepository
