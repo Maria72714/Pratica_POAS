@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import httpx
 import os
 from dotenv import load_dotenv
-from routes.atendimentos import atendimento
+from routes.atendimentos import atendimento, atendimento_prof
 from routes.usuarios import usuarios
 from routes.alunos import alunos
 from fastapi.staticfiles import StaticFiles
@@ -38,6 +38,7 @@ app.add_middleware(
 from routes import notificacoes, professores, solicitacao
 
 app.include_router(atendimento.router, prefix="/api")
+app.include_router(atendimento_prof.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
 app.include_router(alunos.router, prefix="/api")
 app.include_router(notificacoes.router, prefix="/api")

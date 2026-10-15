@@ -8,6 +8,8 @@ export async function buscarAtendimentos(matricula) {
     return response.json();
 }
 
+
+
 export async function buscarAtendimentoPorId(id) {
     const response = await fetch(
         `${API_BASE}/${id}`
