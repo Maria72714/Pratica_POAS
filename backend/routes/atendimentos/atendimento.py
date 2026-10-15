@@ -35,6 +35,9 @@ class AtendimentoResponse(BaseModel):
 def listar_atendimento(session: SessionDep):
     return AtendimentoService(session).listar_atendimentos()
 
+@router.get('/aluno/{matricula}', response_model=list[Atendimento])
+def listar_atendimentos_por_matricula(matricula: str, session: SessionDep):
+    return AtendimentoService(session).listar_por_matricula(matricula)
 
 @router.get("/{atendimento_id}", response_model=Atendimento)
 def buscar_atendimento_por_id(atendimento_id: int, session: SessionDep):

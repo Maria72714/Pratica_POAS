@@ -17,6 +17,13 @@ class AtendimentoService:
     def listar_atendimentos(self):
         return self.repository.list_all()
 
+    def listar_por_matricula(self, matricula: str):
+        usuario = self.usuario_repository.get_by_matricula(matricula)
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+        return self.repository.get_by_matricula(matricula)
+
     def buscar_por_id(self, atendimento_id: int):
         atendimento = self.repository.get_by_id(atendimento_id)
         if not atendimento:

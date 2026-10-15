@@ -13,6 +13,11 @@ class AtendimentoRepository:
     def get_by_id(self, atendimento_id: int) -> Atendimento | None:
         return self.session.get(Atendimento, atendimento_id)
 
+    def get_by_matricula(self, matricula: str) -> list[Atendimento]:
+        return self.session.exec(
+            select(Atendimento).where(Atendimento.matricula == matricula)
+        ).all()
+
     def list_by_professor_id(self, professor_id: int) -> list[Atendimento]:
         return self.session.exec(
             select(Atendimento).where(Atendimento.id_professor == professor_id)
