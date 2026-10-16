@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 
 from models.disciplina import Disciplina
+from models.enums import StatusSolicitacao
 from models.solicitacao import Solicitacao
 
 
@@ -14,6 +15,11 @@ class SolicitacaoRepository:
     def list_by_aluno_id(self, aluno_id: int) -> list[Solicitacao]:
         return self.session.exec(
             select(Solicitacao).where(Solicitacao.id_aluno == aluno_id)
+        ).all()
+
+    def list_by_status(self, status: StatusSolicitacao) -> list[Solicitacao]:
+        return self.session.exec(
+            select(Solicitacao).where(Solicitacao.status == status)
         ).all()
 
     def get_disciplina_by_nome(self, nome_disciplina: str) -> Disciplina | None:

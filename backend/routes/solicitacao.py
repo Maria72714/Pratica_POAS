@@ -30,6 +30,11 @@ class SolicitacaoResponse(BaseModel):
         from_attributes = True
 
 
+class DecidirSolicitacaoInput(BaseModel):
+    status: str
+    id_mediador: Optional[int] = None
+
+
 @router.post('/', response_model=SolicitacaoResponse)
 def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
     return SolicitacaoService(session).criar_solicitacao(dados)
@@ -38,6 +43,20 @@ def criar_solicitacao(dados: SolicitacaoCreateModel, session: SessionDep):
 @router.get("/aluno/{matricula}", response_model=list[Solicitacao])
 def listar_solicitacoes_aluno(matricula: str, session: SessionDep):
     return SolicitacaoService(session).listar_solicitacoes_aluno(matricula)
+
+
+@router.get("/pendentes", response_model=list[Solicitacao])
+def listar_solicitacoes_pendentes(session: SessionDep):
+    return SolicitacaoService(session).listar_solicitacoes_pendentes()
+
+
+@router.patch("/{solicitacao_id}/avaliar", response_model=Solicitacao)
+def avaliar_solicitacao(solicitacao_id: int, dados: DecidirSolicitacaoInput, session: SessionDep):
+    return SolicitacaoService(session).decidir_solicitacao(
+        solicitacao_id=solicitacao_id,
+        status=dados.status,
+        id_mediador=dados.id_mediador,
+    )
 
 
 @router.get("/{solicitacao_id}", response_model=Solicitacao)

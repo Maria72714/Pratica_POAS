@@ -48,7 +48,7 @@ class PerfilAlunoResponse:
         self.curso_nome = curso["nome"] if curso else None
         self.ano_letivo = ano_letivo_efetivo
         self.necessidades_especiais = aluno.necessidades_especiais if aluno else False
-        self.perfil_completo = aluno.perfil_completo if aluno else False
+        self.perfil_completo = True if aluno else True
         self.laudo_path = aluno.laudo_path if aluno else None
         self.disciplinas = disciplinas
 

@@ -69,6 +69,59 @@ class LoginInput(BaseModel):
     senha: str
 
 
+def _to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in {"1", "true", "verdadeiro", "sim", "s", "yes", "y", "ativo", "habilitado"}:
+            return True
+        if v in {"0", "false", "falso", "nao", "n", "no", "não", "inativo", "desabilitado", ""}:
+            return False
+        if any(token in v for token in ["pne", "pessoa com", "pcd", "deficien", "necessidade educacional", "necessidade especial"]):
+            return True
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return False
+
+
+def _detectar_pnee(perfil: dict):
+    if not isinstance(perfil, dict):
+        return False
+
+    chaves = [
+        "necessidades_especiais",
+        "necessidades_educacionais_especiais",
+        "pnee",
+        "pne",
+        "tem_pnee",
+        "tem_necessidade_especial",
+        "possui_necessidade_especial",
+        "necessidade_especial",
+        "pcd",
+        "pessoa_com_deficiencia",
+        "pessoa_com_deficiencia_ou_necessidade_especial",
+        "deficiencia",
+        "tem_deficiencia",
+        "tipo_deficiencia",
+        "tipo_necessidade",
+        "aluno_pnee",
+        "is_pnee",
+    ]
+
+    for chave in chaves:
+        if chave in perfil:
+            return _to_bool(perfil.get(chave))
+
+    for valor in perfil.values():
+        if isinstance(valor, str) and any(token in valor.lower() for token in ["pne", "pessoa com", "pcd", "deficien", "necessidade educacional", "necessidade especial"]):
+            return True
+
+    return False
+
+
 @app.post("/api/login")
 def login_local(payload: LoginInput, session: SessionDep):
     return UsuarioService(session).autenticar_local(payload)
@@ -173,6 +226,7 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     )
     tipo_vinculo = perfil.get("tipo_vinculo") or perfil.get("tipo_usuario")
     foto = perfil.get("foto")
+    necessidades_especiais = _detectar_pnee(perfil)
 
     if not matricula:
         raise HTTPException(status_code=400, detail="Matrícula não encontrada no perfil do SUAP.")
@@ -195,14 +249,22 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         session.refresh(db_user)
 
         if is_aluno:
-            session.add(Aluno(id=db_user.id))
+            session.add(Aluno(
+                id=db_user.id,
+                perfil_completo=True,
+                necessidades_especiais=necessidades_especiais,
+            ))
         elif "professor" in vinculo_lower or "servidor" in vinculo_lower:
             session.add(Professor(id=db_user.id))
         session.commit()
     elif is_aluno:
         aluno_existente = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
         if not aluno_existente:
-            session.add(Aluno(id=db_user.id))
+            session.add(Aluno(
+                id=db_user.id,
+                perfil_completo=True,
+                necessidades_especiais=necessidades_especiais,
+            ))
             session.commit()
 
     # Busca perfil acadêmico se for aluno
@@ -216,15 +278,20 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     curso_id = None
     curso_nome = None
     ano_letivo = None
-    necessidades_especiais = False
+    necessidades_especiais = bool(necessidades_especiais)
 
     if aluno:
         from data.cursos import get_curso
         from data.turmas import get_turma as _get_turma
-        perfil_completo = aluno.perfil_completo
+        perfil_completo = True
+        aluno.perfil_completo = True
         turma_id = aluno.turma_id
         curso_id = aluno.curso_id
         ano_letivo = aluno.ano_letivo
+        if aluno.necessidades_especiais != necessidades_especiais:
+            aluno.necessidades_especiais = necessidades_especiais
+            session.add(aluno)
+            session.commit()
         necessidades_especiais = aluno.necessidades_especiais
         # Enriquece com dados da turma se disponível
         turma = _get_turma(turma_id) if turma_id else None
@@ -244,8 +311,8 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
             aluno.foto_suap = foto
             session.add(aluno)
             session.commit()
-    elif is_aluno:
-        perfil_completo = False
+    else:
+        perfil_completo = True
 
     from data.cursos import get_disciplinas as _get_disciplinas
     disciplinas = _get_disciplinas(curso_id, ano_letivo) if curso_id and ano_letivo else []

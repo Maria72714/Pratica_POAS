@@ -89,7 +89,7 @@ class UsuarioService:
             "email": db_user.email,
             "matricula": db_user.matricula,
             "tipo_usuario": tipo_usuario,
-            "perfil_completo": True if tipo_usuario in ["mediador", "professor", "admin"] else (aluno.perfil_completo if aluno else False),
+            "perfil_completo": True,
             "necessidades_especiais": aluno.necessidades_especiais if aluno else False,
             "curso": aluno.curso_id if aluno else None,
             "id_turma": aluno.turma_id if aluno else None,

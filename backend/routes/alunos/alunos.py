@@ -22,7 +22,7 @@ class PerfilAlunoResponse(BaseModel):
     curso_nome: str | None = None
     ano_letivo: str | None = None
     necessidades_especiais: bool = False
-    perfil_completo: bool = False
+    perfil_completo: bool = True
     laudo_path: str | None = None
     disciplinas: list[str] = []
 

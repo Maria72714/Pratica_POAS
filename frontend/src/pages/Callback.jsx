@@ -51,7 +51,6 @@ export default function Callback() {
 
         let destino = '/';
         if (isProfessor) destino = '/professor';
-        else if (isAluno && !usuario.perfil_completo) destino = '/complementar-perfil';
 
         navigate(destino, { replace: true });
       })

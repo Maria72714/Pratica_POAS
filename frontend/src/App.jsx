@@ -15,7 +15,6 @@ import Perfil from './pages/Perfil';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
 import DashboardAuth from './pages/DashboardAuth';
-import ComplementacaoPerfil from './pages/aluno/ComplementacaoPerfil';
 import ComplementacaoPerfilProfessor from './pages/professor/ComplementacaoPerfilProfessor';
 import SolicitacaoMediador from './pages/SolicitacaoMediador';
 import NotFound from './pages/NotFound';
@@ -57,10 +56,6 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
     }
 
     const isAluno = usuarioLogado.tipo === 'aluno' || usuarioLogado.is_aluno || (!usuarioLogado.tipo && !usuarioLogado.tipo_vinculo);
-    if (isAluno && usuarioLogado.perfil_completo === false) {
-      navigate('/complementar-perfil');
-      return;
-    }
 
     if (requerTai && !usuarioLogado.necessidades_especiais) {
       navigate('/');
@@ -145,7 +140,6 @@ function App() {
           {/* ── OAuth2 SUAP ──────────────────────────────────────────────── */}
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<Callback />} />
-          <Route path="/complementar-perfil" element={<ComplementacaoPerfil />} />
           <Route path="/dashboard" element={<DashboardAuth />} />
           <Route path="/solicitar-mediador" element={<SolicitacaoMediador />} />
 

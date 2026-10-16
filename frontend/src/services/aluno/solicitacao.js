@@ -27,6 +27,28 @@ export async function buscarSolicitacoes(matricula) {
     return response.json();
 }
 
+export async function buscarSolicitacoesPendentes() {
+    const response = await fetch(`${API_BASE}/pendentes`);
+    if (!response.ok) {
+        throw new Error("Erro ao buscar solicitações pendentes");
+    }
+    return response.json();
+}
+
+export async function decidirSolicitacao(solicitacaoId, status, idMediador = null) {
+    const response = await fetch(`${API_BASE}/${solicitacaoId}/avaliar`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, id_mediador: idMediador }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.detail || 'Erro ao atualizar solicitação');
+    }
+    return data;
+}
+
 export async function editarSolicitacao(solicitacaoId, dadosAtualizados) {
     const response = await fetch(`${API_BASE}/${solicitacaoId}`, {
         method: "PATCH",
