@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/aluno/Dashboard';
 import DashboardProfessor from './components/professor/DashboardProfessor';
-// import NovoAtendimento from './components/professor/NovoAtendimento';
+import NovoAtendimento from './components/professor/NovoAtendimento';
 import DashboardMediador from './components/DashboardMediador';
 import SolicitacaoAtendimento from './components/aluno/SolicitacaoAtendimento';
 import Agendamentos from './pages/aluno/Agendamentos';
@@ -157,7 +157,7 @@ function App() {
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
           <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
-          {/* <Route path="/professor/atendimentos/novo" element={<AppLayout isProfessor={true}><NovoAtendimento /></AppLayout>} /> */}
+          <Route path="/professor/atendimentos/novo" element={<AppLayout isProfessor={true}><NovoAtendimento /></AppLayout>} />
           <Route path="/professor/atendimentos" element={<AppLayout isProfessor={true}><ProfessorAtendimentos /></AppLayout>} />
           <Route path="/professor/horarios" element={<AppLayout isProfessor={true}><ProfessorHorarios /></AppLayout>} />
           <Route path="/professor/indicadores" element={<AppLayout isProfessor={true}><ProfessorIndicadores /></AppLayout>} />

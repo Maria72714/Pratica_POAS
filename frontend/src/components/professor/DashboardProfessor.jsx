@@ -104,9 +104,12 @@ const DashboardProfessor = () => {
             <span className="text-xs text-emerald-100">Selecione as matérias que você leciona e as turmas atendidas no pratiCA</span>
           </button>
 
-          <button className="flex flex-col items-start p-4 border border-emerald-500 bg-emerald-50 rounded-lg text-left hover:bg-emerald-100 transition-colors">
-            <span className="font-semibold text-emerald-700 mb-1">Criar Novo Atendimento</span>
-            <span className="text-sm text-emerald-600/80">Adicione horários disponíveis para atendimento</span>
+          <button
+            onClick={() => navigate('/professor/atendimentos/novo')}
+            className="px-4 py-2.5 bg-emerald-700 text-white text-sm font-medium
+              rounded-lg hover:bg-emerald-800 transition-colors shadow-sm shrink-0"
+          >
+            + Novo Atendimento
           </button>
           
           <button className="flex flex-col items-start p-4 border border-gray-100 rounded-lg text-left hover:bg-gray-50 transition-colors">
