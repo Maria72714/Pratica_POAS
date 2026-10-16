@@ -2,6 +2,8 @@ from fastapi import HTTPException
 from sqlmodel import select
 
 from models.atendimento import Atendimento
+from models.users.aluno import Aluno
+from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.users.professor import Professor
 from models.users.user import Usuario
 from repositories.atendimento_repository import AtendimentoRepository
@@ -22,7 +24,13 @@ class AtendimentoService:
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
-        return self.repository.get_by_matricula(matricula)
+        # garante que o usuário tem perfil de aluno (a tabela 'alunos' usa id == usuarios.id)
+        aluno = self.session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
+        if not aluno:
+            # se preferir, podemos retornar [] em vez de 404
+            raise HTTPException(status_code=404, detail="Perfil de aluno não encontrado.")
+
+        return self.repository.list_by_aluno_id(aluno.id)
 
     def buscar_por_id(self, atendimento_id: int):
         atendimento = self.repository.get_by_id(atendimento_id)
@@ -42,14 +50,38 @@ class AtendimentoService:
         return self.repository.list_by_professor_id(professor.id)
 
     def criar_atendimento(self, dados):
-        usuario = self.usuario_repository.get_by_matricula(dados.matricula)
-        if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        # coleta as matrículas: preferir 'matriculas' (lista), senão 'matricula' único
+        if dados.matriculas:
+            matriculas = list(dict.fromkeys(dados.matriculas))  # remove duplicatas mantendo ordem
+        elif dados.matricula:
+            matriculas = [dados.matricula]
+        else:
+            raise HTTPException(status_code=400, detail="É necessário informar ao menos uma matrícula de aluno.")
 
-        professor = self.usuario_repository.get_professor_by_user_id(usuario.id)
-        if not professor:
-            raise HTTPException(status_code=404, detail="Professor não encontrado.")
+        # Resolve e valida todos os usuários/alunos antes de criar o atendimento
+        aluno_ids = []
+        for mat in matriculas:
+            usuario = self.usuario_repository.get_by_matricula(mat)
+            if not usuario:
+                raise HTTPException(status_code=404, detail=f"Usuário com matrícula {mat} não encontrado.")
+            aluno = self.session.exec(select(Aluno).where(Aluno.id == usuario.id)).first()
+            if not aluno:
+                raise HTTPException(status_code=404, detail=f"Perfil de aluno não encontrado para matrícula {mat}.")
+            aluno_ids.append(aluno.id)
 
+        # (Opcional) resolve professor se fornecido
+        id_professor = None
+        professor = None
+        if getattr(dados, "professor_matricula", None):
+            usuario_prof = self.usuario_repository.get_by_matricula(dados.professor_matricula)
+            if not usuario_prof:
+                raise HTTPException(status_code=404, detail="Professor (usuário) não encontrado.")
+            professor = self.usuario_repository.get_professor_by_user_id(usuario_prof.id)
+            if not professor:
+                raise HTTPException(status_code=404, detail="Perfil de professor não encontrado.")
+            id_professor = professor.id
+
+        # monta assunto (sua lógica atual)
         partes = [f"Disciplina: {dados.disciplina}"]
         if dados.tipo_suporte:
             partes.append(f"Suporte: {dados.tipo_suporte}")
@@ -57,13 +89,21 @@ class AtendimentoService:
             partes.append(f"Obs: {dados.descricao}")
         assunto = " | ".join(partes)
 
+        # cria atendimento
         atendimento = Atendimento(
             data_atendimento=dados.data_atendimento,
             assunto=assunto[:250],
-            id_professor=professor.id,
+            id_professor=id_professor,
         )
         atendimento = self.repository.create(atendimento)
 
+        # cria associações para todos os alunos participantes
+        for aid in aluno_ids:
+            assoc = AlunoAtendimento(aluno_id=aid, atendimento_id=atendimento.id)
+            self.session.add(assoc)
+        self.session.commit()
+
+        # notificações: adapte para notificar todos os alunos se quiser
         try:
             from models.associativas.usuario_notificacao import UsuarioNotificacao
             from models.notificacao import Notificacao
@@ -72,32 +112,35 @@ class AtendimentoService:
             data_str = dados.data_atendimento.strftime("%d/%m/%Y")
 
             notif_aluno = Notificacao(
-                titulo=f"Atendimento em {dados.disciplina} Solicitado",
-                mensagem=f"Sua solicitação de atendimento para {data_str} foi registrada com sucesso.",
+                titulo=f"Atendimento em {dados.disciplina} Registrado",
+                mensagem=f"O atendimento para {data_str} foi registrado com sucesso.",
                 lida=False,
             )
             self.session.add(notif_aluno)
             self.session.commit()
             self.session.refresh(notif_aluno)
-            self.session.add(UsuarioNotificacao(usuario_id=usuario.id, notificacao_id=notif_aluno.id))
 
-            notif_docente = Notificacao(
-                titulo=f"Novo Agendamento: {dados.disciplina}",
-                mensagem=f"O aluno {usuario.nome} solicitou atendimento de CA em {dados.disciplina} para {data_str}.",
-                lida=False,
-            )
-            self.session.add(notif_docente)
-            self.session.commit()
-            self.session.refresh(notif_docente)
+            # associa notificação a cada aluno participante
+            for aid in aluno_ids:
+                self.session.add(UsuarioNotificacao(usuario_id=aid, notificacao_id=notif_aluno.id))
 
-            professores = self.session.exec(select(Professor)).all()
-            for professor_atual in professores:
-                self.session.add(UsuarioNotificacao(usuario_id=professor_atual.id, notificacao_id=notif_docente.id))
+            # notificar professor (se houver)
+            if professor:
+                notif_prof = Notificacao(
+                    titulo=f"Atendimento Agendado: {dados.disciplina}",
+                    mensagem=f"Há um atendimento agendado para {data_str}.",
+                    lida=False,
+                )
+                self.session.add(notif_prof)
+                self.session.commit()
+                self.session.refresh(notif_prof)
+                self.session.add(UsuarioNotificacao(usuario_id=professor.id, notificacao_id=notif_prof.id))
 
+            # notificar mediadores se tipo_suporte
             if dados.tipo_suporte:
                 notif_mediador = Notificacao(
                     titulo=f"Nova Demanda TAI: {dados.tipo_suporte}",
-                    mensagem=f"O aluno {usuario.nome} solicitou suporte inclusivo ({dados.tipo_suporte}) para o atendimento de {dados.disciplina}.",
+                    mensagem=f"Demanda TAI registrada para {dados.disciplina} em {data_str}.",
                     lida=False,
                 )
                 self.session.add(notif_mediador)
