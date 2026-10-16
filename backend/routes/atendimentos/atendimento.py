@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 from deps.deps import SessionDep
 from models.atendimento import Atendimento
@@ -18,8 +18,9 @@ class AtendimentoCreateModel(BaseModel):
     disciplina: str
     tipo_suporte: Optional[str] = None
     descricao: Optional[str] = None
-    matricula: str
-
+    matricula: Optional[str] = None            # compatibilidade (matrícula única)
+    matriculas: Optional[List[str]] = None     # nova: várias matrículas (preferível)
+    professor_matricula: Optional[str] = None  # matricula do professor (opcional)
 
 class AtendimentoResponse(BaseModel):
     id: int
@@ -35,6 +36,9 @@ class AtendimentoResponse(BaseModel):
 def listar_atendimento(session: SessionDep):
     return AtendimentoService(session).listar_atendimentos()
 
+@router.get('/aluno/{matricula}', response_model=list[Atendimento])
+def listar_atendimentos_por_matricula(matricula: str, session: SessionDep):
+    return AtendimentoService(session).listar_por_matricula(matricula)
 
 @router.get("/{atendimento_id}", response_model=Atendimento)
 def buscar_atendimento_por_id(atendimento_id: int, session: SessionDep):

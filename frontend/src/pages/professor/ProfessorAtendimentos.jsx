@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { buscarAtendimentosProfessor } from '../../services/professor/agendamento';
-
+import { useNavigate } from 'react-router-dom';
 
 const DashboardProfessor = () => {
   const [appointments, setAppointments] = useState([]);
@@ -26,6 +26,7 @@ const DashboardProfessor = () => {
   ];
 
   useEffect(() => {
+    const navigate = useNavigate();
     async function carregarAgendamentos() {
       try {
         setErro('');
