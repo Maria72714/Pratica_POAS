@@ -166,18 +166,22 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         
         profile_response = None
         SUAP_RH_EU = os.getenv("SUAP_RH_EU")
+        base_profile = SUAP_PROFILE_URL or "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
         
         # Testamos combinações de URLs e esquemas (Bearer/JWT) pois variam entre as versões do SUAP
         tentativas = [
-            {"url": SUAP_PROFILE_URL, "auth": f"Bearer {access_token}"},
-            {"url": SUAP_PROFILE_URL, "auth": f"JWT {access_token}"},
-            {"url": SUAP_PROFILE_URL.rstrip("/"), "auth": f"Bearer {access_token}"},
-            {"url": SUAP_PROFILE_URL.rstrip("/"), "auth": f"JWT {access_token}"},
-            {"url": SUAP_RH_EU, "auth": f"Bearer {access_token}"},
-            {"url": SUAP_RH_EU, "auth": f"JWT {access_token}"},
-            {"url": SUAP_RH_EU.rstrip("/"), "auth": f"Bearer {access_token}"},
-            {"url": SUAP_RH_EU.rstrip("/"), "auth": f"JWT {access_token}"},
+            {"url": base_profile, "auth": f"Bearer {access_token}"},
+            {"url": base_profile, "auth": f"JWT {access_token}"},
+            {"url": base_profile.rstrip("/"), "auth": f"Bearer {access_token}"},
+            {"url": base_profile.rstrip("/"), "auth": f"JWT {access_token}"},
         ]
+        if SUAP_RH_EU:
+            tentativas.extend([
+                {"url": SUAP_RH_EU, "auth": f"Bearer {access_token}"},
+                {"url": SUAP_RH_EU, "auth": f"JWT {access_token}"},
+                {"url": SUAP_RH_EU.rstrip("/"), "auth": f"Bearer {access_token}"},
+                {"url": SUAP_RH_EU.rstrip("/"), "auth": f"JWT {access_token}"},
+            ])
         
         for i, tent in enumerate(tentativas):
             try:
@@ -251,10 +255,10 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         if is_aluno:
             session.add(Aluno(
                 id=db_user.id,
-                perfil_completo=True,
+                perfil_completo=False,
                 necessidades_especiais=necessidades_especiais,
             ))
-        elif "professor" in vinculo_lower or "servidor" in vinculo_lower:
+        elif "professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower:
             session.add(Professor(id=db_user.id))
         session.commit()
     elif is_aluno:
@@ -262,10 +266,87 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         if not aluno_existente:
             session.add(Aluno(
                 id=db_user.id,
-                perfil_completo=True,
+                perfil_completo=False,
                 necessidades_especiais=necessidades_especiais,
             ))
             session.commit()
+    elif ("professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower):
+        prof_existente = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
+        if not prof_existente:
+            session.add(Professor(id=db_user.id))
+            session.commit()
+
+    # Sincronização automática dos dados do Professor via SUAP (diários e turmas)
+    is_professor = ("professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower)
+    if is_professor:
+        try:
+            from datetime import date
+            ano_atual = date.today().year
+           
+            diarios = []
+            for sem in [1, 2]:
+                diarios_url = f"https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-diarios/{ano_atual}/{sem}/"
+                print(f"[SUAP] Sincronizando diários do professor: {diarios_url}")
+                async with httpx.AsyncClient() as diario_client:
+                    r_diario = await diario_client.get(
+                        diarios_url,
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=5.0
+                    )
+                    if r_diario.status_code == 200:
+                        res_json = r_diario.json()
+                        if isinstance(res_json, list):
+                            diarios.extend(res_json)
+
+            prof_obj = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
+            if prof_obj and diarios:
+                from models.turma import Turma
+                from models.disciplina import Disciplina
+                from models.associativas.professor_turma import ProfessorTurma
+                from models.associativas.professor_disciplina import ProfessorDisciplina
+
+                for d in diarios:
+                    nome_disc = d.get("componente_curricular") or d.get("disciplina") or d.get("descricao")
+                    codigo_turma = d.get("turma") or d.get("codigo_turma") or d.get("sigla")
+
+                    if nome_disc:
+                        nome_disc = nome_disc.strip()
+                        db_disc = session.exec(select(Disciplina).where(Disciplina.nome == nome_disc)).first()
+                        if not db_disc:
+                            db_disc = Disciplina(nome=nome_disc)
+                            session.add(db_disc)
+                            session.commit()
+                            session.refresh(db_disc)
+
+                        link_d = session.exec(
+                            select(ProfessorDisciplina)
+                            .where(ProfessorDisciplina.professor_id == prof_obj.id)
+                            .where(ProfessorDisciplina.disciplina_id == db_disc.id)
+                        ).first()
+                        if not link_d:
+                            session.add(ProfessorDisciplina(professor_id=prof_obj.id, disciplina_id=db_disc.id))
+
+                    if codigo_turma:
+                        codigo_turma = str(codigo_turma).strip()
+                        db_turma = session.exec(select(Turma).where(Turma.codigo == codigo_turma)).first()
+                        if not db_turma:
+                            db_turma = Turma(ano=str(ano_atual), turno="Flexível", codigo=codigo_turma)
+                            session.add(db_turma)
+                            session.commit()
+                            session.refresh(db_turma)
+
+                        link_t = session.exec(
+                            select(ProfessorTurma)
+                            .where(ProfessorTurma.professor_id == prof_obj.id)
+                            .where(ProfessorTurma.turma_id == db_turma.id)
+                        ).first()
+                        if not link_t:
+                            session.add(ProfessorTurma(professor_id=prof_obj.id, turma_id=db_turma.id))
+
+                session.commit()
+                print(f"[SUAP] {len(diarios)} diários sincronizados com sucesso para o professor {db_user.nome}!")
+        except Exception as e_diarios:
+            print(f"[SUAP] Aviso: Não foi possível sincronizar diários automaticamente: {e_diarios}")
 
     # Busca perfil acadêmico se for aluno
     aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
