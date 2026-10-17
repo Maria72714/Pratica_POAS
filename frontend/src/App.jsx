@@ -35,7 +35,8 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
   });
 
   const isMediadorUser = isMediador || usuarioLogado?.tipo === 'mediador';
-  const isProfessorUser = isProfessor || usuarioLogado?.tipo === 'professor' || usuarioLogado?.tipo_vinculo === 'professor';
+  const vinculoLower = (usuarioLogado?.tipo_vinculo || usuarioLogado?.tipo || '').toLowerCase();
+  const isProfessorUser = isProfessor || vinculoLower.includes('prof') || vinculoLower.includes('docente') || vinculoLower.includes('servidor');
 
   React.useEffect(() => {
     if (!usuarioLogado) {

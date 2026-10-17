@@ -46,11 +46,16 @@ export default function Callback() {
         localStorage.setItem('suap_access_token', 'suap-oauth');
         localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
 
-        const isProfessor = (usuario.tipo_vinculo || '').toLowerCase().includes('professor');
-        const isAluno = usuario.is_aluno || (usuario.tipo_vinculo || '').toLowerCase().includes('aluno');
+        const vinculo = (usuario.tipo_vinculo || usuario.tipo || '').toLowerCase();
+        const isProfessor = vinculo.includes('professor') || vinculo.includes('docente') || vinculo.includes('servidor');
+        const isAluno = usuario.is_aluno || vinculo.includes('aluno');
 
         let destino = '/';
-        if (isProfessor) destino = '/professor';
+        if (isProfessor) {
+          destino = '/professor';
+        } else if (isAluno && !usuario.perfil_completo) {
+          destino = '/aluno/completar-perfil';
+        }
 
         navigate(destino, { replace: true });
       })
