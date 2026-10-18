@@ -1,43 +1,64 @@
+import logging
+import logging
+import pathlib
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
-import os
-from dotenv import load_dotenv
+from sqlmodel import select
+
+from config.security import SecurityConfig
+from config.logging_config import setup_logging
 from routes.atendimentos import atendimento, atendimento_prof
 from routes.usuarios import usuarios
 from routes.alunos import alunos
 from fastapi.staticfiles import StaticFiles
 from deps.deps import lifespan, SessionDep
-from sqlmodel import select
+from deps.auth_middleware import JWTAuthMiddleware
 from models.users.user import Usuario
 from models.users.aluno import Aluno
 from models.users.professor import Professor
+from models.users.mediador import Mediador
 from services.usuario_service import UsuarioService
-
 
 load_dotenv()
 
-# Configurações do cliente OAuth2 do SUAP
-CLIENT_ID     = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-REDIRECT_URI  = os.getenv("REDIRECT_URI")
+logger = setup_logging()
+logger = logging.getLogger(__name__)
 
-SUAP_TOKEN_URL   = os.getenv("SUAP_TOKEN_URL")
+try:
+    SecurityConfig.validate_all()
+except RuntimeError as e:
+    logger.critical(f"Erro na configuração de segurança: {e}")
+    raise
+
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
+SUAP_TOKEN_URL = os.getenv("SUAP_TOKEN_URL")
 SUAP_PROFILE_URL = os.getenv("SUAP_PROFILE_URL")
 
+app = FastAPI(lifespan=lifespan, title="POAS API", version="1.0.0")
 
-app = FastAPI(lifespan=lifespan)
+allowed_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173",
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[o.strip() for o in allowed_origins if o.strip()],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
-from routes import notificacoes, professores, solicitacao
+app.add_middleware(JWTAuthMiddleware)
+
+# Routers
+from routes import notificacoes, professores, solicitacao, chat, admin
 
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(atendimento_prof.router, prefix="/api")
@@ -46,18 +67,12 @@ app.include_router(alunos.router, prefix="/api")
 app.include_router(notificacoes.router, prefix="/api")
 app.include_router(professores.router, prefix="/api")
 app.include_router(solicitacao.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
-from routes import pets
-app.include_router(pets.router, prefix="/api")
-
-# Serve a pasta de uploads estaticamente
-import pathlib
-_UPLOADS_PETS = pathlib.Path(__file__).parent / "uploads" / "pets"
-_UPLOADS_PETS.mkdir(parents=True, exist_ok=True)
-app.mount("/api/pets/imagem", StaticFiles(directory=str(_UPLOADS_PETS)), name="imagens_pets")
-
-
-from models.users.mediador import Mediador
+uploads_laudos = pathlib.Path(__file__).parent / "uploads" / "laudos"
+uploads_laudos.mkdir(parents=True, exist_ok=True)
+app.mount("/api/uploads/laudos", StaticFiles(directory=str(uploads_laudos)), name="uploads_laudos")
 
 
 class AuthCode(BaseModel):
@@ -87,36 +102,27 @@ def _to_bool(value):
     return False
 
 
-def _detectar_pnee(perfil: dict):
-    if not isinstance(perfil, dict):
+def _detect_special_needs(profile: dict):
+    if not isinstance(profile, dict):
         return False
 
-    chaves = [
-        "necessidades_especiais",
-        "necessidades_educacionais_especiais",
-        "pnee",
-        "pne",
-        "tem_pnee",
-        "tem_necessidade_especial",
-        "possui_necessidade_especial",
-        "necessidade_especial",
-        "pcd",
-        "pessoa_com_deficiencia",
-        "pessoa_com_deficiencia_ou_necessidade_especial",
-        "deficiencia",
-        "tem_deficiencia",
-        "tipo_deficiencia",
-        "tipo_necessidade",
-        "aluno_pnee",
-        "is_pnee",
+    keys = [
+        "necessidades_especiais", "necessidades_educacionais_especiais", "pnee", "pne",
+        "tem_pnee", "tem_necessidade_especial", "possui_necessidade_especial",
+        "necessidade_especial", "pcd", "pessoa_com_deficiencia",
+        "pessoa_com_deficiencia_ou_necessidade_especial", "deficiencia", "tem_deficiencia",
+        "tipo_deficiencia", "tipo_necessidade", "aluno_pnee", "is_pnee",
     ]
 
-    for chave in chaves:
-        if chave in perfil:
-            return _to_bool(perfil.get(chave))
+    for key in keys:
+        if key in profile:
+            return _to_bool(profile.get(key))
 
-    for valor in perfil.values():
-        if isinstance(valor, str) and any(token in valor.lower() for token in ["pne", "pessoa com", "pcd", "deficien", "necessidade educacional", "necessidade especial"]):
+    for value in profile.values():
+        if isinstance(value, str) and any(
+            token in value.lower()
+            for token in ["pne", "pessoa com", "pcd", "deficien", "necessidade educacional", "necessidade especial"]
+        ):
             return True
 
     return False
@@ -129,94 +135,73 @@ def login_local(payload: LoginInput, session: SessionDep):
 
 @app.post("/api/auth/suap")
 async def auth_suap(payload: AuthCode, session: SessionDep):
-    print(f"\n[SUAP] Code recebido: {payload.code[:20]}...")
+    logger.info("Iniciando autenticação SUAP")
 
     async with httpx.AsyncClient() as client:
-
-        # Realizamos a troca do código de autorização pelo token de acesso
         token_payload = {
-            "grant_type":    "authorization_code",
-            "code":          payload.code,
-            "client_id":     CLIENT_ID,
+            "grant_type": "authorization_code",
+            "code": payload.code,
+            "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
-            "redirect_uri":  REDIRECT_URI,
+            "redirect_uri": REDIRECT_URI,
         }
-        print(f"[SUAP] Enviando para {SUAP_TOKEN_URL}")
-        print(f"[SUAP] redirect_uri={REDIRECT_URI} | client_id={CLIENT_ID[:10]}...")
 
         token_response = await client.post(SUAP_TOKEN_URL, data=token_payload)
-
-        print(f"[SUAP] Token status: {token_response.status_code}")
-        print(f"[SUAP] Token body: {token_response.text[:500]}")
-
-        if token_response.status_code != 200:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Falha ao obter token do SUAP: {token_response.text}",
-            )
-
-        access_token = token_response.json().get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=400, detail="access_token não retornado pelo SUAP.")
-
-        print(f"[SUAP] access_token obtido: {access_token[:20]}...")
-
-        # Buscamos os dados de perfil testando endpoints e formatos de cabeçalhos alternativos
-        print(f"[SUAP] Buscando perfil em {SUAP_PROFILE_URL}")
+        logger.debug(f"Token response status: {token_response.status_code}")
         
-        profile_response = None
-        SUAP_RH_EU = os.getenv("SUAP_RH_EU")
+        if token_response.status_code != 200:
+            logger.warning(f"Falha ao obter token SUAP: {token_response.status_code} - {token_response.text[:500]}")
+            raise HTTPException(status_code=400, detail="Falha ao obter token do SUAP")
+
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+        logger.debug(f"Token response keys: {token_data.keys()}")
+        
+        if not access_token:
+            logger.warning(f"access_token não retornado pelo SUAP. Response: {token_data}")
+            raise HTTPException(status_code=400, detail="Token inválido do SUAP")
+
+        suap_rh_eu = os.getenv("SUAP_RH_EU")
         base_profile = SUAP_PROFILE_URL or "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
         
-        # Testamos combinações de URLs e esquemas (Bearer/JWT) pois variam entre as versões do SUAP
-        tentativas = [
+        attempts = [
             {"url": base_profile, "auth": f"Bearer {access_token}"},
             {"url": base_profile, "auth": f"JWT {access_token}"},
-            {"url": base_profile.rstrip("/"), "auth": f"Bearer {access_token}"},
-            {"url": base_profile.rstrip("/"), "auth": f"JWT {access_token}"},
         ]
-        if SUAP_RH_EU:
-            tentativas.extend([
-                {"url": SUAP_RH_EU, "auth": f"Bearer {access_token}"},
-                {"url": SUAP_RH_EU, "auth": f"JWT {access_token}"},
-                {"url": SUAP_RH_EU.rstrip("/"), "auth": f"Bearer {access_token}"},
-                {"url": SUAP_RH_EU.rstrip("/"), "auth": f"JWT {access_token}"},
+        if suap_rh_eu:
+            attempts.extend([
+                {"url": suap_rh_eu, "auth": f"Bearer {access_token}"},
+                {"url": suap_rh_eu, "auth": f"JWT {access_token}"},
             ])
         
-        for i, tent in enumerate(tentativas):
+        logger.debug(f"Tentando {len(attempts)} URLs para perfil")
+        profile_response = None
+        last_error = None
+        for i, attempt in enumerate(attempts):
             try:
-                print(f"[SUAP] Tentativa {i+1}: URL={tent['url']} | Auth={tent['auth'][:15]}...")
+                url_tentativa = attempt["url"].rstrip("/")
+                logger.debug(f"Tentativa {i+1}: GET {url_tentativa}")
                 response = await client.get(
-                    tent["url"],
-                    headers={"Authorization": tent["auth"]},
+                    url_tentativa,
+                    headers={"Authorization": attempt["auth"]},
+                    timeout=5.0,
+                    follow_redirects=True,
                 )
-                print(f"[SUAP] Resposta status: {response.status_code}")
+                logger.debug(f"Tentativa {i+1} - Status: {response.status_code}")
                 if response.status_code == 200:
                     profile_response = response
+                    logger.debug(f"Perfil obtido com sucesso na tentativa {i+1}")
                     break
+                last_error = f"Status {response.status_code}: {response.text[:200]}"
             except Exception as e:
-                print(f"[SUAP] Erro na tentativa {i+1}: {e}")
+                logger.debug(f"Tentativa {i+1} falhou com erro: {e}")
+                last_error = str(e)
 
-        if not profile_response:
-            # Fallback final se tudo falhar para capturar e expor o erro real
-            profile_response = await client.get(
-                SUAP_PROFILE_URL,
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-
-        print(f"[SUAP] Perfil status final: {profile_response.status_code}")
-        print(f"[SUAP] Perfil content-type: {profile_response.headers.get('content-type', 'N/A')}")
-        print(f"[SUAP] Perfil body (300 chars): {profile_response.text[:300]}")
-
-        if profile_response.status_code != 200:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Falha ao buscar perfil do SUAP: {profile_response.text[:500]}",
-            )
+        if not profile_response or profile_response.status_code != 200:
+            logger.warning(f"Falha ao buscar perfil SUAP. Último erro: {last_error}")
+            raise HTTPException(status_code=400, detail="Falha ao buscar perfil do SUAP")
 
         perfil = profile_response.json()
-        print(f"[SUAP] Chaves do perfil: {perfil.keys()}")
-        print(f"[SUAP] Objeto perfil completo: {perfil}")
 
     nome = perfil.get("nome_usual") or perfil.get("nome")
     nome_completo = perfil.get("nome_registro") or perfil.get("nome")
@@ -230,14 +215,12 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     )
     tipo_vinculo = perfil.get("tipo_vinculo") or perfil.get("tipo_usuario")
     foto = perfil.get("foto")
-    necessidades_especiais = _detectar_pnee(perfil)
+    necessidades_especiais = _detect_special_needs(perfil)
 
     if not matricula:
-        raise HTTPException(status_code=400, detail="Matrícula não encontrada no perfil do SUAP.")
+        raise HTTPException(status_code=400, detail="Matrícula não encontrada no perfil do SUAP")
 
-    # Verifica se o usuário já existe no banco
     db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
-
     vinculo_lower = (tipo_vinculo or "").lower()
     is_aluno = "aluno" in vinculo_lower
 
@@ -261,32 +244,36 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         elif "professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower:
             session.add(Professor(id=db_user.id))
         session.commit()
-    elif is_aluno:
-        aluno_existente = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
-        if not aluno_existente:
-            session.add(Aluno(
-                id=db_user.id,
-                perfil_completo=False,
-                necessidades_especiais=necessidades_especiais,
-            ))
-            session.commit()
-    elif ("professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower):
-        prof_existente = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
-        if not prof_existente:
-            session.add(Professor(id=db_user.id))
-            session.commit()
+    else:
+        if is_aluno:
+            aluno_existente = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
+            if not aluno_existente:
+                session.add(Aluno(
+                    id=db_user.id,
+                    perfil_completo=False,
+                    necessidades_especiais=necessidades_especiais,
+                ))
+                session.commit()
+        elif "professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower:
+            prof_existente = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
+            if not prof_existente:
+                session.add(Professor(id=db_user.id))
+                session.commit()
 
-    # Sincronização automática dos dados do Professor via SUAP (diários e turmas)
-    is_professor = ("professor" in vinculo_lower or "servidor" in vinculo_lower or "docente" in vinculo_lower)
+    is_professor = not is_aluno and any(x in vinculo_lower for x in ["professor", "servidor", "docente"])
     if is_professor:
         try:
             from datetime import date
+            from models.turma import Turma
+            from models.disciplina import Disciplina
+            from models.associativas.professor_turma import ProfessorTurma
+            from models.associativas.professor_disciplina import ProfessorDisciplina
+
             ano_atual = date.today().year
-           
             diarios = []
+            
             for sem in [1, 2]:
                 diarios_url = f"https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-diarios/{ano_atual}/{sem}/"
-                print(f"[SUAP] Sincronizando diários do professor: {diarios_url}")
                 async with httpx.AsyncClient() as diario_client:
                     r_diario = await diario_client.get(
                         diarios_url,
@@ -300,11 +287,6 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
             prof_obj = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
             if prof_obj and diarios:
-                from models.turma import Turma
-                from models.disciplina import Disciplina
-                from models.associativas.professor_turma import ProfessorTurma
-                from models.associativas.professor_disciplina import ProfessorDisciplina
-
                 for d in diarios:
                     nome_disc = d.get("componente_curricular") or d.get("disciplina") or d.get("descricao")
                     codigo_turma = d.get("turma") or d.get("codigo_turma") or d.get("sigla")
@@ -344,11 +326,10 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
                             session.add(ProfessorTurma(professor_id=prof_obj.id, turma_id=db_turma.id))
 
                 session.commit()
-                print(f"[SUAP] {len(diarios)} diários sincronizados com sucesso para o professor {db_user.nome}!")
+                logger.info(f"Diários sincronizados para professor {db_user.nome}")
         except Exception as e_diarios:
-            print(f"[SUAP] Aviso: Não foi possível sincronizar diários automaticamente: {e_diarios}")
+            logger.warning(f"Não foi possível sincronizar diários: {e_diarios}")
 
-    # Busca perfil acadêmico se for aluno
     aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
     perfil_completo = True
     turma_id = None
@@ -359,64 +340,71 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     curso_id = None
     curso_nome = None
     ano_letivo = None
-    necessidades_especiais = bool(necessidades_especiais)
 
     if aluno:
         from data.cursos import get_curso
         from data.turmas import get_turma as _get_turma
+        from data.turmas import ano_letivo_da_turma as _ano_letivo_da_turma
+
         perfil_completo = True
         aluno.perfil_completo = True
         turma_id = aluno.turma_id
         curso_id = aluno.curso_id
         ano_letivo = aluno.ano_letivo
+
         if aluno.necessidades_especiais != necessidades_especiais:
             aluno.necessidades_especiais = necessidades_especiais
             session.add(aluno)
             session.commit()
-        necessidades_especiais = aluno.necessidades_especiais
-        # Enriquece com dados da turma se disponível
+
         turma = _get_turma(turma_id) if turma_id else None
         if turma:
             turma_nome = turma["nome"]
             turma_codigo = turma["codigo"]
             turno = turma["turno"]
             turno_label = turma["turno_label"]
-            # turma é a fonte primária de curso
             curso_id = turma["curso_id"]
-        # Deriva ano_letivo automaticamente pela turma
-        from data.turmas import ano_letivo_da_turma as _ano_letivo_da_turma
+
         ano_letivo = _ano_letivo_da_turma(turma_id) if turma_id else aluno.ano_letivo
         curso = get_curso(curso_id) if curso_id else None
         curso_nome = curso["nome"] if curso else None
+
         if foto and not aluno.foto_suap:
             aluno.foto_suap = foto
             session.add(aluno)
             session.commit()
-    else:
-        perfil_completo = True
 
     from data.cursos import get_disciplinas as _get_disciplinas
+    from deps.auth import create_access_token
+    from repositories.usuario_repository import UsuarioRepository
+
     disciplinas = _get_disciplinas(curso_id, ano_letivo) if curso_id and ano_letivo else []
     foto_resposta = foto or (aluno.foto_suap if aluno else None)
 
-    # Retornamos apenas as chaves necessárias estruturadas de forma consistente
+    role = "aluno" if is_aluno else UsuarioRepository(session).get_tipo_usuario(db_user.id)
+    token = create_access_token(db_user, role)
+
     return {
-        "nome":                   nome,
-        "nome_completo":          nome_completo,
-        "matricula":              matricula,
-        "email":                  db_user.email,
-        "tipo_vinculo":           tipo_vinculo,
-        "foto":                   foto_resposta,
-        "is_aluno":               is_aluno,
-        "perfil_completo":        perfil_completo if is_aluno else True,
-        "turma_id":               turma_id,
-        "turma_nome":             turma_nome,
-        "turma_codigo":           turma_codigo,
-        "turno":                  turno,
-        "turno_label":            turno_label,
-        "curso_id":               curso_id,
-        "curso_nome":             curso_nome,
-        "ano_letivo":             ano_letivo,
+        "id": db_user.id,
+        "nome": nome,
+        "nome_completo": nome_completo,
+        "matricula": matricula,
+        "email": db_user.email,
+        "tipo_vinculo": tipo_vinculo,
+        "foto": foto_resposta,
+        "is_aluno": is_aluno,
+        "perfil_completo": perfil_completo if is_aluno else True,
+        "turma_id": turma_id,
+        "turma_nome": turma_nome,
+        "turma_codigo": turma_codigo,
+        "turno": turno,
+        "turno_label": turno_label,
+        "curso_id": curso_id,
+        "curso_nome": curso_nome,
+        "ano_letivo": ano_letivo,
         "necessidades_especiais": necessidades_especiais,
-        "disciplinas":            disciplinas,
+        "disciplinas": disciplinas,
+        "access_token": token,
+        "token_type": "bearer",
+        "tipo_usuario": role,
     }
