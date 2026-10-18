@@ -72,16 +72,26 @@ class UsuarioService:
         except Exception:
             senha_valida = db_user.senha == senha
 
-        if not senha_valida and db_user.senha != senha:
+        if not senha_valida:
             raise HTTPException(status_code=400, detail="Senha incorreta.")
 
         from models.users.aluno import Aluno
-        from models.users.professor import Professor
+        from deps.auth import create_access_token
 
         tipo_usuario = self.usuario_repository.get_tipo_usuario(db_user.id)
+        if tipo_usuario == "mediador":
+            mediador = self.usuario_repository.get_mediador_by_user_id(db_user.id)
+            if mediador and not mediador.aprovado:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cadastro de mediador aguardando aprovação do administrador.",
+                )
+
         aluno = self.session.exec(
             __import__('sqlmodel').select(Aluno).where(Aluno.id == db_user.id)
         ).first()
+
+        token = create_access_token(db_user, tipo_usuario)
 
         return {
             "id": db_user.id,
@@ -93,6 +103,8 @@ class UsuarioService:
             "necessidades_especiais": aluno.necessidades_especiais if aluno else False,
             "curso": aluno.curso_id if aluno else None,
             "id_turma": aluno.turma_id if aluno else None,
+            "access_token": token,
+            "token_type": "bearer",
         }
 
     def solicitar_mediador(self, payload):
@@ -130,6 +142,7 @@ class UsuarioService:
             id=usuario_novo.id,
             tipo=map_tipo_mediacao(payload.tipoMediacao),
             apoio_descricao=(payload.descricao or "").strip() or None,
+            aprovado=False,
         )
         self.session.add(mediador)
         self.session.commit()

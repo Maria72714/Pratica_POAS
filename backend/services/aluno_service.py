@@ -201,3 +201,63 @@ class AlunoService:
         self.aluno_repository.update(aluno)
 
         return _as_dict(PerfilAlunoResponse(usuario, aluno, foto=foto))
+
+    def listar_laudos_pnee(self):
+        """Retorna lista de alunos que enviaram laudo ou se autodeclararam PNEE para análise do Mediador."""
+        alunos_com_laudo = self.session.exec(
+            select(Aluno).where((Aluno.laudo_path != None) | (Aluno.necessidades_especiais == True))
+        ).all()
+
+        resultado = []
+        for a in alunos_com_laudo:
+            u = self.session.get(Usuario, a.id)
+            if not u:
+                continue
+            turma = get_turma(a.turma_id) if a.turma_id else None
+            curso = get_curso(a.curso_id) if a.curso_id else None
+
+            # Monta URL pública para o laudo
+            url_laudo = None
+            if a.laudo_path:
+                nome_arquivo = Path(a.laudo_path).name
+                url_laudo = f"http://localhost:8000/api/uploads/laudos/{nome_arquivo}"
+
+            resultado.append({
+                "aluno_id": a.id,
+                "nome": u.nome,
+                "email": u.email,
+                "matricula": u.matricula,
+                "turma_nome": turma["nome"] if turma else (a.turma_id or "Não informada"),
+                "curso_nome": curso["nome"] if curso else "Não informado",
+                "necessidades_especiais": a.necessidades_especiais,
+                "laudo_path": a.laudo_path,
+                "url_laudo": url_laudo,
+                "status_pnee": "Aprovado" if a.necessidades_especiais else "Pendente",
+            })
+        return resultado
+
+    def avaliar_laudo_pnee(self, aluno_id: int | str, aprovado: bool):
+        """Permite ao Mediador aprovar ou recusar o status de PNEE do aluno com base no laudo."""
+        aluno = None
+        if isinstance(aluno_id, int):
+            aluno = self.session.get(Aluno, aluno_id)
+        elif isinstance(aluno_id, str):
+            if aluno_id.isdigit():
+                aluno = self.session.get(Aluno, int(aluno_id))
+            if not aluno:
+                u = self.usuario_repository.get_by_matricula(aluno_id)
+                if u:
+                    aluno = self.aluno_repository.get_by_user_id(u.id)
+
+        if not aluno:
+            raise HTTPException(status_code=404, detail="Aluno não encontrado.")
+
+        aluno.necessidades_especiais = aprovado
+        self.aluno_repository.update(aluno)
+
+        u = self.session.get(Usuario, aluno.id)
+        return {
+            "message": f"Status PNEE do aluno {u.nome if u else ''} atualizado para {'Aprovado' if aprovado else 'Recusado'}.",
+            "aluno_id": aluno.id,
+            "necessidades_especiais": aluno.necessidades_especiais
+        }
