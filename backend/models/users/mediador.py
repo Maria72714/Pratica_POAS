@@ -10,5 +10,6 @@ class Mediador(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, foreign_key="usuarios.id", ondelete="CASCADE")
     tipo: TipoMediador
     apoio_descricao: str | None = Field(max_length=250)
+    aprovado: bool = Field(default=True)
 
     usuario: Optional["Usuario"] = Relationship(back_populates="mediador")

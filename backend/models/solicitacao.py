@@ -1,3 +1,4 @@
+from datetime import date
 from sqlmodel import SQLModel, Field, table
 from models.enums import StatusSolicitacao
 
@@ -9,4 +10,5 @@ class Solicitacao(SQLModel, table=True):
     id_disciplina: int = Field(foreign_key="disciplinas.id", ondelete="CASCADE")
     tipo_suporte: str = Field(max_length=100)
     descricao: str | None = Field(max_length=500, default=None)
+    data_preferencial: date | None = Field(default=None)
     status: StatusSolicitacao = Field(default=StatusSolicitacao.PENDENTE)
