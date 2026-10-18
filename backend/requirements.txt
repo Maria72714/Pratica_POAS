@@ -26,6 +26,7 @@ pydantic_core==2.46.4
 PyMySQL==1.2.0
 python-dotenv==1.2.3
 python-multipart==0.0.32
+pyjwt==2.15.1
 SQLAlchemy==2.0.51
 sqlmodel==0.0.39
 starlette==1.6.0

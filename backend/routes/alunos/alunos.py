@@ -1,6 +1,9 @@
+from typing import Annotated
+
 from fastapi import APIRouter, UploadFile, File, Form
 from pydantic import BaseModel
 
+from deps.auth import AuthUser, assert_self_or_roles, get_current_user, require_roles
 from deps.deps import SessionDep
 from services.aluno_service import AlunoService
 
@@ -52,8 +55,37 @@ def sugerir_turma(matricula: str, turno: str):
     return AlunoService(session=None).sugerir_turma(matricula, turno)
 
 
+MediadorOuAdmin = Annotated[AuthUser, require_roles("mediador", "admin")]
+
+
+@router.get("/alunos/laudos")
+def listar_laudos_pnee(session: SessionDep, current_user: MediadorOuAdmin):
+    """Lista todos os alunos que enviaram laudo ou solicitaram atendimento PNEE."""
+    return AlunoService(session).listar_laudos_pnee()
+
+
+class AvaliarLaudoInput(BaseModel):
+    aprovado: bool
+
+
+@router.patch("/alunos/{aluno_id}/avaliar-laudo")
+def avaliar_laudo_pnee(
+    aluno_id: str,
+    payload: AvaliarLaudoInput,
+    session: SessionDep,
+    current_user: MediadorOuAdmin,
+):
+    """Aprova ou recusa o status de PNEE do aluno pelo Mediador."""
+    return AlunoService(session).avaliar_laudo_pnee(aluno_id=aluno_id, aprovado=payload.aprovado)
+
+
 @router.get("/alunos/perfil/{matricula}", response_model=PerfilAlunoResponse, response_model_exclude_none=True)
-def obter_perfil(matricula: str, session: SessionDep):
+def obter_perfil(
+    matricula: str,
+    session: SessionDep,
+    current: Annotated[AuthUser, get_current_user],
+):
+    assert_self_or_roles(current, matricula, "admin", "mediador", "professor")
     return AlunoService(session).obter_perfil(matricula)
 
 

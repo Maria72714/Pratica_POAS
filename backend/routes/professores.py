@@ -230,3 +230,163 @@ def complementar_perfil_professor(
     }
 
 
+class HorarioProfessorInput(BaseModel):
+    dia_semana: str
+    hora_inicio: str
+    hora_fim: str
+    local: Optional[str] = "Sala de Professores"
+    modalidade: Optional[str] = "Presencial"
+    disciplina: Optional[str] = "Todas as disciplinas"
+
+
+@router.get("/{matricula_ou_id}/horarios")
+def listar_horarios_professor(matricula_ou_id: str, session: SessionDep):
+    """Lista as janelas de horários disponíveis para atendimento cadastradas pelo professor."""
+    from models.professor_horario import ProfessorHorario
+
+    db_user = None
+    if matricula_ou_id.isdigit():
+        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
+    if not db_user:
+        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Professor não encontrado.")
+
+    prof = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
+    if not prof:
+        prof = Professor(id=db_user.id)
+        session.add(prof)
+        session.commit()
+        session.refresh(prof)
+
+    horarios = session.exec(
+        select(ProfessorHorario)
+        .where(ProfessorHorario.id_professor == prof.id)
+        .order_by(ProfessorHorario.id)
+    ).all()
+
+    # Se ainda não possui horários cadastrados, adiciona sementes padrão
+    if not horarios:
+        sementes = [
+            ProfessorHorario(
+                id_professor=prof.id,
+                dia_semana="Terça-feira",
+                hora_inicio="14:00",
+                hora_fim="16:00",
+                local="Sala de Professores - Bloco B",
+                modalidade="Presencial",
+                disciplina="Todas as disciplinas",
+                ativo=True
+            ),
+            ProfessorHorario(
+                id_professor=prof.id,
+                dia_semana="Quinta-feira",
+                hora_inicio="10:00",
+                hora_fim="12:00",
+                local="Laboratório de Informática 02",
+                modalidade="Presencial",
+                disciplina="Todas as disciplinas",
+                ativo=True
+            ),
+        ]
+        for s in sementes:
+            session.add(s)
+        session.commit()
+        horarios = sementes
+
+    return [
+        {
+            "id": h.id,
+            "id_professor": h.id_professor,
+            "dia_semana": h.dia_semana,
+            "hora_inicio": h.hora_inicio,
+            "hora_fim": h.hora_fim,
+            "local": h.local,
+            "modalidade": h.modalidade,
+            "disciplina": h.disciplina,
+            "ativo": h.ativo,
+        }
+        for h in horarios
+    ]
+
+
+@router.post("/{matricula_ou_id}/horarios")
+def adicionar_horario_professor(matricula_ou_id: str, dados: HorarioProfessorInput, session: SessionDep):
+    """Cadastra um novo horário de atendimento para o professor."""
+    from models.professor_horario import ProfessorHorario
+
+    db_user = None
+    if matricula_ou_id.isdigit():
+        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
+    if not db_user:
+        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Professor não encontrado.")
+
+    prof = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
+    if not prof:
+        prof = Professor(id=db_user.id)
+        session.add(prof)
+        session.commit()
+        session.refresh(prof)
+
+    novo_horario = ProfessorHorario(
+        id_professor=prof.id,
+        dia_semana=dados.dia_semana.strip(),
+        hora_inicio=dados.hora_inicio.strip(),
+        hora_fim=dados.hora_fim.strip(),
+        local=dados.local.strip() if dados.local else "Sala de Professores",
+        modalidade=dados.modalidade.strip() if dados.modalidade else "Presencial",
+        disciplina=dados.disciplina.strip() if dados.disciplina else "Todas as disciplinas",
+        ativo=True,
+    )
+    session.add(novo_horario)
+    session.commit()
+    session.refresh(novo_horario)
+
+    return {
+        "id": novo_horario.id,
+        "id_professor": novo_horario.id_professor,
+        "dia_semana": novo_horario.dia_semana,
+        "hora_inicio": novo_horario.hora_inicio,
+        "hora_fim": novo_horario.hora_fim,
+        "local": novo_horario.local,
+        "modalidade": novo_horario.modalidade,
+        "disciplina": novo_horario.disciplina,
+        "ativo": novo_horario.ativo,
+        "message": "Horário de atendimento cadastrado com sucesso!"
+    }
+
+
+@router.delete("/{matricula_ou_id}/horarios/{horario_id}")
+def remover_horario_professor(matricula_ou_id: str, horario_id: int, session: SessionDep):
+    """Remove um horário de atendimento."""
+    from models.professor_horario import ProfessorHorario
+
+    h = session.get(ProfessorHorario, horario_id)
+    if not h:
+        raise HTTPException(status_code=404, detail="Horário não encontrado.")
+
+    session.delete(h)
+    session.commit()
+    return {"message": "Horário removido com sucesso."}
+
+
+@router.patch("/{matricula_ou_id}/horarios/{horario_id}/toggle")
+def alternar_horario_professor(matricula_ou_id: str, horario_id: int, session: SessionDep):
+    """Alterna entre ativo/inativo um horário de atendimento."""
+    from models.professor_horario import ProfessorHorario
+
+    h = session.get(ProfessorHorario, horario_id)
+    if not h:
+        raise HTTPException(status_code=404, detail="Horário não encontrado.")
+
+    h.ativo = not h.ativo
+    session.add(h)
+    session.commit()
+    return {"id": h.id, "ativo": h.ativo}
+
+
+
