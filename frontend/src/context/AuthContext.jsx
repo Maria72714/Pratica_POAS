@@ -21,6 +21,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const setAuthenticatedUser = (userData) => {
+    localStorage.setItem('usuario', JSON.stringify(userData));
+    localStorage.setItem('suap_user', JSON.stringify(userData));
     setUser(userData);
     setIsLogged(true);
   };

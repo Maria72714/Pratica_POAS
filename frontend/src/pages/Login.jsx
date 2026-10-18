@@ -6,7 +6,8 @@
 
 import React, { useState } from 'react';
 import { login } from '../services/suapAuth';
-import { loginLocal } from '../services/api';
+import { loginLocal, salvarUsuarioLocal } from '../services/api';
+import { setAccessToken } from '../services/httpClient';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 
@@ -33,25 +34,29 @@ const Login = () => {
       const data = await loginLocal(matricula, senha);
 
       const userData = {
-        id: data.matricula,
+        id: data.id,
         matricula: data.matricula,
         nome: data.nome,
         email: data.email,
         foto: null,
         campus: 'Caicó',
         tipo: data.tipo_usuario,
-        tipoOriginal: data.tipo_usuario,
+        tipo_usuario: data.tipo_usuario,
         necessidades_especiais: data.necessidades_especiais ?? false,
         curso: data.curso ?? null,
         id_turma: data.id_turma ?? null,
       };
 
-      localStorage.setItem('suap_user', JSON.stringify(userData));
-      localStorage.setItem('suap_access_token', 'dev-local');
+      if (data.access_token) {
+        setAccessToken(data.access_token);
+      }
+      salvarUsuarioLocal(userData);
       localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
 
       setAuthenticatedUser(userData);
-      if (data.tipo_usuario === 'mediador') {
+      if (data.tipo_usuario === 'admin') {
+        navigate('/admin', { replace: true });
+      } else if (data.tipo_usuario === 'mediador') {
         navigate('/mediador', { replace: true });
       } else if (data.tipo_usuario === 'professor') {
         navigate('/professor', { replace: true });

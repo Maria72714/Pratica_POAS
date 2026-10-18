@@ -1,65 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { abrirNoGoogleCalendar } from '../../utils/googleCalendar';
+import CalendarioAtendimentos from '../../components/CalendarioAtendimentos';
+import { buscarAtendimentos, editarAtendimento } from '../../services/aluno/agendamento';
+import { buscarSolicitacoes, editarSolicitacao } from '../../services/aluno/solicitacao';
+import ChatAtendimento from '../../components/ChatAtendimento';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 const Agendamentos = () => {
-  // Dados iniciais simulando o retorno do banco de dados
-  const [agendamentos, setAgendamentos] = useState([
-    {
-      id: 1,
-      disciplina: 'Programação Orientada a Objeto',
-      tipo: 'TAL',
-      status: 'Confirmado',
-      professor: 'Prof. Roberto Santos',
-      data: '28 Abr 2026',
-      horario: '14:00 - 15:00',
-      local: 'Sala CA-01',
-      assunto: 'Dúvidas sobre herança e polimorfismo'
-    },
-    {
-      id: 2,
-      disciplina: 'Banco de Dados',
-      tipo: 'TAL',
-      status: 'Pendente',
-      professor: 'Profa. Carla Oliveira',
-      data: '29 Abr 2026',
-      horario: '10:00 - 11:00',
-      local: 'Laboratório de Informática 2',
-      assunto: 'Normalização de banco de dados'
-    },
-    {
-      id: 3,
-      disciplina: 'Estrutura de Dados',
-      tipo: 'TAL',
-      status: 'Concluído',
-      professor: 'Prof. Roberto Santos',
-      data: '15 Mar 2026',
-      horario: '08:00 - 09:00',
-      local: 'Sala CA-02',
-      assunto: 'Arvores binárias e recursão'
-    },
-    {
-      id: 4,
-      disciplina: 'Redes de Computadores',
-      tipo: 'TAL',
-      status: 'Concluído',
-      professor: 'Prof. Marcos Lima',
-      data: '10 Fev 2026',
-      horario: '16:00 - 17:00',
-      local: 'Laboratório de Redes',
-      assunto: 'Configuração de sub-redes IPv4'
-    }
-  ]);
+  const [agendamentos, setAgendamentos] = useState([]);
 
   const [abaAtiva, setAbaAtiva] = useState('proximos');
+  const [modoVisualizacao, setModoVisualizacao] = useState('calendario'); // 'calendario' ou 'lista'
+  const [chatAtendimentoId, setChatAtendimentoId] = useState(null);
+  const [chatTitulo, setChatTitulo] = useState('Chat do Atendimento');
 
-  // Cancela o agendamento localmente sem precisar de backend
-  const handleCancelarAgendamento = (id) => {
-    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
+  useEffect(() => {
+    const dadosUsuario = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    if (!dadosUsuario) return;
+    try {
+      const usuario = JSON.parse(dadosUsuario);
+      if (!usuario?.matricula) return;
+
+      Promise.allSettled([
+        buscarAtendimentos(usuario.matricula),
+        buscarSolicitacoes(usuario.matricula)
+      ]).then(([resAtend, resSol]) => {
+        const listaAtend = resAtend.status === 'fulfilled' && Array.isArray(resAtend.value) ? resAtend.value : [];
+        const listaSol = resSol.status === 'fulfilled' && Array.isArray(resSol.value) ? resSol.value : [];
+
+        const formatados = [];
+
+        listaAtend.forEach((item) => {
+          formatados.push({
+            id: `atend-${item.id}`,
+            disciplina: item.assunto?.split('|')?.[0]?.replace('Disciplina:', '')?.replace('TAI -', '')?.trim() || item.disciplina || 'Atendimento',
+            tipo: item.tipo_atendimento || 'TAI',
+            status: item.status === 'Agendado' || item.status === 'AGENDADO' ? 'Confirmado' : (item.status === 'CONCLUIDO' || item.status === 'Concluído' ? 'Concluído' : item.status),
+            data: item.data_atendimento ? String(item.data_atendimento).split('T')[0] : '',
+            horario: item.horario || 'Horário agendado',
+            local: item.sala || item.local || 'Campus IFRN',
+            assunto: item.assunto || item.relatorio || ''
+          });
+        });
+
+        listaSol.forEach((item) => {
+          const dataSol = item.data_preferencial || item.data || item.data_atendimento;
+          if (dataSol) {
+            const dataIso = String(dataSol).split('T')[0];
+            const statusNorm = (item.status === 'Aprovado' || item.status === 'APROVADA')
+              ? 'Confirmado'
+              : (item.status === 'Pendente' || item.status === 'PENDENTE' ? 'Pendente' : item.status);
+
+            const jaExiste = formatados.some((f) => f.data === dataIso && f.disciplina.toLowerCase().includes((item.disciplina || item.disciplina_nome || '').toLowerCase()));
+            if (!jaExiste) {
+              formatados.push({
+                id: `sol-${item.id}`,
+                disciplina: item.disciplina || item.disciplina_nome || 'Atendimento TAI',
+                tipo: 'TAI',
+                status: statusNorm,
+                data: dataIso,
+                horario: 'Horário preferencial',
+                local: 'Apoio TAI',
+                assunto: item.descricao || item.tipo_suporte || 'Solicitação TAI'
+              });
+            }
+          }
+        });
+
+        setAgendamentos(formatados);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const handleCancelarAgendamento = async (id) => {
+    if (!window.confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+
+    try {
+      const idStr = String(id);
+      if (idStr.startsWith('atend-')) {
+        const atendimentoId = idStr.replace('atend-', '');
+        await editarAtendimento(atendimentoId, { status: 'Cancelado' });
+      } else if (idStr.startsWith('sol-')) {
+        const solicitacaoId = idStr.replace('sol-', '');
+        await editarSolicitacao(solicitacaoId, { status: 'Cancelado' });
+      }
       setAgendamentos((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, status: 'Cancelado' } : item
-        )
+        prev.map((item) => (item.id === id ? { ...item, status: 'Cancelado' } : item))
       );
+    } catch (e) {
+      console.error(e);
+      alert('Não foi possível cancelar. Tente novamente.');
     }
   };
 
@@ -81,17 +114,55 @@ const Agendamentos = () => {
     ? Math.round((concluidosCount / totalAgendamentos) * 100) 
     : 0;
 
+  const handleAbrirChat = (item) => {
+    if (!item) return;
+    let numId = null;
+    if (typeof item.id === 'number') numId = item.id;
+    else if (typeof item.id === 'string') {
+      const clean = item.id.replace('atend-', '').replace('sol-', '');
+      if (clean && !isNaN(clean)) numId = parseInt(clean, 10);
+    }
+    if (numId) {
+      setChatAtendimentoId(numId);
+      setChatTitulo(item.disciplina || item.assunto || 'Atendimento TAI');
+    }
+  };
+
+  const toggleModo = (
+    <div className="flex items-center bg-white/15 p-1 rounded-xl">
+      <button
+        type="button"
+        onClick={() => setModoVisualizacao('calendario')}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          modoVisualizacao === 'calendario'
+            ? 'bg-white text-emerald-800 shadow-xs'
+            : 'text-white/90 hover:text-white'
+        }`}
+      >
+        Calendário
+      </button>
+      <button
+        type="button"
+        onClick={() => setModoVisualizacao('lista')}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          modoVisualizacao === 'lista'
+            ? 'bg-white text-emerald-800 shadow-xs'
+            : 'text-white/90 hover:text-white'
+        }`}
+      >
+        Lista
+      </button>
+    </div>
+  );
+
   return (
-    <div className="flex-1 bg-gray-50 p-8 overflow-y-auto">
-      <div className="max-w-5xl mx-auto space-y-6">
-        
-        {/* Título */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Meus Agendamentos</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Gerencie seus atendimentos agendados no Centro de Aprendizagem
-          </p>
-        </div>
+    <PageShell>
+      <PageHeader
+        role="aluno"
+        title="Meus Agendamentos"
+        subtitle="Acompanhe seus horários integrados ao calendário acadêmico do IFRN."
+        actions={toggleModo}
+      />
 
         {/* Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -109,40 +180,47 @@ const Agendamentos = () => {
           </div>
         </div>
 
-        {/* Quadro Principal */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          
-          {/* Navegação entre Abas */}
-          <div className="flex border-b border-gray-100 text-sm font-medium">
-            <button
-              onClick={() => setAbaAtiva('proximos')}
-              className={`flex-1 py-4 text-center border-b-2 transition-colors ${
-                abaAtiva === 'proximos'
-                  ? 'border-emerald-600 text-emerald-600 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Próximos Agendamentos ({proximos.length})
-            </button>
-            <button
-              onClick={() => setAbaAtiva('historico')}
-              className={`flex-1 py-4 text-center border-b-2 transition-colors ${
-                abaAtiva === 'historico'
-                  ? 'border-emerald-600 text-emerald-600 font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Histórico ({historico.length})
-            </button>
-          </div>
+        {/* Visualização de Calendário vs Lista */}
+        {modoVisualizacao === 'calendario' ? (
+          <CalendarioAtendimentos
+            agendamentos={agendamentos}
+            onCancelarAgendamento={handleCancelarAgendamento}
+            onAbrirChat={handleAbrirChat}
+          />
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            
+            {/* Navegação entre Abas */}
+            <div className="flex border-b border-gray-100 text-sm font-medium">
+              <button
+                onClick={() => setAbaAtiva('proximos')}
+                className={`flex-1 py-4 text-center border-b-2 transition-colors ${
+                  abaAtiva === 'proximos'
+                    ? 'border-emerald-600 text-emerald-600 font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Próximos Agendamentos ({proximos.length})
+              </button>
+              <button
+                onClick={() => setAbaAtiva('historico')}
+                className={`flex-1 py-4 text-center border-b-2 transition-colors ${
+                  abaAtiva === 'historico'
+                    ? 'border-emerald-600 text-emerald-600 font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Histórico ({historico.length})
+              </button>
+            </div>
 
-          {/* Conteúdo da Lista */}
-          <div className="p-6 space-y-4">
-            {listaExibida.length === 0 ? (
-              <p className="text-center py-8 text-gray-400 text-sm">
-                Nenhum agendamento encontrado nesta seção.
-              </p>
-            ) : (
+            {/* Conteúdo da Lista */}
+            <div className="p-6 space-y-4">
+              {listaExibida.length === 0 ? (
+                <p className="text-center py-8 text-gray-400 text-sm">
+                  Nenhum agendamento encontrado nesta seção.
+                </p>
+              ) : (
               listaExibida.map((item) => (
                 <div key={item.id} className="border border-gray-200 rounded-xl p-5 space-y-4 bg-white">
                   
@@ -213,11 +291,33 @@ const Agendamentos = () => {
                         </svg>
                         Adicionar ao Google Calendar
                       </button>
+                      {/* Botão de Chat: só para atendimentos reais (prefixo "atend-") */}
+                      {item.id?.toString().startsWith('atend-') && (
+                        <button
+                          onClick={() => {
+                            const numId = parseInt(item.id.replace('atend-', ''), 10);
+                            setChatAtendimentoId(numId);
+                            setChatTitulo(item.disciplina || 'Atendimento TAI');
+                          }}
+                          className={`py-2 px-3 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+                            chatAtendimentoId === parseInt(item.id.replace('atend-', ''), 10)
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                          }`}
+                          title="Abrir chat deste atendimento"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          Chat
+                        </button>
+                      )}
                       <button 
                         onClick={() => handleCancelarAgendamento(item.id)}
                         className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition-colors"
                       >
-                        Cancelar Agendamento
+                        Cancelar
                       </button>
                     </div>
                   )}
@@ -228,9 +328,17 @@ const Agendamentos = () => {
           </div>
 
         </div>
+        )}
 
-      </div>
-    </div>
+      {chatAtendimentoId && (
+        <ChatAtendimento
+          atendimentoId={chatAtendimentoId}
+          titulo={chatTitulo}
+          abertoInicial={true}
+          onFechar={() => setChatAtendimentoId(null)}
+        />
+      )}
+    </PageShell>
   );
 };
 

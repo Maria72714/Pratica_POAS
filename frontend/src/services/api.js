@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000/api';
+import { API_BASE, apiFetch, apiJson, clearAccessToken, setAccessToken } from './httpClient';
 
 function mesclarPerfilUsuario(existing, data) {
   const camposSuap = ['foto', 'nome_completo', 'tipo_vinculo', 'is_aluno'];
@@ -19,8 +19,7 @@ function salvarUsuarioLocal(usuario) {
 export function logoutUsuario() {
   localStorage.removeItem('usuario');
   localStorage.removeItem('suap_user');
-  localStorage.removeItem('suap_access_token');
-  localStorage.removeItem('suap_token_expiry');
+  clearAccessToken();
 }
 
 export async function loginLocal(matricula, senha) {
@@ -30,51 +29,43 @@ export async function loginLocal(matricula, senha) {
     body: JSON.stringify({ matricula, senha }),
   });
 
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erro ao fazer login');
+    throw new Error(data.detail || data.message || 'Erro ao fazer login');
   }
 
-  return response.json();
+  if (data.access_token) {
+    setAccessToken(data.access_token);
+  }
+
+  return data;
 }
 
 export async function fetchCursos() {
-  const res = await fetch(`${API_BASE}/cursos`);
-  if (!res.ok) throw new Error('Erro ao carregar cursos');
-  return res.json();
+  return apiJson('/cursos');
 }
 
 export async function fetchDisciplinas(cursoId, anoLetivo) {
-  const res = await fetch(`${API_BASE}/cursos/${cursoId}/${encodeURIComponent(anoLetivo)}/disciplinas`);
-  if (!res.ok) throw new Error('Erro ao carregar disciplinas');
-  return res.json();
+  return apiJson(`/cursos/${cursoId}/${encodeURIComponent(anoLetivo)}/disciplinas`);
 }
 
 export async function fetchTurmas(anoIngresso) {
-  const url = anoIngresso
-    ? `${API_BASE}/turmas?ano_ingresso=${anoIngresso}`
-    : `${API_BASE}/turmas`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Erro ao carregar turmas');
-  return res.json();
+  const path = anoIngresso ? `/turmas?ano_ingresso=${anoIngresso}` : '/turmas';
+  return apiJson(path);
 }
 
 export async function fetchTurmaSugestao(matricula, turno) {
-  const res = await fetch(
-    `${API_BASE}/turmas/sugestao/${matricula}?turno=${turno}`
-  );
+  const res = await apiFetch(`/turmas/sugestao/${matricula}?turno=${turno}`);
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function fetchPerfilAluno(matricula) {
-  const res = await fetch(`${API_BASE}/alunos/perfil/${matricula}`);
-  if (!res.ok) throw new Error('Erro ao carregar perfil');
-  return res.json();
+  return apiJson(`/alunos/perfil/${matricula}`);
 }
 
 export async function completarPerfil(matricula, formData) {
-  const res = await fetch(`${API_BASE}/alunos/perfil/${matricula}`, {
+  const res = await apiFetch(`/alunos/perfil/${matricula}`, {
     method: 'POST',
     body: formData,
   });
@@ -87,44 +78,43 @@ export async function completarPerfil(matricula, formData) {
 }
 
 export async function solicitarAcessoMediador(payload) {
-  const res = await fetch(`${API_BASE}/usuarios/mediador/solicitar`, {
+  const response = await fetch(`${API_BASE}/usuarios/mediador/solicitar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || 'Erro ao enviar solicitação');
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || 'Erro ao enviar solicitação');
   return data;
 }
 
 export async function fetchNotificacoes(matriculaOuId) {
-  const res = await fetch(`${API_BASE}/notificacoes/${encodeURIComponent(matriculaOuId)}`);
+  const res = await apiFetch(`/notificacoes/${encodeURIComponent(matriculaOuId)}`);
   if (!res.ok) return [];
   return res.json();
 }
 
 export async function marcarNotificacaoComoLida(notificacaoId) {
-  const res = await fetch(`${API_BASE}/notificacoes/${notificacaoId}/ler`, {
-    method: 'PUT',
-  });
-  if (!res.ok) throw new Error('Erro ao marcar notificação como lida');
-  return res.json();
+  return apiJson(`/notificacoes/${notificacaoId}/ler`, { method: 'PUT' });
 }
 
 export async function marcarTodasNotificacoesComoLidas(matriculaOuId) {
-  const res = await fetch(`${API_BASE}/notificacoes/ler-todas/${encodeURIComponent(matriculaOuId)}`, {
-    method: 'PUT',
-  });
-  if (!res.ok) throw new Error('Erro ao marcar todas notificações como lidas');
-  return res.json();
+  return apiJson(`/notificacoes/ler-todas/${encodeURIComponent(matriculaOuId)}`, { method: 'PUT' });
 }
 
 export async function deletarNotificacao(notificacaoId) {
-  const res = await fetch(`${API_BASE}/notificacoes/${notificacaoId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error('Erro ao excluir notificação');
-  return res.json();
+  return apiJson(`/notificacoes/${notificacaoId}`, { method: 'DELETE' });
 }
 
-export { salvarUsuarioLocal };
+export async function fetchLaudosPnee() {
+  return apiJson('/alunos/laudos');
+}
+
+export async function avaliarLaudoPnee(alunoId, aprovado) {
+  return apiJson(`/alunos/${alunoId}/avaliar-laudo`, {
+    method: 'PATCH',
+    body: JSON.stringify({ aprovado }),
+  });
+}
+
+export { salvarUsuarioLocal, setAccessToken, API_BASE };

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import PageShell from '../ui/PageShell';
+import PageHeader from '../ui/PageHeader';
 
 const DashboardProfessor = () => {
   const navigate = useNavigate();
@@ -25,16 +27,14 @@ const DashboardProfessor = () => {
   ];
 
   return (
-    <div className="flex-1 bg-gray-50 overflow-y-auto">
-      {/* Banner */}
-      <div className="bg-emerald-900 text-white px-8 py-10 ml-6 mr-6 rounded-xl mb-8 mt-10">
-        <h1 className="text-3xl font-bold mb-2">Área do Professor</h1>
-        <p className="text-emerald-100 text-lg">
-          Gerencie seus atendimentos e visualize estatísticas do CA
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        role="professor"
+        title="Área do Professor"
+        subtitle="Gerencie seus atendimentos e visualize estatísticas do Centro de Aprendizagem."
+      />
 
-      <div className="p-8">
+      <div>
       {/* Grade de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {estatisticas.map((estatistica, index) => (
@@ -130,7 +130,7 @@ const DashboardProfessor = () => {
         </div>
       </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

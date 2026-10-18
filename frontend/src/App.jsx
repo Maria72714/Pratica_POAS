@@ -22,21 +22,27 @@ import ProfessorAtendimentos from './pages/professor/ProfessorAtendimentos';
 import ProfessorHorarios from './pages/professor/ProfessorHorarios';
 import ProfessorIndicadores from './pages/professor/ProfessorIndicadores';
 import ProfessorRelatorios from './pages/professor/ProfessorRelatorios';
+import ComplementacaoPerfil from './pages/aluno/ComplementacaoPerfil';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 import { AuthProvider } from './context/AuthContext';
+import { resolveRoleFromUser, getRoleTheme } from './theme/roles';
 import { SidebarProvider } from './context/SidebarContext';
 import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
 
-function AppLayout({ children, isProfessor = false, isMediador = false, requerTai = false }) {
+function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin = false, requerTai = false }) {
   const navigate = useNavigate();
   const [usuarioLogado, setUsuarioLogado] = React.useState(() => {
     const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
     return dados ? JSON.parse(dados) : null;
   });
 
-  const isMediadorUser = isMediador || usuarioLogado?.tipo === 'mediador';
-  const vinculoLower = (usuarioLogado?.tipo_vinculo || usuarioLogado?.tipo || '').toLowerCase();
-  const isProfessorUser = isProfessor || vinculoLower.includes('prof') || vinculoLower.includes('docente') || vinculoLower.includes('servidor');
+  const role = resolveRoleFromUser(usuarioLogado);
+  const isAlunoUser = role === 'aluno';
+  const isAdminUser = !isAlunoUser && (isAdmin || role === 'admin');
+  const isMediadorUser = !isAlunoUser && (isMediador || role === 'mediador');
+  const isProfessorUser = !isAlunoUser && (isProfessor || role === 'professor');
+  const theme = getRoleTheme(role);
 
   React.useEffect(() => {
     if (!usuarioLogado) {
@@ -46,22 +52,30 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
 
     const path = window.location.pathname;
 
-    if (usuarioLogado.tipo === 'mediador' && !path.startsWith('/mediador') && path !== '/perfil') {
+    if (isAdminUser && !path.startsWith('/admin') && path !== '/perfil') {
+      navigate('/admin');
+      return;
+    }
+
+    if (isMediadorUser && !path.startsWith('/mediador') && path !== '/perfil') {
       navigate('/mediador');
       return;
     }
 
-    if ((usuarioLogado.tipo === 'professor' || usuarioLogado.tipo_vinculo === 'professor') && !path.startsWith('/professor') && path !== '/perfil') {
+    if (isProfessorUser && !isAdminUser && !path.startsWith('/professor') && path !== '/perfil') {
       navigate('/professor');
       return;
     }
 
-    const isAluno = usuarioLogado.tipo === 'aluno' || usuarioLogado.is_aluno || (!usuarioLogado.tipo && !usuarioLogado.tipo_vinculo);
+    if (isAlunoUser && (path.startsWith('/professor') || path.startsWith('/admin'))) {
+      navigate('/');
+      return;
+    }
 
     if (requerTai && !usuarioLogado.necessidades_especiais) {
       navigate('/');
     }
-  }, [usuarioLogado, navigate, isProfessor, isMediador, requerTai]);
+  }, [usuarioLogado, navigate, isProfessor, isMediador, isAdminUser, isProfessorUser, isAlunoUser, requerTai]);
 
   React.useEffect(() => {
     if (!usuarioLogado?.matricula || usuarioLogado?.foto) return;
@@ -93,10 +107,15 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
     { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
 
+  const adminMenu = [
+    { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Painel Admin", link: "/admin" },
+    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" },
+  ];
+
   const alunoMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/" },
-    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Meus Agendamentos", link: "/Agendamentos" },
-    ...(usuarioLogado?.necessidades_especiais ? [{ icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" }] : []),
+    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Meus Agendamentos", link: "/agendamentos" },
+    { icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" },
     { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/historico" },
     { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
   ];
@@ -105,9 +124,15 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
     ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : 'U';
 
-  const menuAtivo = isMediadorUser ? mediadorMenu : (isProfessorUser ? professorMenu : alunoMenu);
-  const corAvatar = isMediadorUser ? "bg-purple-700" : (isProfessorUser ? "bg-emerald-700" : "bg-emerald-600");
-  const papelTexto = isMediadorUser ? "Mediador" : (isProfessorUser ? "Professor" : "Aluno");
+  const menuAtivo = isAdminUser
+    ? adminMenu
+    : isMediadorUser
+      ? mediadorMenu
+      : isProfessorUser
+        ? professorMenu
+        : alunoMenu;
+  const corAvatar = theme.avatar;
+  const papelTexto = theme.label;
 
   const usuarioInfo = {
     nome: usuarioLogado?.nome || papelTexto,
@@ -121,7 +146,7 @@ function AppLayout({ children, isProfessor = false, isMediador = false, requerTa
   return (
     <div className="flex min-h-screen bg-gray-50">
       <SidebarProvider>
-        <Sidebar itensMenu={menuAtivo} />
+        <Sidebar itensMenu={menuAtivo} role={role} />
         <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
           <Header usuario={usuarioInfo} />
           <main className="flex-1 overflow-y-auto">
@@ -148,9 +173,14 @@ function App() {
           <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/solicitar-atendimento" element={<AppLayout requerTai={false}><SolicitacaoAtendimento /></AppLayout>} />
           <Route path="/historico" element={<AppLayout><Historico /></AppLayout>} />
+          <Route path="/agendamentos" element={<AppLayout><Agendamentos /></AppLayout>} />
           <Route path="/Agendamentos" element={<AppLayout><Agendamentos /></AppLayout>} />
+          <Route path="/aluno/completar-perfil" element={<AppLayout><ComplementacaoPerfil /></AppLayout>} />
           <Route path="/perfil" element={<AppLayout><Perfil /></AppLayout>} />
           <Route path="/solicitacoes/editar/:id" element={<AppLayout><EditarSolicitacao /></AppLayout>} />
+
+          {/* ── Admin ──────────────────────────────────────────────────── */}
+          <Route path="/admin" element={<AppLayout isAdmin={true}><AdminDashboard /></AppLayout>} />
 
           {/* ── Rotas do Mediador ───────────────────────────────────────── */}
           <Route path="/mediador" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />
@@ -164,23 +194,6 @@ function App() {
           <Route path="/professor/indicadores" element={<AppLayout isProfessor={true}><ProfessorIndicadores /></AppLayout>} />
           <Route path="/professor/relatorios" element={<AppLayout isProfessor={true}><ProfessorRelatorios /></AppLayout>} />
           <Route path="/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
-          <Route path="/teste/professor/completar-perfil" element={<ComplementacaoPerfilProfessor />} />
-          <Route path="/preview/professor" element={
-            <div className="flex min-h-screen bg-gray-50">
-              <Sidebar itensMenu={[
-                { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 01-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/preview/professor" },
-                { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Meus Atendimentos", link: "/preview/professor" },
-                { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Horários Disponíveis", link: "/preview/professor" },
-                { icone: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", texto: "Indicadores", link: "/preview/professor" },
-                { icone: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Relatórios", link: "/preview/professor" }
-              ]} />
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <Header usuario={{ nome: "Prof. Preview", descricao: "Professor • Visualização", iniciais: "PP", corAvatar: "bg-emerald-700" }} />
-                <DashboardProfessor />
-              </div>
-            </div>
-          } />
-          
           {/* ── Rota 404 - Fallback ──────────────────────────────────────── */}
           <Route path="*" element={<NotFound />} />
         </Routes>

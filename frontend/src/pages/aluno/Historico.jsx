@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { excluirSolicitacao, editarSolicitacao } from "../../services/aluno/solicitacao";
-import { buscarSolicitacoes } from "../../services/aluno/solicitacao";
+import { excluirSolicitacao, editarSolicitacao, buscarSolicitacoes } from "../../services/aluno/solicitacao";
+import PageShell from "../../components/ui/PageShell";
+import PageHeader from "../../components/ui/PageHeader";
 
 const STATUS_LABELS = {
   AGENDADO: "Agendado",
@@ -132,29 +133,50 @@ export default function Historico() {
     carregarHistorico();
   }, []);
 
+  const mapaStatusFiltro = {
+    Agendado: "AGENDADO",
+    "Concluído": "CONCLUIDO",
+    Cancelado: "CANCELADO",
+  };
+
+  const solicitacoesFiltradas = solicitacoes.filter((s) => {
+    if (status) {
+      const alvo = mapaStatusFiltro[status] || normalizarStatus(status);
+      if (normalizarStatus(s.status) !== alvo) return false;
+    }
+    if (tipo) {
+      const t = (s.tipo_solicitacao || s.tipo || "TAI").toUpperCase();
+      if (t !== tipo.toUpperCase()) return false;
+    }
+    if (modalidade) {
+      const m = (s.modalidade || "").toLowerCase();
+      if (m && m !== modalidade.toLowerCase()) return false;
+    }
+    return true;
+  });
+
   const infoCA = {
-    Total: solicitacoes.length,
-    Concluídos: solicitacoes.filter((a) => a.status === "Concluido").length,
-    Agendados: solicitacoes.filter((a) => a.status === "Agendado").length,
+    Total: solicitacoesFiltradas.length,
+    Concluídos: solicitacoesFiltradas.filter((a) => normalizarStatus(a.status) === "CONCLUIDO").length,
+    Agendados: solicitacoesFiltradas.filter((a) => normalizarStatus(a.status) === "AGENDADO").length,
   };
   const caData = {
     status: ["Agendado", "Concluído", "Cancelado"],
     tipos: ["TAL", "TAI"],
-    modalidades: ["Pesencial", "Remoto", "Híbrido"],
+    modalidades: ["Presencial", "Remoto", "Híbrido"],
   };
 
   return (
-    <div>
-      <div className="bg-emerald-900 text-white font-sans rounded-xl m-[20px_20px_0_20px] px-5 py-8">
-        <h1 className="text-3xl font-bold pb-1">Histórico de Solicitações</h1>
-        <p className="font-normal text-sm text-emerald-100">
-          Todas as solicitações de atendimento em que você está ou esteve inscrito.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        role="aluno"
+        title="Histórico de Solicitações"
+        subtitle="Todas as solicitações de atendimento em que você está ou esteve inscrito."
+      />
 
-      <div className="m-[20px_20px_0_20px] grid grid-cols-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {Object.entries(infoCA).map(([nome, valor]) => (
-          <div className="bg-white py-5 mx-2 border rounded-2xl flex flex-col items-center font-sans shadow-sm">
+          <div key={nome} className="bg-white py-5 border rounded-2xl flex flex-col items-center font-sans shadow-sm">
             <p
               className={`font-bold text-2xl ${nome === "Total" ? "text-gray-800" : nome === "Concluídos" ? "text-green-600" : "text-yellow-600"}`}
             >
@@ -165,9 +187,10 @@ export default function Historico() {
         ))}
       </div>
 
-      <div className="mx-7 my-5 py-4 px-3 grid grid-cols-3 border rounded-xl bg-white text-sm">
+      <div className="py-4 px-3 grid grid-cols-1 sm:grid-cols-3 gap-3 border rounded-xl bg-white text-sm shadow-sm">
         {Object.entries(caData).map(([nome, valor]) => (
           <select
+            key={nome}
             onChange={
               nome == "status"
                 ? (e) => setStatus(e.target.value)
@@ -183,13 +206,13 @@ export default function Historico() {
                 : `Todos os ${nome}`}
             </option>
             {valor.map((data) => (
-              <option value={data}>{data}</option>
+              <option key={data} value={data}>{data}</option>
             ))}
           </select>
         ))}
       </div>
 
-      <section className="mx-7 my-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-slate-800">
             Registro de Atendimentos
@@ -201,13 +224,13 @@ export default function Historico() {
           <div className="py-10 text-center text-sm text-slate-500">
             Carregando solicitações...
           </div>
-        ) : solicitacoes.length === 0 ? (
+        ) : solicitacoesFiltradas.length === 0 ? (
           <div className="py-10 text-center text-sm font-semibold text-slate-500">
             Nenhum atendimento encontrado.
           </div>
         ) : (
           <div className="space-y-3">
-            {solicitacoes.map((solicitacao) => {
+            {solicitacoesFiltradas.map((solicitacao) => {
               const statusAtual = normalizarStatus(solicitacao.status);
               const statusLabel =
                 STATUS_LABELS[statusAtual] || solicitacao.status || "Agendado";
@@ -306,9 +329,9 @@ export default function Historico() {
         )}
       </section>
       
-      <button className="ml-7 text-gray-500 text-sm" onClick={backDashboard}>
+      <button type="button" className="text-gray-500 text-sm hover:text-emerald-700" onClick={backDashboard}>
         {"<"} Voltar ao dashboard
       </button>
-    </div>
+    </PageShell>
   );
 }
