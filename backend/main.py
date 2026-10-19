@@ -414,6 +414,7 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
                 session.commit()
                 logger.info(f"Diários sincronizados para professor {db_user.nome}")
         except Exception as e_diarios:
+            session.rollback()
             logger.warning(f"Não foi possível sincronizar diários: {e_diarios}")
 
     # Para aluno: busca o boletim do SUAP para obter as disciplinas reais do
@@ -426,10 +427,11 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
             from services.suap_disciplinas_service import sincronizar_disciplinas_aluno
 
             disciplinas_suap_aluno = await sincronizar_disciplinas_aluno(
-                session, access_token, _date.today().year
+                session, access_token, _date.today().year, aluno_id=db_user.id
             )
             logger.info(f"Boletim SUAP: {len(disciplinas_suap_aluno)} disciplinas para aluno {matricula}")
         except Exception as e_bol:
+            session.rollback()
             logger.warning(f"Não foi possível buscar boletim do aluno: {e_bol}")
 
     aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()

@@ -20,6 +20,7 @@ import httpx
 from sqlmodel import select
 
 from models.associativas.professor_disciplina import ProfessorDisciplina
+from models.associativas.aluno_disciplina import AlunoDisciplina
 from models.disciplina import Disciplina
 from models.users.professor import Professor
 from models.users.user import Usuario
@@ -119,12 +120,28 @@ def _persistir_professores(session, disciplina: Disciplina, dados_profs: list) -
     return novos
 
 
+def _persistir_aluno_disciplina(session, aluno_id: int, disciplina: Disciplina) -> None:
+    """Vincula o aluno à disciplina (idempotente)."""
+    link = session.exec(
+        select(AlunoDisciplina)
+        .where(AlunoDisciplina.aluno_id == aluno_id)
+        .where(AlunoDisciplina.disciplina_id == disciplina.id)
+    ).first()
+    if not link:
+        session.add(AlunoDisciplina(aluno_id=aluno_id, disciplina_id=disciplina.id))
+        session.commit()
+
+
 async def sincronizar_disciplinas_aluno(
     session,
     suap_token: str,
     ano: int | None = None,
+    aluno_id: int | None = None,
 ) -> list[str]:
     """Consulta o boletim do aluno no SUAP e persiste disciplinas + professores.
+
+    Quando ``aluno_id`` é informado, também persiste o vínculo aluno→disciplina
+    (usado para exibir o CA/TAL aberto apenas para alunos da disciplina).
 
     Retorna os nomes das disciplinas encontradas (sem duplicatas).
     """
@@ -195,9 +212,11 @@ async def sincronizar_disciplinas_aluno(
             dados_profs = profs_por_codigo.get(str(codigo)) or []
             if not dados_profs:
                 dados_profs = profs_por_id.get(str(codigo)) or profs_por_nome.get(nome) or []
+            disciplina = _garantir_disciplina(session, nome)
+            if aluno_id is not None:
+                _persistir_aluno_disciplina(session, aluno_id, disciplina)
             if not dados_profs:
                 continue
-            disciplina = _garantir_disciplina(session, nome)
             total_vinculos += _persistir_professores(session, disciplina, dados_profs)
 
     logger.info(

@@ -84,7 +84,9 @@ async def buscar_disciplinas_suap(
         # próprio SUAP, para não depender do sync do professor.
         from services.suap_disciplinas_service import sincronizar_disciplinas_aluno
 
-        for nome in await sincronizar_disciplinas_aluno(session, token_suap, ano_atual):
+        for nome in await sincronizar_disciplinas_aluno(
+            session, token_suap, ano_atual, aluno_id=current_user.id
+        ):
             disciplinas.add(nome)
 
     elif role in ("professor", "servidor"):

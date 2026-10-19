@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from datetime import date
 from typing import List, Optional, Annotated
@@ -23,6 +22,11 @@ class AtendimentoCreateModel(BaseModel):
     matricula: Optional[str] = None            # compatibilidade (matrícula única)
     matriculas: Optional[List[str]] = None     # nova: várias matrículas (preferível)
     professor_matricula: Optional[str] = None  # matricula do professor (opcional)
+    # Campos extras usados pelo fluxo do professor (opcionais)
+    assunto: Optional[str] = None
+    tipo_atendimento: Optional[str] = None     # 'TAL' ou 'TAI'
+    modalidade: Optional[str] = None           # 'Presencial' ou 'Remoto'
+    link_ca_online: Optional[str] = None
 
 class AtendimentoUpdateModel(BaseModel):
     status: Optional[str] = None
@@ -46,18 +50,13 @@ class AtendimentoResponse(BaseModel):
 def listar_atendimento(session: SessionDep):
     return AtendimentoService(session).listar_atendimentos()
 
-@router.get('/aluno/{matricula}', response_model=list[Atendimento])
+@router.get('/aluno/{matricula}')
 def listar_atendimentos_por_matricula(matricula: str, session: SessionDep):
     return AtendimentoService(session).listar_por_matricula(matricula)
 
 @router.get("/{atendimento_id}", response_model=Atendimento)
 def buscar_atendimento_por_id(atendimento_id: int, session: SessionDep):
     return AtendimentoService(session).buscar_por_id(atendimento_id)
-
-
-@router.get('/professor/{matricula}')
-def listar_atendimentos_professor(matricula: str, session: SessionDep):
-    return AtendimentoService(session).listar_por_professor(matricula)
 
 
 @router.get('/mediador/tai')
@@ -142,7 +141,7 @@ def editar_atendimento(atendimento_id: int, dados: AtendimentoUpdateModel, sessi
     import logging
     logger = logging.getLogger(__name__)
     logger.info(f"PATCH /atendimentos/{atendimento_id} - User: {current_user.id if current_user else 'None'}, Dados: {dados}")
-    return AtendimentoService(session).editar_atendimento(atendimento_id, dados)
+    return AtendimentoService(session).editar_atendimento(atendimento_id, dados, current_user)
 
 
 @router.post("/{atendimento_id}/cancelar")
@@ -170,7 +169,15 @@ def cancelar_atendimento(atendimento_id: int, session: SessionDep,
             status_code=400, 
             detail=f"Não é possível cancelar atendimento com status {status_atual.value if hasattr(status_atual, 'value') else status_atual}."
         )
-    
+
+    # CA/TAL aberto pelo professor para a turma não pode ser cancelado pelo aluno.
+    if getattr(current_user, "role", None) == "aluno" and AtendimentoService(session)._tal_aberto(atendimento):
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail="Este CA/TAL é aberto para a turma e não pode ser cancelado pelo aluno.",
+        )
+
     # Cancelar
     atendimento.status = StatusAtendimento.CANCELADO
     session.add(atendimento)

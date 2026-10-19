@@ -218,8 +218,9 @@ class SolicitacaoService:
 
         _PROFESSORES_SYNC_RECENTE[usuario.id] = time.time()
         try:
-            await sincronizar_disciplinas_aluno(self.session, token)
+            await sincronizar_disciplinas_aluno(self.session, token, aluno_id=aluno.id)
         except Exception as e:
+            self.session.rollback()
             logger.warning(f"Não foi possível atualizar professores via SUAP: {e}")
 
     def listar_solicitacoes_aluno(self, matricula: str):

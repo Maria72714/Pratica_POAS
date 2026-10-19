@@ -375,7 +375,7 @@ export default function CalendarioAtendimentos({
                         Chat
                       </button>
                     )}
-                    {onCancelarAgendamento && item.status !== 'Cancelado' && (
+                    {onCancelarAgendamento && item.status !== 'Cancelado' && item.podeCancelar !== false && (
                       <button
                         onClick={() => onCancelarAgendamento(item.id)}
                         className="py-1 px-2 text-red-600 hover:bg-red-50 text-[10px] font-semibold rounded transition-colors"

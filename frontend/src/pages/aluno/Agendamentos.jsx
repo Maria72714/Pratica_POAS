@@ -34,13 +34,18 @@ const Agendamentos = () => {
         listaAtend.forEach((item) => {
           formatados.push({
             id: `atend-${item.id}`,
-            disciplina: item.assunto?.split('|')?.[0]?.replace('Disciplina:', '')?.replace('TAI -', '')?.trim() || item.disciplina || 'Atendimento',
+            disciplina: item.disciplina_nome || item.assunto?.split('|')?.[0]?.replace('Disciplina:', '')?.replace('TAI -', '')?.trim() || item.disciplina || 'Atendimento',
             tipo: item.tipo_atendimento || 'TAI',
             status: item.status === 'Agendado' || item.status === 'AGENDADO' ? 'Confirmado' : (item.status === 'CONCLUIDO' || item.status === 'Concluído' ? 'Concluído' : item.status),
             data: item.data_atendimento ? String(item.data_atendimento).split('T')[0] : '',
             horario: item.horario || 'Horário agendado',
             local: item.sala || item.local || 'Campus IFRN',
-            assunto: item.assunto || item.relatorio || ''
+            assunto: item.assunto || item.relatorio || '',
+            professor: item.professor_nome || '',
+            modalidade: item.modalidade || '',
+            link_ca_online: item.link_ca_online || '',
+            aberto: !!item.aberto,
+            podeCancelar: item.pode_cancelar !== false,
           });
         });
 
@@ -247,7 +252,7 @@ const Agendamentos = () => {
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <span>{item.professor}</span>
+                      <span>{item.professor || 'Professor(a) responsável'}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -291,6 +296,22 @@ const Agendamentos = () => {
                         </svg>
                         Adicionar ao Google Calendar
                       </button>
+                      {/* CA Online: disponível quando o professor informa o link */}
+                      {item.link_ca_online && (
+                        <a
+                          href={item.link_ca_online}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-3 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700"
+                          title="Abrir o CA Online"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                              d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.5-1.5m5.5-5.5l1.5-1.5a4 4 0 015.656 5.656l-4 4a4 4 0 01-5.656 0" />
+                          </svg>
+                          CA Online
+                        </a>
+                      )}
                       {/* Botão de Chat: só para atendimentos reais (prefixo "atend-") */}
                       {item.id?.toString().startsWith('atend-') && (
                         <button
@@ -313,12 +334,14 @@ const Agendamentos = () => {
                           Chat
                         </button>
                       )}
-                      <button 
-                        onClick={() => handleCancelarAgendamento(item.id)}
-                        className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition-colors"
-                      >
-                        Cancelar
-                      </button>
+                      {item.podeCancelar !== false && (
+                        <button 
+                          onClick={() => handleCancelarAgendamento(item.id)}
+                          className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </div>
                   )}
 
