@@ -5,7 +5,7 @@ from typing import Annotated, List, Optional
 from datetime import date
 
 from deps.deps import SessionDep
-from deps.auth import AuthUser, get_current_user
+from deps.auth import AuthUser, get_current_user, assert_self_or_roles
 from models.users.user import Usuario
 from models.users.professor import Professor
 from models.disciplina import Disciplina
@@ -19,6 +19,16 @@ router = APIRouter(
     prefix="/professores",
     tags=["Professores"]
 )
+
+
+def _resolver_usuario(session, matricula_ou_id: str):
+    """Busca um usuário pelo ID numérico ou pela matrícula."""
+    db_user = None
+    if matricula_ou_id.isdigit():
+        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
+    if not db_user:
+        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+    return db_user
 
 
 class VinculoTurmaInput(BaseModel):
@@ -201,12 +211,14 @@ def disciplinas_da_turma(turma_id: str):
 
 
 @router.get("/perfil/{matricula_ou_id}")
-def obter_perfil_professor(matricula_ou_id: str, session: SessionDep):
-    db_user = None
-    if matricula_ou_id.isdigit():
-        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
-    if not db_user:
-        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+def obter_perfil_professor(
+    matricula_ou_id: str,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário professor não encontrado.")
@@ -238,13 +250,12 @@ def obter_perfil_professor(matricula_ou_id: str, session: SessionDep):
 def complementar_perfil_professor(
     matricula_ou_id: str,
     payload: ComplementarPerfilProfessorInput,
-    session: SessionDep
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
 ):
-    db_user = None
-    if matricula_ou_id.isdigit():
-        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
-    if not db_user:
-        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
@@ -331,15 +342,17 @@ class HorarioProfessorInput(BaseModel):
 
 
 @router.get("/{matricula_ou_id}/horarios")
-def listar_horarios_professor(matricula_ou_id: str, session: SessionDep):
+def listar_horarios_professor(
+    matricula_ou_id: str,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
     """Lista as janelas de horários disponíveis para atendimento cadastradas pelo professor."""
     from models.professor_horario import ProfessorHorario
 
-    db_user = None
-    if matricula_ou_id.isdigit():
-        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
-    if not db_user:
-        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Professor não encontrado.")
@@ -356,35 +369,6 @@ def listar_horarios_professor(matricula_ou_id: str, session: SessionDep):
         .where(ProfessorHorario.id_professor == prof.id)
         .order_by(ProfessorHorario.id)
     ).all()
-
-    # Se ainda não possui horários cadastrados, adiciona sementes padrão
-    if not horarios:
-        sementes = [
-            ProfessorHorario(
-                id_professor=prof.id,
-                dia_semana="Terça-feira",
-                hora_inicio="14:00",
-                hora_fim="16:00",
-                local="Sala de Professores - Bloco B",
-                modalidade="Presencial",
-                disciplina="Todas as disciplinas",
-                ativo=True
-            ),
-            ProfessorHorario(
-                id_professor=prof.id,
-                dia_semana="Quinta-feira",
-                hora_inicio="10:00",
-                hora_fim="12:00",
-                local="Laboratório de Informática 02",
-                modalidade="Presencial",
-                disciplina="Todas as disciplinas",
-                ativo=True
-            ),
-        ]
-        for s in sementes:
-            session.add(s)
-        session.commit()
-        horarios = sementes
 
     return [
         {
@@ -403,15 +387,18 @@ def listar_horarios_professor(matricula_ou_id: str, session: SessionDep):
 
 
 @router.post("/{matricula_ou_id}/horarios")
-def adicionar_horario_professor(matricula_ou_id: str, dados: HorarioProfessorInput, session: SessionDep):
+def adicionar_horario_professor(
+    matricula_ou_id: str,
+    dados: HorarioProfessorInput,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
     """Cadastra um novo horário de atendimento para o professor."""
     from models.professor_horario import ProfessorHorario
 
-    db_user = None
-    if matricula_ou_id.isdigit():
-        db_user = session.exec(select(Usuario).where(Usuario.id == int(matricula_ou_id))).first()
-    if not db_user:
-        db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula_ou_id)).first()
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Professor não encontrado.")
@@ -452,13 +439,25 @@ def adicionar_horario_professor(matricula_ou_id: str, dados: HorarioProfessorInp
 
 
 @router.delete("/{matricula_ou_id}/horarios/{horario_id}")
-def remover_horario_professor(matricula_ou_id: str, horario_id: int, session: SessionDep):
+def remover_horario_professor(
+    matricula_ou_id: str,
+    horario_id: int,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
     """Remove um horário de atendimento."""
     from models.professor_horario import ProfessorHorario
+
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
 
     h = session.get(ProfessorHorario, horario_id)
     if not h:
         raise HTTPException(status_code=404, detail="Horário não encontrado.")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
+    prof = session.exec(select(Professor).where(Professor.id == db_user.id)).first() if db_user else None
+    if not prof or h.id_professor != prof.id:
+        raise HTTPException(status_code=403, detail="Este horário não pertence a você.")
 
     session.delete(h)
     session.commit()
@@ -466,13 +465,25 @@ def remover_horario_professor(matricula_ou_id: str, horario_id: int, session: Se
 
 
 @router.patch("/{matricula_ou_id}/horarios/{horario_id}/toggle")
-def alternar_horario_professor(matricula_ou_id: str, horario_id: int, session: SessionDep):
+def alternar_horario_professor(
+    matricula_ou_id: str,
+    horario_id: int,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
     """Alterna entre ativo/inativo um horário de atendimento."""
     from models.professor_horario import ProfessorHorario
+
+    assert_self_or_roles(current_user, matricula_ou_id, "admin")
 
     h = session.get(ProfessorHorario, horario_id)
     if not h:
         raise HTTPException(status_code=404, detail="Horário não encontrado.")
+
+    db_user = _resolver_usuario(session, matricula_ou_id)
+    prof = session.exec(select(Professor).where(Professor.id == db_user.id)).first() if db_user else None
+    if not prof or h.id_professor != prof.id:
+        raise HTTPException(status_code=403, detail="Este horário não pertence a você.")
 
     h.ativo = not h.ativo
     session.add(h)
