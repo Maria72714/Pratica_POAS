@@ -1,7 +1,7 @@
 """add ondelete cascade on alunos_atendimentos
 
 Revision ID: 64eaa13af5d7
-Revises: de749e12f8b4
+Revises: 6e501f7a1802
 Create Date: 2026-10-01 09:24:04.763906
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '64eaa13af5d7'
-down_revision: Union[str, Sequence[str], None] = 'de749e12f8b4'
+down_revision: Union[str, Sequence[str], None] = '6e501f7a1802'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

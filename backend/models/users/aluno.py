@@ -20,6 +20,7 @@ class Aluno(SQLModel, table=True):
     ano_letivo: Optional[str] = Field(default=None, max_length=20)
     turma_id: Optional[str] = Field(default=None, max_length=60)
     necessidades_especiais: bool = Field(default=False)
+    tipo_necessidade: Optional[str] = Field(default=None, max_length=100)  # Ex: "Libras", "Braille", "TDA/TDAH", etc.
     perfil_completo: bool = Field(default=False)
     laudo_path: Optional[str] = Field(default=None, max_length=255)
     foto_suap: Optional[str] = Field(default=None, max_length=500)
