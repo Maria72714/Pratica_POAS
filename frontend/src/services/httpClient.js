@@ -1,4 +1,6 @@
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Em dev, usa caminho relativo para aproveitar o proxy do Vite (funciona também
+// no celular, sem CORS). Em produção, defina VITE_API_URL no .env do frontend.
+export const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export function getAccessToken() {
   return localStorage.getItem('access_token') || localStorage.getItem('suap_access_token');
