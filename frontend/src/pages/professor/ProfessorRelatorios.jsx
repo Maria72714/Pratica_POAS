@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { buscarAtendimentosProfessor } from '../../services/professor/agendamento';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import CardEstatisticas from '../../components/CardEstatisticas';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -232,7 +233,7 @@ export default function ProfessorRelatorios() {
         )}
 
         {/* Painel de Filtros */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 no-print">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-6 mb-6 no-print">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
               <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,7 +261,7 @@ export default function ProfessorRelatorios() {
                 type="date"
                 value={filtroDataInicio}
                 onChange={(e) => setFiltroDataInicio(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               />
             </div>
 
@@ -270,7 +271,7 @@ export default function ProfessorRelatorios() {
                 type="date"
                 value={filtroDataFim}
                 onChange={(e) => setFiltroDataFim(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               />
             </div>
 
@@ -279,7 +280,7 @@ export default function ProfessorRelatorios() {
               <select
                 value={filtroDisciplina}
                 onChange={(e) => setFiltroDisciplina(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               >
                 <option value="">Todas</option>
                 {disciplinas.map(d => (
@@ -293,7 +294,7 @@ export default function ProfessorRelatorios() {
               <select
                 value={filtroStatus}
                 onChange={(e) => setFiltroStatus(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               >
                 <option value="">Todos</option>
                 <option value="Agendado">Agendado</option>
@@ -307,7 +308,7 @@ export default function ProfessorRelatorios() {
               <select
                 value={filtroTipo}
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               >
                 <option value="">Todos</option>
                 <option value="Regular">Regular (Plantão)</option>
@@ -318,22 +319,15 @@ export default function ProfessorRelatorios() {
         </div>
 
         {/* Resumo de Métricas do Filtro */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[
-            { label: 'Total Filtrado', valor: atendimentosFiltrados.length, cor: 'text-gray-800', fundo: 'bg-white' },
-            { label: 'Realizados', valor: realizados, cor: 'text-emerald-700', fundo: 'bg-emerald-50' },
-            { label: 'Agendados', valor: agendados, cor: 'text-blue-700', fundo: 'bg-blue-50' },
-            { label: 'Atend. TAI', valor: taiCount, cor: 'text-amber-700', fundo: 'bg-amber-50' },
-          ].map(({ label, valor, cor, fundo }) => (
-            <div key={label} className={`${fundo} rounded-xl border border-gray-100 shadow-sm p-4 text-center`}>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{label}</p>
-              <p className={`text-2xl font-bold ${cor}`}>{valor}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <CardEstatisticas stat={{ label: 'Total filtrado', value: atendimentosFiltrados.length }} index={0} />
+          <CardEstatisticas stat={{ label: 'Realizados', value: realizados }} index={1} />
+          <CardEstatisticas stat={{ label: 'Agendados', value: agendados }} index={2} />
+          <CardEstatisticas stat={{ label: 'Atendimentos TAI', value: taiCount }} index={3} />
         </div>
 
         {/* Tabela Principal */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-gray-800">Registro Detalhado</h2>

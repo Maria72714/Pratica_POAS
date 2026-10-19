@@ -7,6 +7,7 @@ import {
 } from '../../services/professor/horarios';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import CardEstatisticas from '../../components/CardEstatisticas';
 
 const DIAS_SEMANA = [
   'Segunda-feira',
@@ -15,6 +16,10 @@ const DIAS_SEMANA = [
   'Quinta-feira',
   'Sexta-feira'
 ];
+
+const inputClass =
+  'w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white ' +
+  'focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500';
 
 export default function ProfessorHorarios() {
   const [horarios, setHorarios] = useState([]);
@@ -167,47 +172,15 @@ export default function ProfessorHorarios() {
           </div>
         )}
 
-        {/* Grade de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Janelas Cadastradas</p>
-              <p className="text-2xl font-bold text-gray-800">{totalJanelas}</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Horários Ativos</p>
-              <p className="text-2xl font-bold text-gray-800">{janelasAtivas}</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Dias com Atendimento</p>
-              <p className="text-2xl font-bold text-gray-800">{diasAtendidos} dia(s)/semana</p>
-            </div>
-          </div>
+        {/* Grade de Estatísticas (padrão do site) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <CardEstatisticas stat={{ label: 'Janelas cadastradas', value: totalJanelas }} index={0} />
+          <CardEstatisticas stat={{ label: 'Horários ativos', value: janelasAtivas }} index={1} />
+          <CardEstatisticas stat={{ label: 'Dias com atendimento', value: diasAtendidos }} index={2} />
         </div>
 
         {/* Seção Principal de Horários por Dia da Semana */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-gray-800">Grade Semanal de Disponibilidade</h2>
@@ -247,7 +220,7 @@ export default function ProfessorHorarios() {
                             key={item.id} 
                             className={`p-4 rounded-xl border transition-all ${
                               item.ativo 
-                                ? 'border-emerald-200 bg-emerald-50/20 shadow-xs' 
+                                ? 'border-emerald-200 bg-emerald-50/20 shadow-sm' 
                                 : 'border-gray-200 bg-gray-50/60 opacity-60'
                             }`}
                           >
@@ -320,25 +293,31 @@ export default function ProfessorHorarios() {
 
       {/* Modal de Cadastro de Horário */}
       {modalAberto && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
-            <div className="bg-emerald-900 text-white px-6 py-4 flex items-center justify-between">
-              <h3 className="font-bold text-lg">Novo Horário de Atendimento</h3>
-              <button 
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Novo Horário de Atendimento</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Defina o dia, o período e o local em que você estará disponível.
+                </p>
+              </div>
+              <button
                 onClick={() => setModalAberto(false)}
-                className="text-emerald-200 hover:text-white font-bold text-lg cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                aria-label="Fechar"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSalvarHorario} className="p-6 space-y-4">
+            <form onSubmit={handleSalvarHorario} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Dia da Semana</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dia da Semana</label>
                 <select
                   value={formDia}
                   onChange={(e) => setFormDia(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                  className={inputClass}
                 >
                   {DIAS_SEMANA.map((dia) => (
                     <option key={dia} value={dia}>{dia}</option>
@@ -348,45 +327,45 @@ export default function ProfessorHorarios() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Hora de Início</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Hora de Início</label>
                   <input
                     type="time"
                     value={formHoraInicio}
                     onChange={(e) => setFormHoraInicio(e.target.value)}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Hora de Término</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Hora de Término</label>
                   <input
                     type="time"
                     value={formHoraFim}
                     onChange={(e) => setFormHoraFim(e.target.value)}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Local / Sala</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Local / Sala</label>
                 <input
                   type="text"
                   value={formLocal}
                   onChange={(e) => setFormLocal(e.target.value)}
                   placeholder="Ex: Sala de Professores - Bloco B"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                  className={inputClass}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Modalidade</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade</label>
                   <select
                     value={formModalidade}
                     onChange={(e) => setFormModalidade(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className={inputClass}
                   >
                     <option value="Presencial">Presencial</option>
                     <option value="Remoto">Remoto</option>
@@ -395,29 +374,29 @@ export default function ProfessorHorarios() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Disciplina</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Disciplina</label>
                   <input
                     type="text"
                     value={formDisciplina}
                     onChange={(e) => setFormDisciplina(e.target.value)}
                     placeholder="Ex: Todas as disciplinas"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  className="px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={salvando}
-                  className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-semibold shadow-sm transition cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-emerald-800 shadow-sm transition-colors disabled:opacity-50"
                 >
                   {salvando ? 'Salvando...' : 'Salvar Horário'}
                 </button>

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { buscarAtendimentosProfessor, editarAtendimentoProfessor } from '../../services/professor/agendamento';
 import { buscarSolicitacoesPendentes, decidirSolicitacao } from '../../services/aluno/solicitacao';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import CalendarioAtendimentos from '../../components/CalendarioAtendimentos';
 import ChatAtendimento from '../../components/ChatAtendimento';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 const ProfessorAtendimentos = () => {
   const navigate = useNavigate();
@@ -16,9 +18,19 @@ const ProfessorAtendimentos = () => {
   const [carregandoSolicitacoes, setCarregandoSolicitacoes] = useState(false);
   const [processandoId, setProcessandoId] = useState(null);
   const [erro, setErro] = useState('');
-  const [modoVisualizacao, setModoVisualizacao] = useState('calendario'); // 'calendario' | 'lista' | 'solicitacoes'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const abaInicial = searchParams.get('tab');
+  const [modoVisualizacao, setModoVisualizacao] = useState(
+    abaInicial === 'solicitacoes' || abaInicial === 'lista' ? abaInicial : 'calendario'
+  ); // 'calendario' | 'lista' | 'solicitacoes'
   const [chatAtendimentoId, setChatAtendimentoId] = useState(null);
   const [chatTitulo, setChatTitulo] = useState('Chat do Atendimento');
+
+  const mudarModo = (modo) => {
+    setModoVisualizacao(modo);
+    if (modo === 'calendario') setSearchParams({}, { replace: true });
+    else setSearchParams({ tab: modo }, { replace: true });
+  };
 
   const usuarioSalvo = localStorage.getItem('usuario');
   const suapSalvo = localStorage.getItem('suap_user');
@@ -28,8 +40,6 @@ const ProfessorAtendimentos = () => {
     : suapSalvo
       ? JSON.parse(suapSalvo)
       : null;
-
-  const userName = usuario?.nome || 'Professor';
 
   const carregarDados = async () => {
     try {
@@ -136,46 +146,23 @@ const ProfessorAtendimentos = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-gray-50">
+    <PageShell>
+      <PageHeader
+        role="professor"
+        title="Meus Atendimentos"
+        subtitle="Consulte sua agenda, gerencie atendimentos e avalie as solicitações TAI recebidas."
+      />
 
-      {/* Banner de boas-vindas */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-900
-        text-white mx-2 sm:mx-4 lg:mx-6 rounded-lg sm:rounded-xl
-        mb-3 sm:mb-4 lg:mb-6 mt-2 sm:mt-3 lg:mt-4
-        p-4 sm:p-6 lg:p-8">
-
-        <h1 className="text-base sm:text-xl lg:text-2xl font-bold mb-2">
-          Bem-vindo, {userName}!
-        </h1>
-
-        <p className="text-emerald-100 text-xs sm:text-sm lg:text-base">
-          Gerencie seus atendimentos, consulte sua agenda e avalie as solicitações TAI recebidas.
-        </p>
-      </div>
-
-      <div className="p-2 sm:p-3 lg:p-6 space-y-4">
+      <div className="space-y-4">
 
         {/* Barra de Seleção de Visualização */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              {modoVisualizacao === 'solicitacoes'
-                ? 'Solicitações TAI Pendentes'
-                : 'Meus Agendamentos'}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {modoVisualizacao === 'solicitacoes'
-                ? 'Como professor, você é o responsável por aprovar o atendimento TAI (com ou sem o selo do mediador).'
-                : 'Consulte seus atendimentos integrados ao calendário acadêmico do IFRN.'}
-            </p>
-          </div>
-
-          <div className="flex items-center bg-gray-200/80 p-1 rounded-xl self-start sm:self-auto flex-wrap gap-1">
+        <div className="flex items-center justify-start">
+          <div className="flex items-center bg-gray-100 p-1 rounded-xl flex-wrap gap-1">
             <button
-              onClick={() => setModoVisualizacao('calendario')}
+              onClick={() => mudarModo('calendario')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 modoVisualizacao === 'calendario'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-emerald-800 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -186,10 +173,10 @@ const ProfessorAtendimentos = () => {
             </button>
 
             <button
-              onClick={() => setModoVisualizacao('lista')}
+              onClick={() => mudarModo('lista')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 modoVisualizacao === 'lista'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-emerald-800 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -200,10 +187,10 @@ const ProfessorAtendimentos = () => {
             </button>
 
             <button
-              onClick={() => setModoVisualizacao('solicitacoes')}
+              onClick={() => mudarModo('solicitacoes')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 modoVisualizacao === 'solicitacoes'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-emerald-800 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -267,12 +254,10 @@ const ProfessorAtendimentos = () => {
                       </div>
 
                       <div className="sm:text-right shrink-0 flex flex-col items-end gap-2">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          atendimento.status?.toUpperCase() === 'AGENDADO'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : atendimento.status?.toUpperCase() === 'CANCELADO'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-blue-100 text-blue-700'
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          atendimento.status?.toUpperCase() === 'CANCELADO'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-emerald-100 text-emerald-700'
                         }`}>
                           {formatarTexto(atendimento.status)}
                         </span>
@@ -368,13 +353,13 @@ const ProfessorAtendimentos = () => {
             {loading ? (
               <p className="text-gray-500 text-sm py-8 text-center">Carregando solicitações...</p>
             ) : solicitacoesPendentes.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">
+              <div className="bg-white rounded-lg sm:rounded-xl border border-gray-100 p-8 text-center text-gray-500">
                 <p className="font-semibold text-gray-800 text-base mb-1">Nenhuma solicitação TAI pendente no momento.</p>
                 <p className="text-xs text-gray-400">Todas as solicitações foram avaliadas.</p>
               </div>
             ) : (
               solicitacoesPendentes.map((sol) => (
-                <div key={sol.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-xs space-y-4">
+                <div key={sol.id} className="bg-white rounded-lg sm:rounded-xl border border-gray-100 p-5 shadow-sm space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -510,7 +495,7 @@ const ProfessorAtendimentos = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 };
 
