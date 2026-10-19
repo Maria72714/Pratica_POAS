@@ -7,9 +7,43 @@ from sqlmodel import select
 from deps.deps import SessionDep
 from models.chat_mensagem import ChatMensagem
 from models.users.user import Usuario
+from models.users.aluno import Aluno
+from models.users.professor import Professor
+from models.users.mediador import Mediador
 from models.atendimento import Atendimento
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+
+def _dados_autores(session: SessionDep, ids: set[int]) -> tuple[dict[int, str], dict[int, str]]:
+    """Carrega em lote o nome e o papel (aluno/professor/mediador/admin) dos autores."""
+    if not ids:
+        return {}, {}
+
+    usuarios = {
+        u.id: u
+        for u in session.exec(select(Usuario).where(Usuario.id.in_(ids))).all()
+    }
+    alunos = set(session.exec(select(Aluno.id).where(Aluno.id.in_(ids))).all())
+    professores = set(session.exec(select(Professor.id).where(Professor.id.in_(ids))).all())
+    mediadores = set(session.exec(select(Mediador.id).where(Mediador.id.in_(ids))).all())
+
+    nomes: dict[int, str] = {}
+    roles: dict[int, str] = {}
+    for uid in ids:
+        usuario = usuarios.get(uid)
+        nomes[uid] = usuario.nome if usuario else "Usuário desconhecido"
+        if usuario and (usuario.matricula or "").lower() == "admin":
+            roles[uid] = "admin"
+        elif uid in alunos:
+            roles[uid] = "aluno"
+        elif uid in professores:
+            roles[uid] = "professor"
+        elif uid in mediadores:
+            roles[uid] = "mediador"
+        else:
+            roles[uid] = "aluno"
+    return nomes, roles
 
 
 class MensagemInput(BaseModel):
@@ -23,6 +57,7 @@ class MensagemResponse(BaseModel):
     atendimento_id: int
     autor_id: int
     autor_nome: str
+    autor_role: str = "aluno"
     mensagem: str
     criado_em: datetime
     lida: bool
@@ -69,11 +104,14 @@ def enviar_mensagem(dados: MensagemInput, session: SessionDep):
     session.commit()
     session.refresh(msg)
 
+    _, roles = _dados_autores(session, {usuario.id})
+
     return MensagemResponse(
         id=msg.id,
         atendimento_id=msg.atendimento_id,
         autor_id=msg.autor_id,
         autor_nome=usuario.nome,
+        autor_role=roles.get(usuario.id, "aluno"),
         mensagem=msg.mensagem,
         criado_em=msg.criado_em,
         lida=msg.lida,
@@ -92,14 +130,16 @@ def listar_mensagens(atendimento_id: int, session: SessionDep):
         .order_by(ChatMensagem.criado_em)
     ).all()
 
+    nomes, roles = _dados_autores(session, {m.autor_id for m in mensagens})
+
     resultado = []
     for m in mensagens:
-        usuario = session.get(Usuario, m.autor_id)
         resultado.append(MensagemResponse(
             id=m.id,
             atendimento_id=m.atendimento_id,
             autor_id=m.autor_id,
-            autor_nome=usuario.nome if usuario else "Usuário desconhecido",
+            autor_nome=nomes.get(m.autor_id, "Usuário desconhecido"),
+            autor_role=roles.get(m.autor_id, "aluno"),
             mensagem=m.mensagem,
             criado_em=m.criado_em,
             lida=m.lida,

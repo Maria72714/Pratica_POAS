@@ -163,11 +163,12 @@ def cancelar_atendimento(atendimento_id: int, session: SessionDep,
     
     # Validar status
     status_atual = atendimento.status
-    if status_atual not in (StatusAtendimento.AGENDADO, StatusAtendimento.CONFIRMADO):
+    status_valor = status_atual.value if hasattr(status_atual, "value") else str(status_atual)
+    if status_valor not in (StatusAtendimento.AGENDADO.value, "Confirmado"):
         from fastapi import HTTPException
         raise HTTPException(
             status_code=400, 
-            detail=f"Não é possível cancelar atendimento com status {status_atual.value if hasattr(status_atual, 'value') else status_atual}."
+            detail=f"Não é possível cancelar atendimento com status {status_valor}."
         )
 
     # CA/TAL aberto pelo professor para a turma não pode ser cancelado pelo aluno.

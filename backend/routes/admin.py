@@ -7,11 +7,12 @@ from sqlmodel import select
 
 from deps.auth import AuthUser, require_roles
 from deps.deps import SessionDep
-from models.disciplina import Disciplina
 from models.sala import Sala
 from models.turma import Turma
 from models.curso import Curso
+from models.users.aluno import Aluno
 from models.users.mediador import Mediador
+from models.users.professor import Professor
 from models.users.user import Usuario
 
 logger = logging.getLogger(__name__)
@@ -19,10 +20,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 AdminUser = Annotated[AuthUser, Depends(require_roles("admin"))]
-
-
-class DisciplinaInput(BaseModel):
-    nome: str = Field(min_length=1, max_length=100)
 
 
 class TurmaInput(BaseModel):
@@ -38,71 +35,6 @@ class SalaInput(BaseModel):
 
 class MediadorRejeitar(BaseModel):
     motivo: Optional[str] = None
-
-
-@router.get("/disciplinas")
-def listar_disciplinas_admin(session: SessionDep, current_user: AdminUser):
-    disciplinas = session.exec(select(Disciplina).order_by(Disciplina.nome)).all()
-    return [{"id": d.id, "nome": d.nome} for d in disciplinas]
-
-
-@router.post("/disciplinas")
-def criar_disciplina(payload: DisciplinaInput, session: SessionDep, current_user: AdminUser):
-    nome = payload.nome.strip()
-    if not nome:
-        raise HTTPException(status_code=400, detail="Nome da disciplina é obrigatório.")
-    
-    existente = session.exec(select(Disciplina).where(Disciplina.nome == nome)).first()
-    if existente:
-        raise HTTPException(status_code=400, detail="Disciplina já cadastrada.")
-    
-    disc = Disciplina(nome=nome)
-    session.add(disc)
-    session.commit()
-    session.refresh(disc)
-    
-    logger.info(f"Disciplina criada: {disc.id} - {disc.nome}")
-    return {"id": disc.id, "nome": disc.nome}
-
-
-@router.put("/disciplinas/{disciplina_id}")
-def atualizar_disciplina(disciplina_id: int, payload: DisciplinaInput, session: SessionDep, current_user: AdminUser):
-    disc = session.get(Disciplina, disciplina_id)
-    if not disc:
-        raise HTTPException(status_code=404, detail="Disciplina não encontrada.")
-
-    nome = payload.nome.strip()
-    if not nome:
-        raise HTTPException(status_code=400, detail="Nome não pode ser vazio.")
-
-    outro = session.exec(
-        select(Disciplina)
-        .where(Disciplina.nome == nome)
-        .where(Disciplina.id != disciplina_id)
-    ).first()
-    if outro:
-        raise HTTPException(status_code=400, detail="Nome de disciplina já existe.")
-
-    disc.nome = nome
-    session.add(disc)
-    session.commit()
-    session.refresh(disc)
-
-    logger.info(f"Disciplina atualizada: {disc.id} - {disc.nome}")
-    return {"id": disc.id, "nome": disc.nome}
-
-
-@router.delete("/disciplinas/{disciplina_id}")
-def remover_disciplina(disciplina_id: int, session: SessionDep, current_user: AdminUser):
-    disc = session.get(Disciplina, disciplina_id)
-    if not disc:
-        raise HTTPException(status_code=404, detail="Disciplina não encontrada.")
-
-    session.delete(disc)
-    session.commit()
-
-    logger.info(f"Disciplina removida: {disciplina_id}")
-    return {"message": "Disciplina removida com sucesso."}
 
 
 @router.get("/turmas")
@@ -278,6 +210,77 @@ def remover_sala(sala_id: int, session: SessionDep, current_user: AdminUser):
 
     logger.info(f"Sala removida: {sala_id}")
     return {"message": "Sala removida com sucesso."}
+
+
+@router.get("/usuarios")
+def listar_usuarios(
+    session: SessionDep,
+    current_user: AdminUser,
+    role: Optional[str] = Query(default=None, description="Filtra por papel: aluno, professor ou mediador."),
+    busca: Optional[str] = Query(default=None, description="Busca por nome, matrícula ou e-mail."),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+):
+    """Lista alunos, professores e mediadores cadastrados (somente leitura)."""
+    query = select(Usuario)
+
+    if role == "aluno":
+        query = query.where(Usuario.id.in_(select(Aluno.id)))
+    elif role == "professor":
+        query = query.where(Usuario.id.in_(select(Professor.id)))
+    elif role == "mediador":
+        query = query.where(Usuario.id.in_(select(Mediador.id)))
+
+    termo = busca.strip() if busca else ""
+    if termo:
+        like = f"%{termo}%"
+        query = query.where(
+            (Usuario.nome.ilike(like))
+            | (Usuario.matricula.ilike(like))
+            | (Usuario.email.ilike(like))
+        )
+
+    usuarios = session.exec(
+        query.order_by(Usuario.nome).offset(skip).limit(limit)
+    ).all()
+
+    ids = [u.id for u in usuarios]
+    alunos = {a.id: a for a in session.exec(select(Aluno).where(Aluno.id.in_(ids))).all()} if ids else {}
+    professores = set(session.exec(select(Professor.id).where(Professor.id.in_(ids))).all()) if ids else set()
+    mediadores = {m.id: m for m in session.exec(select(Mediador).where(Mediador.id.in_(ids))).all()} if ids else {}
+
+    resultado = []
+    for u in usuarios:
+        if u.id in alunos:
+            papel = "aluno"
+        elif u.id in professores:
+            papel = "professor"
+        elif u.id in mediadores:
+            papel = "mediador"
+        elif (u.matricula or "").lower() == "admin":
+            papel = "admin"
+        else:
+            papel = "desconhecido"
+
+        item = {
+            "id": u.id,
+            "nome": u.nome,
+            "matricula": u.matricula,
+            "email": u.email,
+            "role": papel,
+        }
+        if papel == "aluno":
+            a = alunos[u.id]
+            item["necessidades_especiais"] = a.necessidades_especiais
+            item["perfil_completo"] = a.perfil_completo
+            item["turma_id"] = a.turma_id
+        elif papel == "mediador":
+            m = mediadores[u.id]
+            item["aprovado"] = m.aprovado
+            item["tipo"] = m.tipo.value if hasattr(m.tipo, "value") else str(m.tipo)
+        resultado.append(item)
+
+    return {"usuarios": resultado, "total": len(resultado)}
 
 
 @router.get("/mediadores/pendentes")

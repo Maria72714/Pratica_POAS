@@ -223,3 +223,4 @@ async def sincronizar_disciplinas_aluno(
         f"SUAP sync aluno: {len(nomes)} disciplinas, {total_vinculos} novos vínculos professor→disciplina"
     )
     return nomes
+

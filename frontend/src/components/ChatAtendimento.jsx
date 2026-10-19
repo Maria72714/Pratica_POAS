@@ -23,6 +23,25 @@ function formatarData(iso) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
+// Destaques por papel do autor (professor, mediador e admin se sobressaem).
+const ROLE_META = {
+  professor: {
+    label: 'Professor',
+    badge: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+    bubble: 'bg-emerald-50 text-emerald-900 border border-emerald-300',
+  },
+  mediador: {
+    label: 'Mediador',
+    badge: 'bg-violet-100 text-violet-700 border border-violet-200',
+    bubble: 'bg-violet-50 text-violet-900 border border-violet-300',
+  },
+  admin: {
+    label: 'Admin',
+    badge: 'bg-slate-200 text-slate-700 border border-slate-300',
+    bubble: 'bg-slate-50 text-slate-900 border border-slate-300',
+  },
+};
+
 export default function ChatAtendimento({
   atendimentoId,
   titulo = 'Chat do Atendimento',
@@ -198,16 +217,26 @@ export default function ChatAtendimento({
 
                   {msgs.map((m, i) => {
                     const isAutor = m.autor_id === autorId;
+                    const meta = !isAutor ? ROLE_META[m.autor_role] : null;
                     const showAutor = i === 0 || msgs[i - 1]?.autor_id !== m.autor_id;
                     return (
                       <div key={m.id} className={`flex flex-col mb-1 ${isAutor ? 'items-end' : 'items-start'}`}>
                         {showAutor && !isAutor && (
-                          <span className="text-[10px] text-gray-400 font-medium ml-1 mb-0.5">{m.autor_nome}</span>
+                          <span className="flex items-center gap-1 ml-1 mb-0.5">
+                            {meta && (
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${meta.badge}`}>
+                                {meta.label}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-gray-400 font-medium">{m.autor_nome}</span>
+                          </span>
                         )}
                         <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-snug shadow-sm ${
                           isAutor
                             ? 'bg-emerald-600 text-white rounded-tr-sm'
-                            : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
+                            : meta
+                              ? `${meta.bubble} rounded-tl-sm`
+                              : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
                         }`}>
                           {m.mensagem}
                         </div>

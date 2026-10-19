@@ -97,7 +97,7 @@ const Agendamentos = () => {
       );
     } catch (e) {
       console.error(e);
-      alert('Não foi possível cancelar. Tente novamente.');
+      alert(e?.message || 'Não foi possível cancelar. Tente novamente.');
     }
   };
 

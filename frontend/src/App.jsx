@@ -23,6 +23,7 @@ import ProfessorHorarios from './pages/professor/ProfessorHorarios';
 import ProfessorRelatorios from './pages/professor/ProfessorRelatorios';
 import ComplementacaoPerfil from './pages/aluno/ComplementacaoPerfil';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAtendimentos from './pages/admin/AdminAtendimentos';
 
 import { AuthProvider } from './context/AuthContext';
 import { resolveRoleFromUser, getRoleTheme } from './theme/roles';
@@ -116,6 +117,7 @@ function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin 
 
   const adminMenu = [
     { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Painel Admin", link: "/admin" },
+    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Atendimentos", link: "/admin/atendimentos" },
     { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" },
   ];
 
@@ -191,6 +193,7 @@ function App() {
 
           {/* ── Admin ──────────────────────────────────────────────────── */}
           <Route path="/admin" element={<AppLayout isAdmin={true}><AdminDashboard /></AppLayout>} />
+          <Route path="/admin/atendimentos" element={<AppLayout isAdmin={true}><AdminAtendimentos /></AppLayout>} />
 
           {/* ── Rotas do Mediador ───────────────────────────────────────── */}
           <Route path="/mediador" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />

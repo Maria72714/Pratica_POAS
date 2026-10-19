@@ -42,33 +42,59 @@ class AtendimentoService:
         abertos = self.repository.list_tal_abertos_por_aluno(aluno.id)
 
         vistos: set[int] = set()
-        resultado = []
+        atendimentos: list[tuple[Atendimento, bool]] = []
         for atendimento in vinculados:
             if atendimento.id in vistos:
                 continue
             vistos.add(atendimento.id)
-            resultado.append(self._serializar_para_aluno(atendimento, aberto=False))
+            atendimentos.append((atendimento, False))
         for atendimento in abertos:
             if atendimento.id in vistos:
                 continue
             vistos.add(atendimento.id)
-            resultado.append(self._serializar_para_aluno(atendimento, aberto=True))
-        return resultado
+            atendimentos.append((atendimento, True))
 
-    def _serializar_para_aluno(self, atendimento: Atendimento, aberto: bool = False) -> dict:
+        # Carrega disciplinas e professores em lote (evita N+1 por atendimento).
+        disc_ids = {a.id_disciplina for a, _ in atendimentos if a.id_disciplina}
+        prof_ids = {a.id_professor for a, _ in atendimentos if a.id_professor}
+        disc_map = {
+            d.id: d
+            for d in self.session.exec(select(Disciplina).where(Disciplina.id.in_(disc_ids))).all()
+        } if disc_ids else {}
+        prof_map = {
+            u.id: u
+            for u in self.session.exec(select(Usuario).where(Usuario.id.in_(prof_ids))).all()
+        } if prof_ids else {}
+
+        return [
+            self._serializar_para_aluno(atendimento, aberto=aberto, disc_map=disc_map, prof_map=prof_map)
+            for atendimento, aberto in atendimentos
+        ]
+
+    def _serializar_para_aluno(
+        self,
+        atendimento: Atendimento,
+        aberto: bool = False,
+        disc_map: dict | None = None,
+        prof_map: dict | None = None,
+    ) -> dict:
         """Formata o atendimento para o aluno, incluindo professor e disciplina.
 
         ``aberto`` indica um CA/TAL aberto pelo professor para a turma: o aluno
         pode adicionar ao calendário e usar o chat, mas não cancelar.
         """
-        disciplina = (
-            self.session.get(Disciplina, atendimento.id_disciplina)
-            if atendimento.id_disciplina
-            else None
-        )
+        if disc_map is not None:
+            disciplina = disc_map.get(atendimento.id_disciplina) if atendimento.id_disciplina else None
+        else:
+            disciplina = (
+                self.session.get(Disciplina, atendimento.id_disciplina)
+                if atendimento.id_disciplina
+                else None
+            )
+
         professor_nome = None
         if atendimento.id_professor:
-            u_prof = self.session.get(Usuario, atendimento.id_professor)
+            u_prof = prof_map.get(atendimento.id_professor) if prof_map is not None else self.session.get(Usuario, atendimento.id_professor)
             professor_nome = u_prof.nome if u_prof else None
 
         return {
@@ -275,12 +301,13 @@ class AtendimentoService:
             
             if status_enum == StatusAtendimento.CANCELADO:
                 status_atual = atendimento.status
-                logger.info(f"Tentando cancelar. Status atual: {status_atual}")
-                if status_atual not in (StatusAtendimento.AGENDADO, StatusAtendimento.CONFIRMADO):
-                    logger.error(f"Não pode cancelar. Status atual: {status_atual}")
+                status_valor = status_atual.value if hasattr(status_atual, "value") else str(status_atual)
+                logger.info(f"Tentando cancelar. Status atual: {status_valor}")
+                if status_valor not in (StatusAtendimento.AGENDADO.value, "Confirmado"):
+                    logger.error(f"Não pode cancelar. Status atual: {status_valor}")
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Não é possível cancelar atendimento com status {status_atual.value if hasattr(status_atual, 'value') else status_atual}."
+                        detail=f"Não é possível cancelar atendimento com status {status_valor}."
                     )
 
                 # CA/TAL aberto pelo professor para a turma não pode ser
