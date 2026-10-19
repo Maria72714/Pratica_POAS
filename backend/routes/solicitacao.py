@@ -93,6 +93,12 @@ def listar_solicitacoes_pendentes(session: SessionDep,
     return SolicitacaoService(session).listar_solicitacoes_pendentes(role=role)
 
 
+@router.get("/recusadas")
+def listar_solicitacoes_recusadas(session: SessionDep,
+                                  current_user: Annotated[AuthUser, Depends(require_roles("mediador", "admin"))] = None):
+    return SolicitacaoService(session).listar_solicitacoes_recusadas()
+
+
 @router.post("/{solicitacao_id}/selar")
 @router.patch("/{solicitacao_id}/selar")
 def selar_solicitacao(solicitacao_id: int, dados: SelarSolicitacaoInput, session: SessionDep,

@@ -17,6 +17,10 @@ export async function buscarSolicitacoesPendentes() {
   return apiJson(`${PREFIX}/pendentes`);
 }
 
+export async function buscarSolicitacoesRecusadas() {
+  return apiJson(`${PREFIX}/recusadas`);
+}
+
 export async function selarSolicitacao(solicitacaoId, idMediador) {
   return apiJson(`${PREFIX}/${solicitacaoId}/selar`, {
     method: 'POST',

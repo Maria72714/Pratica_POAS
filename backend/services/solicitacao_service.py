@@ -233,36 +233,75 @@ class SolicitacaoService:
             raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
         solicitacoes = self.repository.list_by_aluno_id(aluno.id)
+        if not solicitacoes:
+            return []
+
+        # Carrega em lote todos os dados relacionados (disciplinas, professores,
+        # atendimentos, salas e horários) para evitar N+1 consultas por solicitação.
+        sol_ids = [s.id for s in solicitacoes]
+        disc_ids = {s.id_disciplina for s in solicitacoes if s.id_disciplina}
+
+        disc_map = {
+            d.id: d
+            for d in self.session.exec(select(Disciplina).where(Disciplina.id.in_(disc_ids))).all()
+        } if disc_ids else {}
+
+        # Professores por disciplina (um único SELECT para todas as disciplinas).
+        prof_ids_por_disc: dict[int, list[int]] = {}
+        prof_ids_total: set[int] = set()
+        if disc_ids:
+            for row in self.session.exec(
+                select(ProfessorDisciplina).where(ProfessorDisciplina.disciplina_id.in_(disc_ids))
+            ).all():
+                prof_ids_por_disc.setdefault(row.disciplina_id, []).append(row.professor_id)
+                prof_ids_total.add(row.professor_id)
+        prof_usuario_map = {
+            u.id: u
+            for u in self.session.exec(select(Usuario).where(Usuario.id.in_(prof_ids_total))).all()
+        } if prof_ids_total else {}
+
+        # Atendimentos por solicitação.
+        at_map: dict[int, Atendimento] = {}
+        for at in self.session.exec(
+            select(Atendimento).where(Atendimento.id_solicitacao.in_(sol_ids))
+        ).all():
+            at_map.setdefault(at.id_solicitacao, at)
+
+        sala_ids = {at.id_sala for at in at_map.values() if at.id_sala}
+        horario_ids = {at.id_horario for at in at_map.values() if at.id_horario}
+        sala_map = {
+            s.id: s
+            for s in self.session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+        } if sala_ids else {}
+        horario_map = {
+            h.id: h
+            for h in self.session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+        } if horario_ids else {}
+
         resultado = []
         for s in solicitacoes:
-            disciplina = self.session.get(Disciplina, s.id_disciplina)
+            disciplina = disc_map.get(s.id_disciplina)
 
             # Professores responsáveis pela disciplina (vínculo ProfessorDisciplina),
             # preenchido quando o professor sincroniza seus diários com o SUAP.
             professores = []
-            if disciplina:
-                prof_ids = self.session.exec(
-                    select(ProfessorDisciplina.professor_id).where(
-                        ProfessorDisciplina.disciplina_id == disciplina.id
-                    )
-                ).all()
-                for prof_id in prof_ids:
-                    u_prof = self.session.get(Usuario, prof_id)
-                    if u_prof:
-                        professores.append({
-                            "id": prof_id,
-                            "nome": u_prof.nome,
-                            "email": u_prof.email,
-                        })
+            for prof_id in prof_ids_por_disc.get(s.id_disciplina, []):
+                u_prof = prof_usuario_map.get(prof_id)
+                if u_prof:
+                    professores.append({
+                        "id": prof_id,
+                        "nome": u_prof.nome,
+                        "email": u_prof.email,
+                    })
 
             # Sala/horário só existem depois que o atendimento é agendado.
-            atendimento = self.session.exec(
-                select(Atendimento).where(Atendimento.id_solicitacao == s.id)
-            ).first()
+            atendimento = at_map.get(s.id)
 
             # Se o atendimento já tem professor definido, ele tem prioridade.
             if atendimento and atendimento.id_professor:
-                u_prof_at = self.session.get(Usuario, atendimento.id_professor)
+                u_prof_at = prof_usuario_map.get(atendimento.id_professor) or self.session.get(
+                    Usuario, atendimento.id_professor
+                )
                 if u_prof_at:
                     professores = [p for p in professores if p["id"] != atendimento.id_professor]
                     professores.insert(0, {
@@ -278,10 +317,10 @@ class SolicitacaoService:
             horario_termino = None
             if atendimento:
                 if atendimento.id_sala:
-                    sala = self.session.get(Sala, atendimento.id_sala)
+                    sala = sala_map.get(atendimento.id_sala)
                     sala_nome = sala.nome if sala else None
                 if atendimento.id_horario:
-                    horario = self.session.get(Horario, atendimento.id_horario)
+                    horario = horario_map.get(atendimento.id_horario)
                     if horario:
                         horario_inicio = horario.horario_inicio.isoformat() if horario.horario_inicio else None
                         horario_termino = horario.horario_termino.isoformat() if horario.horario_termino else None
@@ -308,43 +347,53 @@ class SolicitacaoService:
             })
         return resultado
 
-    def listar_solicitacoes_pendentes(self, role: str = None):
-        """
-        Lista solicitações pendentes.
-        - Mediador: vê TODAS as solicitações pendentes (para poder selar)
-        - Professor: vê APENAS solicitações que já foram seladas pelo mediador
-        """
-        solicitacoes = self.repository.list_by_status(StatusSolicitacao.PENDENTE)
+    def _serializar_solicitacoes(self, solicitacoes):
+        """Enriquece uma lista de solicitações com disciplina, aluno, mediador e
+        professores, carregando os dados relacionados em lote (evita N+1)."""
+        if not solicitacoes:
+            return []
+
+        # Carrega em lote disciplinas, usuários e vínculos professor→disciplina.
+        disc_ids = {s.id_disciplina for s in solicitacoes if s.id_disciplina}
+        usuario_ids = set()
+        for s in solicitacoes:
+            if s.id_aluno:
+                usuario_ids.add(s.id_aluno)
+            if s.id_mediador:
+                usuario_ids.add(s.id_mediador)
+
+        disc_map = {
+            d.id: d
+            for d in self.session.exec(select(Disciplina).where(Disciplina.id.in_(disc_ids))).all()
+        } if disc_ids else {}
+
+        prof_ids_por_disc: dict[int, list[int]] = {}
+        if disc_ids:
+            for row in self.session.exec(
+                select(ProfessorDisciplina).where(ProfessorDisciplina.disciplina_id.in_(disc_ids))
+            ).all():
+                prof_ids_por_disc.setdefault(row.disciplina_id, []).append(row.professor_id)
+                usuario_ids.add(row.professor_id)
+
+        usuario_map = {
+            u.id: u
+            for u in self.session.exec(select(Usuario).where(Usuario.id.in_(usuario_ids))).all()
+        } if usuario_ids else {}
+
         itens = []
-
         for solicitacao in solicitacoes:
-            # Se for professor, pular solicitações que não foram seladas
-            if role == "professor" and not solicitacao.id_mediador:
-                continue
-            
-            aluno = self.session.get(Aluno, solicitacao.id_aluno)
-            aluno_user = self.session.get(Usuario, aluno.id) if aluno else None
-            disciplina = self.session.get(Disciplina, solicitacao.id_disciplina)
-
-            mediador_user = None
-            if solicitacao.id_mediador:
-                mediador_user = self.session.get(Usuario, solicitacao.id_mediador)
+            disciplina = disc_map.get(solicitacao.id_disciplina)
+            aluno_user = usuario_map.get(solicitacao.id_aluno)
+            mediador_user = usuario_map.get(solicitacao.id_mediador) if solicitacao.id_mediador else None
 
             professores = []
-            if disciplina:
-                professores_rows = self.session.exec(
-                    select(Professor)
-                    .join(ProfessorDisciplina, Professor.id == ProfessorDisciplina.professor_id)
-                    .where(ProfessorDisciplina.disciplina_id == disciplina.id)
-                ).all()
-
-                for professor in professores_rows:
-                    usuario_prof = self.session.get(Usuario, professor.id)
-                    professores.append({
-                        "id": professor.id,
-                        "nome": usuario_prof.nome if usuario_prof else "Professor não identificado",
-                        "email": usuario_prof.email if usuario_prof else "",
-                    })
+            for prof_id in prof_ids_por_disc.get(solicitacao.id_disciplina, []):
+                usuario_prof = usuario_map.get(prof_id)
+                professores.append({
+                    "id": prof_id,
+                    "nome": usuario_prof.nome if usuario_prof else "Professor não identificado",
+                    "email": usuario_prof.email if usuario_prof else "",
+                })
 
             itens.append({
                 "id": solicitacao.id,
@@ -358,7 +407,7 @@ class SolicitacaoService:
                 "tem_selo": bool(solicitacao.id_mediador),
                 "mediador_nome": mediador_user.nome if mediador_user else None,
                 "aluno": {
-                    "id": aluno.id if aluno else None,
+                    "id": solicitacao.id_aluno,
                     "nome": aluno_user.nome if aluno_user else "Aluno não identificado",
                     "email": aluno_user.email if aluno_user else "",
                     "matricula": aluno_user.matricula if aluno_user else "",
@@ -367,6 +416,25 @@ class SolicitacaoService:
             })
 
         return itens
+
+    def listar_solicitacoes_pendentes(self, role: str = None):
+        """
+        Lista solicitações pendentes.
+        - Mediador: vê TODAS as solicitações pendentes (para poder selar)
+        - Professor: vê APENAS solicitações que já foram seladas pelo mediador
+        """
+        solicitacoes = self.repository.list_by_status(StatusSolicitacao.PENDENTE)
+
+        # Se for professor, considera apenas solicitações já seladas pelo mediador.
+        if role == "professor":
+            solicitacoes = [s for s in solicitacoes if s.id_mediador]
+
+        return self._serializar_solicitacoes(solicitacoes)
+
+    def listar_solicitacoes_recusadas(self):
+        """Lista as solicitações recusadas pelo professor (histórico do mediador)."""
+        solicitacoes = self.repository.list_by_status(StatusSolicitacao.RECUSADO)
+        return self._serializar_solicitacoes(solicitacoes)
 
     def selar_solicitacao(self, solicitacao_id: int, id_mediador: int | str):
         """O mediador apenas CONCEDE O SELO à solicitação. NÃO cria atendimento nem finaliza a aprovação."""
