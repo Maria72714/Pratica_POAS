@@ -1,134 +1,75 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageShell from '../ui/PageShell';
 import PageHeader from '../ui/PageHeader';
 
 const DashboardProfessor = () => {
   const navigate = useNavigate();
-  const estatisticas = [
-    { rotulo: 'Próximos Atendimentos', valor: '3', icone: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', corIcone: 'text-emerald-500', fundoIcone: 'bg-emerald-50' },
-    { rotulo: 'Atendimentos (Mês)', valor: '36', icone: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', corIcone: 'text-blue-500', fundoIcone: 'bg-blue-50' },
-    { rotulo: 'Alunos Atendidos', valor: '28', icone: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', corIcone: 'text-purple-500', fundoIcone: 'bg-purple-50' },
-    { rotulo: 'Taxa de Presença', valor: '94%', icone: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', corIcone: 'text-amber-500', fundoIcone: 'bg-amber-50' },
-  ];
-
-  const dadosMensais = [
-    { mes: 'Jan', valor: 8 },
-    { mes: 'Fev', valor: 10 },
-    { mes: 'Mar', valor: 9 },
-    { mes: 'Abr', valor: 12 },
-  ];
-
-  const dadosDisciplina = [
-    { disciplina: 'POO', valor: 18 },
-    { disciplina: 'Estrutura de Dados', valor: 12 },
-    { disciplina: 'Algoritmos', valor: 6 },
-  ];
 
   return (
     <PageShell>
       <PageHeader
         role="professor"
         title="Área do Professor"
-        subtitle="Gerencie seus atendimentos e visualize estatísticas do Centro de Aprendizagem."
+        subtitle="Gerencie seus atendimentos TAI e configure sua disponibilidade."
       />
 
-      <div>
-      {/* Grade de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {estatisticas.map((estatistica, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-lg ${estatistica.fundoIcone} flex items-center justify-center`}>
-              <svg className={`w-6 h-6 ${estatistica.corIcone}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={estatistica.icone} />
-              </svg>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">{estatistica.rotulo}</p>
-              <p className="text-2xl font-bold text-gray-800">{estatistica.valor}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Gráfico de Linha */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8">
-          <div className="p-6 pb-2 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Meus Atendimentos por Mês</h2>
-          </div>
-          <div className="p-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dadosMensais} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-                <Tooltip cursor={{ stroke: '#f3f4f6', strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Gráfico de Barras */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8">
-          <div className="p-6 pb-2 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Atendimentos por Disciplina</h2>
-          </div>
-          <div className="p-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dadosDisciplina} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="disciplina" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-                <Tooltip cursor={{fill: '#f3f4f6'}} />
-                <Bar dataKey="valor" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={50} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Ações Rápidas */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-8 p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Ações Rápidas</h2>
+      <div className="space-y-6">
+        {/* Menu Principal */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           <button 
-            onClick={() => navigate('/professor/completar-perfil')}
-            className="flex flex-col items-start p-4 border border-emerald-600 bg-emerald-700 text-white rounded-lg text-left hover:bg-emerald-800 transition-all shadow-md"
+            onClick={() => navigate('/professor/atendimentos')}
+            className="flex flex-col items-start p-6 border border-emerald-200 bg-emerald-50 text-emerald-900 rounded-xl text-left hover:bg-emerald-100 transition-colors shadow-sm"
           >
-            <span className="font-bold text-white mb-1">📚 Vincular Minhas Disciplinas e Turmas</span>
-            <span className="text-xs text-emerald-100">Selecione as matérias que você leciona e as turmas atendidas no pratiCA</span>
+            <span className="font-bold text-lg">Meus Atendimentos</span>
+            <span className="text-sm text-emerald-700 mt-1">Visualize e gerencie todos os seus atendimentos TAI</span>
           </button>
 
-          <button
+          <button 
             onClick={() => navigate('/professor/atendimentos/novo')}
-            className="px-4 py-2.5 bg-emerald-700 text-white text-sm font-medium
-              rounded-lg hover:bg-emerald-800 transition-colors shadow-sm shrink-0"
+            className="flex flex-col items-start p-6 border border-emerald-600 bg-emerald-700 text-white rounded-xl text-left hover:bg-emerald-800 transition-colors shadow-sm"
           >
-            + Novo Atendimento
+            <span className="font-bold text-lg">Novo Atendimento</span>
+            <span className="text-sm text-emerald-100 mt-1">Crie um novo atendimento para alunos</span>
           </button>
-          
-          <button className="flex flex-col items-start p-4 border border-gray-100 rounded-lg text-left hover:bg-gray-50 transition-colors">
-            <span className="font-semibold text-gray-800 mb-1">Gerenciar Horários</span>
-            <span className="text-sm text-gray-500">Configure sua disponibilidade semanal</span>
+
+          <button 
+            onClick={() => navigate('/professor/horarios')}
+            className="flex flex-col items-start p-6 border border-blue-200 bg-blue-50 text-blue-900 rounded-xl text-left hover:bg-blue-100 transition-colors shadow-sm"
+          >
+            <span className="font-bold text-lg">Horários Disponíveis</span>
+            <span className="text-sm text-blue-700 mt-1">Configure sua disponibilidade semanal</span>
           </button>
-          
-          <button className="flex flex-col items-start p-4 border border-gray-100 rounded-lg text-left hover:bg-gray-50 transition-colors">
-            <span className="font-semibold text-gray-800 mb-1">Dashboard de Indicadores</span>
-            <span className="text-sm text-gray-500">Visualize gráficos detalhados por disciplina e período</span>
+
+          <button 
+            onClick={() => navigate('/professor/completar-perfil')}
+            className="flex flex-col items-start p-6 border border-purple-200 bg-purple-50 text-purple-900 rounded-xl text-left hover:bg-purple-100 transition-colors shadow-sm"
+          >
+            <span className="font-bold text-lg">Minhas Disciplinas</span>
+            <span className="text-sm text-purple-700 mt-1">Vincule as disciplinas e turmas que você leciona</span>
           </button>
-          
-          <button className="flex flex-col items-start p-4 border border-gray-100 rounded-lg text-left hover:bg-gray-50 transition-colors">
-            <span className="font-semibold text-gray-800 mb-1">Relatórios Mensais</span>
-            <span className="text-sm text-gray-500">Gere relatórios de atendimentos realizados</span>
+
+          <button 
+            onClick={() => navigate('/professor/relatorios')}
+            className="flex flex-col items-start p-6 border border-amber-200 bg-amber-50 text-amber-900 rounded-xl text-left hover:bg-amber-100 transition-colors shadow-sm"
+          >
+            <span className="font-bold text-lg">Relatórios</span>
+            <span className="text-sm text-amber-700 mt-1">Gere relatórios de atendimentos realizados</span>
           </button>
 
         </div>
-      </div>
+
+        {/* Informações Úteis */}
+        <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-6">
+          <h3 className="font-bold text-emerald-900 mb-3">Bem-vindo ao Sistema pratiCA</h3>
+          <ul className="space-y-2 text-sm text-emerald-800">
+            <li>Crie atendimentos presenciais ou remotos para os alunos</li>
+            <li>Configure seus horários disponíveis para atendimento</li>
+            <li>Gerencie solicitações TAI enviadas por alunos e mediadores</li>
+            <li>Acompanhe relatórios de atendimentos realizados</li>
+          </ul>
+        </div>
       </div>
     </PageShell>
   );

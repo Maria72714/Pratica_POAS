@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { buscarAtendimentosProfessor } from '../../services/professor/agendamento';
+import { buscarAtendimentosProfessor, editarAtendimentoProfessor } from '../../services/professor/agendamento';
 import { buscarSolicitacoesPendentes, decidirSolicitacao } from '../../services/aluno/solicitacao';
 import { useNavigate } from 'react-router-dom';
 import CalendarioAtendimentos from '../../components/CalendarioAtendimentos';
@@ -9,6 +9,9 @@ const ProfessorAtendimentos = () => {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [solicitacoesPendentes, setSolicitacoesPendentes] = useState([]);
+  const [modalLinkCA, setModalLinkCA] = useState(null); // { id, link_atual }
+  const [linkCAInput, setLinkCAInput] = useState('');
+  const [salvandoLink, setSalvandoLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [carregandoSolicitacoes, setCarregandoSolicitacoes] = useState(false);
   const [processandoId, setProcessandoId] = useState(null);
@@ -103,6 +106,32 @@ const ProfessorAtendimentos = () => {
       alert(err.message || 'Erro ao processar solicitação.');
     } finally {
       setProcessandoId(null);
+    }
+  };
+
+  const handleAbrirModalLinkCA = (atendimento) => {
+    setLinkCAInput(atendimento.link_ca_online || '');
+    setModalLinkCA({ id: atendimento.id, link_atual: atendimento.link_ca_online });
+  };
+
+  const handleSalvarLinkCA = async () => {
+    if (!linkCAInput.trim()) return;
+    // Validação básica de URL
+    try { new URL(linkCAInput.trim()); } catch {
+      alert('Por favor, insira uma URL válida (ex.: https://zoom.us/j/...)');
+      return;
+    }
+    setSalvandoLink(true);
+    try {
+      await editarAtendimentoProfessor(modalLinkCA.id, { link_ca_online: linkCAInput.trim() });
+      setAppointments(prev =>
+        prev.map(a => a.id === modalLinkCA.id ? { ...a, link_ca_online: linkCAInput.trim() } : a)
+      );
+      setModalLinkCA(null);
+    } catch (err) {
+      alert(err.message || 'Erro ao salvar o link.');
+    } finally {
+      setSalvandoLink(false);
     }
   };
 
@@ -275,6 +304,37 @@ const ProfessorAtendimentos = () => {
                           </svg>
                           Chat
                         </button>
+
+                        {/* Botão CA Online — só aparece para atendimentos remotos */}
+                        {atendimento.modalidade === 'Remoto' && !atendimento.link_ca_online && (
+                          <button
+                            onClick={() => handleAbrirModalLinkCA(atendimento)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4.243 4.243a4 4 0 105.656 5.656l4.243-4.243" />
+                            </svg>
+                            + Link CA Online
+                          </button>
+                        )}
+                        {atendimento.modalidade === 'Remoto' && atendimento.link_ca_online && (
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            <a
+                              href={atendimento.link_ca_online}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                            >
+                              🌐 CA Online
+                            </a>
+                            <button
+                              onClick={() => handleAbrirModalLinkCA(atendimento)}
+                              className="text-[10px] text-gray-400 hover:text-gray-600 underline"
+                            >
+                              alterar link
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -407,6 +467,48 @@ const ProfessorAtendimentos = () => {
           abertoInicial={true}
           onFechar={() => setChatAtendimentoId(null)}
         />
+      )}
+
+      {/* Modal: Adicionar/Editar Link CA Online */}
+      {modalLinkCA && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">
+                {modalLinkCA.link_atual ? 'Alterar Link CA Online' : 'Adicionar Link CA Online'}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Cole o link da reunião remota (Zoom, Google Meet, Microsoft Teams, etc).
+                O aluno poderá acessar pelo calendário.
+              </p>
+            </div>
+
+            <input
+              type="url"
+              value={linkCAInput}
+              onChange={(e) => setLinkCAInput(e.target.value)}
+              placeholder="https://zoom.us/j/123456789"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              autoFocus
+            />
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setModalLinkCA(null)}
+                className="px-4 py-2 text-sm border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSalvarLinkCA}
+                disabled={!linkCAInput.trim() || salvandoLink}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-semibold"
+              >
+                {salvandoLink ? 'Salvando...' : 'Salvar Link'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
