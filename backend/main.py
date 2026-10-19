@@ -48,15 +48,19 @@ allowed_origins = os.getenv(
     "http://localhost:5173,http://127.0.0.1:5173",
 ).split(",")
 
+app.add_middleware(JWTAuthMiddleware)
+
+# O CORS precisa ser o middleware mais externo (adicionado por último) para que os
+# cabeçalhos de CORS também sejam aplicados às respostas de erro (401/403/500)
+# geradas pelo JWTAuthMiddleware. Caso contrário o navegador exibe erro de CORS
+# em vez do status real, e o frontend não consegue tratar o 401 (expirar sessão).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in allowed_origins if o.strip()],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
-
-app.add_middleware(JWTAuthMiddleware)
 
 # Routers
 from routes import notificacoes, professores, solicitacao, chat, admin, suap
