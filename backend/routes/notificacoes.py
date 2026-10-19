@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
 from datetime import datetime
 from pydantic import BaseModel
@@ -27,7 +27,7 @@ class CriarNotificacaoInput(BaseModel):
 def listar_notificacoes(
     matricula_ou_id: str,
     session: SessionDep,
-    current: Annotated[AuthUser, get_current_user],
+    current: Annotated[AuthUser, Depends(get_current_user)],
 ):
     assert_self_or_roles(current, matricula_ou_id, "admin")
     # Procura usuário por id ou matrícula
@@ -63,7 +63,7 @@ def listar_notificacoes(
 def criar_notificacao(
     payload: CriarNotificacaoInput,
     session: SessionDep,
-    current: Annotated[AuthUser, get_current_user],
+    current: Annotated[AuthUser, Depends(get_current_user)],
 ):
     if current.role not in {"admin", "professor", "mediador"}:
         raise HTTPException(status_code=403, detail="Permissão insuficiente.")
