@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchDisciplinas } from '../../services/api';
+import { fetchDisciplinas, fetchDisciplinasLocais, fetchDisciplinasSuap } from '../../services/api';
 import { cadastrarSolicitacao, buscarSolicitacoes } from '../../services/aluno/solicitacao';
 import { buscarAtendimentos } from '../../services/aluno/agendamento';
 import CalendarioAtendimentos from '../CalendarioAtendimentos';
@@ -20,14 +20,20 @@ const SolicitacaoTAI = () => {
     const parsed = JSON.parse(dados);
     setUsuario(parsed);
 
-    // Disciplinas vêm do localStorage (preenchidas no login/perfil) ou da API como fallback
-    if (parsed.disciplinas?.length) {
-      setDisciplinas(parsed.disciplinas);
-    } else if (parsed.curso_id && parsed.ano_letivo) {
-      fetchDisciplinas(parsed.curso_id, parsed.ano_letivo)
-        .then((res) => setDisciplinas(res.disciplinas ?? []))
-        .catch(() => setDisciplinas([]));
-    }
+    // Disciplinas: SUAP (real) → localStorage (salvo no login)
+    fetchDisciplinasSuap()
+      .then((lista) => {
+        if (lista.length > 0) {
+          setDisciplinas(lista);
+        } else {
+          // SUAP retornou vazio: usa o que foi salvo no login
+          setDisciplinas(parsed.disciplinas ?? []);
+        }
+      })
+      .catch(() => {
+        // SUAP inacessível: usa o que foi salvo no login
+        setDisciplinas(parsed.disciplinas ?? []);
+      });
 
     if (parsed.matricula) {
       Promise.allSettled([
@@ -122,6 +128,8 @@ const SolicitacaoTAI = () => {
       });
       navigate('/historico');
     } catch (err) {
+      const mensagem = err.response?.data?.detail || err.message || 'Erro ao solicitar CA';
+      alert(mensagem);
       console.error('Erro ao solicitar CA:', err);
     }
   }
@@ -247,8 +255,14 @@ const SolicitacaoTAI = () => {
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
-                {disciplinas.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">Nenhuma disciplina encontrada para seu curso/ano.</p>
+                {disciplinas.length === 0 ? (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Nenhuma disciplina encontrada. Faça logout e login novamente pelo SUAP para sincronizar suas matérias.
+                  </p>
+                ) : (
+                  <p className="text-xs text-emerald-700 mt-1">
+                    {disciplinas.length} disciplina(s) carregada(s) do SUAP
+                  </p>
                 )}
               </div>
 

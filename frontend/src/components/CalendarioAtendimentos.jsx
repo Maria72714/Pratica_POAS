@@ -315,6 +315,14 @@ export default function CalendarioAtendimentos({
                       <span className="text-gray-400">🕒</span>
                       <span>{item.horario || 'Horário a definir'}</span>
                     </div>
+                    {item.modalidade && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400">{item.modalidade === 'Remoto' ? '💻' : '🏫'}</span>
+                        <span className={`font-medium ${item.modalidade === 'Remoto' ? 'text-blue-600' : 'text-gray-600'}`}>
+                          {item.modalidade}
+                        </span>
+                      </div>
+                    )}
                     {item.professor && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400">👤</span>
@@ -325,6 +333,19 @@ export default function CalendarioAtendimentos({
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400">📍</span>
                         <span>{item.local}</span>
+                      </div>
+                    )}
+                    {item.link_ca_online && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400">🌐</span>
+                        <a 
+                          href={item.link_ca_online} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-emerald-600 hover:text-emerald-800 underline truncate"
+                        >
+                          CA Online
+                        </a>
                       </div>
                     )}
                     {item.assunto && (

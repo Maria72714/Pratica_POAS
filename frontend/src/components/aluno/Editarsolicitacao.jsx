@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buscarSolicitacaoPorId, editarSolicitacao, buscarSolicitacoes } from "../../services/aluno/solicitacao";
 import { buscarAtendimentos } from "../../services/aluno/agendamento";
-import { fetchDisciplinas } from "../../services/api";
+import { fetchDisciplinas, fetchDisciplinasLocais, fetchDisciplinasSuap } from "../../services/api";
 import CalendarioAtendimentos from "../CalendarioAtendimentos";
 
 const OPCOES_SUPORTE = [
@@ -38,13 +38,13 @@ export default function EditarSolicitacao() {
     if (!dados) return;
     const parsed = JSON.parse(dados);
 
-    if (parsed.disciplinas?.length) {
-      setDisciplinas(parsed.disciplinas); // array de nomes
-    } else if (parsed.curso_id && parsed.ano_letivo) {
-      fetchDisciplinas(parsed.curso_id, parsed.ano_letivo)
-        .then((res) => setDisciplinas(res.disciplinas ?? []))
-        .catch(() => setDisciplinas([]));
-    }
+    // Disciplinas: SUAP (real) → localStorage (salvo no login)
+    fetchDisciplinasSuap()
+      .then((lista) => {
+        if (lista.length > 0) { setDisciplinas(lista); }
+        else { setDisciplinas(parsed.disciplinas ?? []); }
+      })
+      .catch(() => { setDisciplinas(parsed.disciplinas ?? []); });
 
     if (parsed.matricula) {
       Promise.allSettled([

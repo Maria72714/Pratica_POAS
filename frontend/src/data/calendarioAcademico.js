@@ -71,3 +71,8 @@ export function getEventoDoDia(dataISO) {
   const feriados = getFeriadosDoAno(ano);
   return feriados.find((f) => f.data === dataISO);
 }
+
+
+export function isFeriadoOuRecesso(dataISO) {
+  return getEventoDoDia(dataISO) !== null && getEventoDoDia(dataISO) !== undefined;
+}

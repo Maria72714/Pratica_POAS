@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {buscarPerfilProfessor,cadastrarAtendimentoProfessor,
 } from '../../services/professor/agendamento';
+import { fetchDisciplinasSuap } from '../../services/api';
 
 function hojeISO() {
   const d = new Date();
@@ -32,6 +33,7 @@ export default function NovoAtendimento() {
     data_atendimento: '',
     tipo_atendimento: 'TAL',
     modalidade: 'Presencial',
+    link_ca_online: '',
   });
 
   useEffect(() => {
@@ -172,6 +174,24 @@ export default function NovoAtendimento() {
                 <Opcoes campo="modalidade" valores={MODALIDADES} />
               </div>
             </div>
+
+            {form.modalidade === 'Remoto' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Link do Centro de Aprendizagem Online
+                </label>
+                <input
+                  type="url"
+                  value={form.link_ca_online}
+                  onChange={atualizar('link_ca_online')}
+                  placeholder="Ex.: https://zoom.us/j/123456789 ou https://meet.google.com/..."
+                  className={inputClass}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Opcional - você pode adicionar o link depois, antes da reunião
+                </p>
+              </div>
+            )}
 
             {erro && (
               <p className="text-red-600 bg-red-50 rounded-lg p-3 text-sm">{erro}</p>

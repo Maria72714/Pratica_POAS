@@ -11,6 +11,13 @@ export async function cadastrarAtendimentoProfessor(dados) {
   });
 }
 
+export async function editarAtendimentoProfessor(atendimentoId, dados) {
+  return apiJson(`/atendimentos/${atendimentoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(dados),
+  });
+}
+
 export async function buscarPerfilProfessor(matricula) {
   return apiJson(`/professores/perfil/${matricula}`);
 }
