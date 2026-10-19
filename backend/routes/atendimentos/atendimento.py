@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from deps.deps import SessionDep
+from deps.auth import AuthUser, get_current_user
 from models.atendimento import Atendimento
 from services.atendimento_service import AtendimentoService
 
@@ -21,6 +23,14 @@ class AtendimentoCreateModel(BaseModel):
     matricula: Optional[str] = None            # compatibilidade (matrícula única)
     matriculas: Optional[List[str]] = None     # nova: várias matrículas (preferível)
     professor_matricula: Optional[str] = None  # matricula do professor (opcional)
+
+class AtendimentoUpdateModel(BaseModel):
+    status: Optional[str] = None
+    link_ca_online: Optional[str] = None
+    modalidade: Optional[str] = None
+    data_atendimento: Optional[date] = None
+    assunto: Optional[str] = None
+    relatorio: Optional[str] = None
 
 class AtendimentoResponse(BaseModel):
     id: int
@@ -126,13 +136,18 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
     return AtendimentoService(session).deletar_atendimento(atendimento_id)
 
 
-@router.patch("/{atendimento_id}", response_model=Atendimento)
-def editar_atendimento(atendimento_id: int, dados: Atendimento, session: SessionDep):
+@router.patch("/{atendimento_id}")
+def editar_atendimento(atendimento_id: int, dados: AtendimentoUpdateModel, session: SessionDep,
+                       current_user: Annotated[AuthUser, Depends(get_current_user)] = None):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"PATCH /atendimentos/{atendimento_id} - User: {current_user.id if current_user else 'None'}, Dados: {dados}")
     return AtendimentoService(session).editar_atendimento(atendimento_id, dados)
 
 
 @router.post("/{atendimento_id}/cancelar")
-def cancelar_atendimento(atendimento_id: int, session: SessionDep):
+def cancelar_atendimento(atendimento_id: int, session: SessionDep,
+                         current_user: Annotated[AuthUser, Depends(get_current_user)] = None):
     """
     Cancelar um atendimento agendado.
     Apenas atendimentos com status AGENDADO ou CONFIRMADO podem ser cancelados.
@@ -162,11 +177,10 @@ def cancelar_atendimento(atendimento_id: int, session: SessionDep):
     session.commit()
     session.refresh(atendimento)
     
-    logger.info(f"Atendimento {atendimento_id} cancelado")
+    logger.info(f"Atendimento {atendimento_id} cancelado pelo usuário {current_user.id}")
     
     return {
         "message": "Atendimento cancelado com sucesso.",
         "id": atendimento_id,
         "status": StatusAtendimento.CANCELADO.value if hasattr(StatusAtendimento.CANCELADO, 'value') else str(StatusAtendimento.CANCELADO)
     }
-
