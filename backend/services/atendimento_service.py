@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlmodel import select
+import logging
 
 from models.atendimento import Atendimento
 from models.users.aluno import Aluno
@@ -8,6 +9,9 @@ from models.users.professor import Professor
 from models.users.user import Usuario
 from repositories.atendimento_repository import AtendimentoRepository
 from repositories.usuario_repository import UsuarioRepository
+from services.notification_service import NotificationService
+
+logger = logging.getLogger(__name__)
 
 
 class AtendimentoService:
@@ -15,6 +19,7 @@ class AtendimentoService:
         self.session = session
         self.repository = AtendimentoRepository(session)
         self.usuario_repository = UsuarioRepository(session)
+        self.notification_service = NotificationService(session)
 
     def listar_atendimentos(self):
         return self.repository.list_all()
@@ -103,56 +108,39 @@ class AtendimentoService:
             self.session.add(assoc)
         self.session.commit()
 
-        # notificações: adapte para notificar todos os alunos se quiser
+        # notificações usando NotificationService
         try:
-            from models.associativas.usuario_notificacao import UsuarioNotificacao
-            from models.notificacao import Notificacao
-            from models.users.mediador import Mediador
-
             data_str = dados.data_atendimento.strftime("%d/%m/%Y")
-
-            notif_aluno = Notificacao(
-                titulo=f"Atendimento em {dados.disciplina} Registrado",
-                mensagem=f"O atendimento para {data_str} foi registrado com sucesso.",
-                lida=False,
+            
+            # Notificar alunos
+            self.notification_service.notificar_multiplos(
+                usuario_ids=aluno_ids,
+                titulo=f"Atendimento Registrado: {dados.disciplina}",
+                mensagem=f"Seu atendimento em {dados.disciplina} foi agendado para {data_str}."
             )
-            self.session.add(notif_aluno)
-            self.session.commit()
-            self.session.refresh(notif_aluno)
-
-            # associa notificação a cada aluno participante
-            for aid in aluno_ids:
-                self.session.add(UsuarioNotificacao(usuario_id=aid, notificacao_id=notif_aluno.id))
-
-            # notificar professor (se houver)
+            
+            # Notificar professor
             if professor:
-                notif_prof = Notificacao(
+                self.notification_service.notificar_usuario(
+                    usuario_id=professor.id,
                     titulo=f"Atendimento Agendado: {dados.disciplina}",
-                    mensagem=f"Há um atendimento agendado para {data_str}.",
-                    lida=False,
+                    mensagem=f"Um atendimento foi agendado em {dados.disciplina} para {data_str}."
                 )
-                self.session.add(notif_prof)
-                self.session.commit()
-                self.session.refresh(notif_prof)
-                self.session.add(UsuarioNotificacao(usuario_id=professor.id, notificacao_id=notif_prof.id))
-
-            # notificar mediadores se tipo_suporte
+            
+            # Notificar mediadores se TAI
             if dados.tipo_suporte:
-                notif_mediador = Notificacao(
-                    titulo=f"Nova Demanda TAI: {dados.tipo_suporte}",
-                    mensagem=f"Demanda TAI registrada para {dados.disciplina} em {data_str}.",
-                    lida=False,
-                )
-                self.session.add(notif_mediador)
-                self.session.commit()
-                self.session.refresh(notif_mediador)
+                from models.users.mediador import Mediador
                 mediadores = self.session.exec(select(Mediador)).all()
-                for mediador in mediadores:
-                    self.session.add(UsuarioNotificacao(usuario_id=mediador.id, notificacao_id=notif_mediador.id))
-
-            self.session.commit()
-        except Exception as exc:  # pragma: no cover
-            print(f"[NOTIFICAÇÕES] Erro ao disparar notificação automática: {exc}")
+                mediador_ids = [m.id for m in mediadores]
+                if mediador_ids:
+                    self.notification_service.notificar_multiplos(
+                        usuario_ids=mediador_ids,
+                        titulo=f"Nova Demanda TAI: {dados.tipo_suporte}",
+                        mensagem=f"Demanda TAI registrada para {dados.disciplina} em {data_str}."
+                    )
+                    
+        except Exception as exc:
+            logger.error(f"[NOTIFICAÇÕES] Erro ao disparar notificação automática: {exc}")
 
         return atendimento
 
@@ -165,12 +153,65 @@ class AtendimentoService:
         return {"ok": True}
 
     def editar_atendimento(self, atendimento_id: int, dados: Atendimento):
+        import logging
+        from models.enums import StatusAtendimento
+        
+        logger = logging.getLogger(__name__)
+        
         atendimento = self.repository.get_by_id(atendimento_id)
         if not atendimento:
+            logger.error(f"Atendimento {atendimento_id} não encontrado")
             raise HTTPException(status_code=404, detail="Atendimento não encontrado")
 
         dados_update = dados.model_dump(exclude_unset=True)
+        logger.info(f"Editando atendimento {atendimento_id} com dados: {dados_update}")
+        
+        # Validar cancelamento
+        if 'status' in dados_update:
+            novo_status = dados_update['status']
+            logger.info(f"Novo status: {novo_status}, tipo: {type(novo_status)}")
+            
+            try:
+                status_enum = StatusAtendimento(novo_status) if isinstance(novo_status, str) else novo_status
+                logger.info(f"Status enum: {status_enum}")
+            except ValueError as e:
+                logger.error(f"Status inválido: {novo_status}. Erro: {e}")
+                raise HTTPException(status_code=400, detail=f"Status inválido: {novo_status}")
+            
+            if status_enum == StatusAtendimento.CANCELADO:
+                status_atual = atendimento.status
+                logger.info(f"Tentando cancelar. Status atual: {status_atual}")
+                if status_atual not in (StatusAtendimento.AGENDADO, StatusAtendimento.CONFIRMADO):
+                    logger.error(f"Não pode cancelar. Status atual: {status_atual}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Não é possível cancelar atendimento com status {status_atual.value if hasattr(status_atual, 'value') else status_atual}."
+                    )
+        
         for campo, valor in dados_update.items():
             setattr(atendimento, campo, valor)
 
-        return self.repository.update(atendimento)
+        resultado = self.repository.update(atendimento)
+        
+        # Notificar sobre cancelamento se aplicável
+        try:
+            if 'status' in dados_update and dados_update['status'] == 'Cancelado':
+                # Buscar alunos associados
+                aluno_atendimentos = self.session.exec(
+                    select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id == atendimento_id)
+                ).all()
+                aluno_ids = [aa.aluno_id for aa in aluno_atendimentos]
+                
+                disciplina_nome = getattr(atendimento, 'assunto', 'Atendimento').split('|')[0].replace('Disciplina:', '').strip()
+                professor_id = getattr(atendimento, 'id_professor', None)
+                
+                self.notification_service.notificar_atendimento_cancelado(
+                    aluno_ids=aluno_ids,
+                    professor_id=professor_id,
+                    disciplina_nome=disciplina_nome
+                )
+        except Exception as e:
+            logger.error(f"Erro ao notificar cancelamento: {e}")
+        
+        logger.info(f"Atendimento {atendimento_id} atualizado: {resultado}")
+        return resultado
