@@ -1,9 +1,9 @@
 import logging
-import logging
 import pathlib
 import os
+from typing import Annotated
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -17,6 +17,7 @@ from routes.alunos import alunos
 from fastapi.staticfiles import StaticFiles
 from deps.deps import lifespan, SessionDep
 from deps.auth_middleware import JWTAuthMiddleware
+from deps.auth import AuthUser, require_roles
 from models.users.user import Usuario
 from models.users.aluno import Aluno
 from models.users.professor import Professor
@@ -58,7 +59,7 @@ app.add_middleware(
 app.add_middleware(JWTAuthMiddleware)
 
 # Routers
-from routes import notificacoes, professores, solicitacao, chat, admin
+from routes import notificacoes, professores, solicitacao, chat, admin, suap
 
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(atendimento_prof.router, prefix="/api")
@@ -69,6 +70,7 @@ app.include_router(professores.router, prefix="/api")
 app.include_router(solicitacao.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(suap.router, prefix="/api")
 
 uploads_laudos = pathlib.Path(__file__).parent / "uploads" / "laudos"
 uploads_laudos.mkdir(parents=True, exist_ok=True)
@@ -133,6 +135,20 @@ def login_local(payload: LoginInput, session: SessionDep):
     return UsuarioService(session).autenticar_local(payload)
 
 
+@app.post("/api/logout")
+def logout(current_user: Annotated[AuthUser, Depends(require_roles("aluno", "professor", "mediador", "admin"))]):
+    from deps.auth_middleware import _auth_cache
+    from services.suap_token_store import remover_token as _remover_suap_token
+    
+    tokens_to_remove = [k for k, v in _auth_cache.items() if v["user"].id == current_user.id]
+    for token in tokens_to_remove:
+        del _auth_cache[token]
+
+    _remover_suap_token(current_user.id)
+    
+    return {"message": "Logout realizado com sucesso"}
+
+
 @app.post("/api/auth/suap")
 async def auth_suap(payload: AuthCode, session: SessionDep):
     logger.info("Iniciando autenticação SUAP")
@@ -161,18 +177,16 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
             logger.warning(f"access_token não retornado pelo SUAP. Response: {token_data}")
             raise HTTPException(status_code=400, detail="Token inválido do SUAP")
 
-        suap_rh_eu = os.getenv("SUAP_RH_EU")
-        base_profile = SUAP_PROFILE_URL or "https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-dados/"
-        
-        attempts = [
-            {"url": base_profile, "auth": f"Bearer {access_token}"},
-            {"url": base_profile, "auth": f"JWT {access_token}"},
-        ]
-        if suap_rh_eu:
-            attempts.extend([
-                {"url": suap_rh_eu, "auth": f"Bearer {access_token}"},
-                {"url": suap_rh_eu, "auth": f"JWT {access_token}"},
-            ])
+        # Base correta da API v2 do SUAP (confirmada em https://suap.ifrn.edu.br/api/docs/).
+        suap_api = "https://suap.ifrn.edu.br/api"
+        # /api/rh/eu/ é o endpoint de identidade (funciona para aluno e servidor).
+        suap_eu = os.getenv("SUAP_RH_EU") or f"{suap_api}/rh/eu/"
+        suap_perfil = SUAP_PROFILE_URL or f"{suap_api}/rh/meus-dados/"
+
+        attempts = []
+        for url_candidata in [suap_eu, suap_perfil]:
+            attempts.append({"url": url_candidata, "auth": f"Bearer {access_token}"})
+            attempts.append({"url": url_candidata, "auth": f"JWT {access_token}"})
         
         logger.debug(f"Tentando {len(attempts)} URLs para perfil")
         profile_response = None
@@ -203,18 +217,53 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
         perfil = profile_response.json()
 
-    nome = perfil.get("nome_usual") or perfil.get("nome")
-    nome_completo = perfil.get("nome_registro") or perfil.get("nome")
-    matricula = perfil.get("matricula") or perfil.get("identificacao")
+    # Campos da API SUAP v2:
+    # - nome_usual: nome curto
+    # - vinculo.nome: nome completo
+    # - tipo_vinculo: "Aluno" | "Servidor" | "Prestador de Serviço"
+    # - vinculo.matricula: matrícula (também disponível no top-level)
+    # - url_foto_75x100: foto do usuário
+    # - vinculo.campus: campus do usuário
+    # - vinculo.curso: curso do aluno
+    # - vinculo.situacao: situação do aluno ("Matriculado", etc.)
+
+    vinculo_obj = perfil.get("vinculo") or {}
+
+    nome = perfil.get("nome_usual") or perfil.get("nome") or vinculo_obj.get("nome")
+    nome_completo = vinculo_obj.get("nome") or perfil.get("nome_registro") or nome
+    matricula = (
+        perfil.get("matricula")
+        or vinculo_obj.get("matricula")
+        or perfil.get("identificacao")
+    )
     email = (
+        perfil.get("email_academico")
+        or perfil.get("email_institucional")
+        or perfil.get("email_preferencial")
+        or perfil.get("email")
+        or f"{matricula}@academico.ifrn.edu.br"
+    )
+    # Email pessoal guardado separado para referência, mas NÃO é o email principal
+    email_pessoal = (
         perfil.get("email")
         or perfil.get("email_preferencial")
-        or perfil.get("email_academico")
         or perfil.get("email_secundario")
-        or f"{matricula}@suap.ifrn.edu.br"
     )
     tipo_vinculo = perfil.get("tipo_vinculo") or perfil.get("tipo_usuario")
-    foto = perfil.get("foto")
+    # URL foto correta da API SUAP v2
+    foto = (
+        perfil.get("url_foto_75x100")
+        or perfil.get("foto")
+        or perfil.get("url_foto")
+    )
+    # Prefixar com domínio SUAP se for um path relativo
+    if foto and foto.startswith("/"):
+        foto = f"https://suap.ifrn.edu.br{foto}"
+    
+    campus = vinculo_obj.get("campus") or perfil.get("campus")
+    curso_suap = vinculo_obj.get("curso") or perfil.get("curso")
+    situacao = vinculo_obj.get("situacao") or perfil.get("situacao")
+
     necessidades_especiais = _detect_special_needs(perfil)
 
     if not matricula:
@@ -222,7 +271,32 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
     db_user = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
     vinculo_lower = (tipo_vinculo or "").lower()
+    # "Aluno" é o tipo_vinculo exato para alunos no SUAP
     is_aluno = "aluno" in vinculo_lower
+    
+    logger.info(f"Login SUAP: matricula={matricula}, tipo_vinculo={tipo_vinculo}, campus={campus}, is_aluno={is_aluno}")
+
+    # Para alunos, complementa com os dados acadêmicos oficiais do SUAP
+    # (curso e situação), necessários para identificar turma/curso.
+    if is_aluno:
+        try:
+            async with httpx.AsyncClient() as acad_client:
+                r_acad = await acad_client.get(
+                    "https://suap.ifrn.edu.br/api/ensino/meus-dados-aluno/",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=8.0,
+                    follow_redirects=True,
+                )
+                if r_acad.status_code == 200:
+                    dados_acad = r_acad.json()
+                    if isinstance(dados_acad, dict):
+                        curso_suap = curso_suap or dados_acad.get("curso")
+                        situacao = situacao or dados_acad.get("situacao")
+                        logger.info(
+                            f"Dados acadêmicos SUAP: curso={curso_suap}, situacao={situacao}"
+                        )
+        except Exception as e_acad:
+            logger.debug(f"Dados acadêmicos do aluno indisponíveis: {e_acad}")
 
     if not db_user:
         db_user = Usuario(
@@ -260,6 +334,16 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
                 session.add(Professor(id=db_user.id))
                 session.commit()
 
+    # Guarda o token do SUAP da sessão para permitir re-sincronizar dados
+    # oficiais (disciplinas, etc.) sem que o frontend precise retê-lo.
+    from services.suap_token_store import salvar_token as _salvar_suap_token
+    _salvar_suap_token(
+        db_user.id,
+        access_token,
+        token_data.get("refresh_token"),
+        token_data.get("expires_in"),
+    )
+
     is_professor = not is_aluno and any(x in vinculo_lower for x in ["professor", "servidor", "docente"])
     if is_professor:
         try:
@@ -273,7 +357,7 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
             diarios = []
             
             for sem in [1, 2]:
-                diarios_url = f"https://suap.ifrn.edu.br/api/v2/minhas-informacoes/meus-diarios/{ano_atual}/{sem}/"
+                diarios_url = f"https://suap.ifrn.edu.br/api/ensino/meus-diarios/{ano_atual}/{sem}/"
                 async with httpx.AsyncClient() as diario_client:
                     r_diario = await diario_client.get(
                         diarios_url,
@@ -282,6 +366,8 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
                     )
                     if r_diario.status_code == 200:
                         res_json = r_diario.json()
+                        if isinstance(res_json, dict):
+                            res_json = res_json.get("results") or []
                         if isinstance(res_json, list):
                             diarios.extend(res_json)
 
@@ -330,6 +416,22 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         except Exception as e_diarios:
             logger.warning(f"Não foi possível sincronizar diários: {e_diarios}")
 
+    # Para aluno: busca o boletim do SUAP para obter as disciplinas reais do
+    # semestre atual e, com o codigo_diario de cada uma, resolver os professores
+    # diretamente no SUAP (sem depender do sync do professor).
+    disciplinas_suap_aluno: list[str] = []
+    if is_aluno:
+        try:
+            from datetime import date as _date
+            from services.suap_disciplinas_service import sincronizar_disciplinas_aluno
+
+            disciplinas_suap_aluno = await sincronizar_disciplinas_aluno(
+                session, access_token, _date.today().year
+            )
+            logger.info(f"Boletim SUAP: {len(disciplinas_suap_aluno)} disciplinas para aluno {matricula}")
+        except Exception as e_bol:
+            logger.warning(f"Não foi possível buscar boletim do aluno: {e_bol}")
+
     aluno = session.exec(select(Aluno).where(Aluno.id == db_user.id)).first()
     perfil_completo = True
     turma_id = None
@@ -345,17 +447,44 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         from data.cursos import get_curso
         from data.turmas import get_turma as _get_turma
         from data.turmas import ano_letivo_da_turma as _ano_letivo_da_turma
+        from data.turmas import resolver_turma_suap
 
-        perfil_completo = True
-        aluno.perfil_completo = True
         turma_id = aluno.turma_id
         curso_id = aluno.curso_id
         ano_letivo = aluno.ano_letivo
 
-        if aluno.necessidades_especiais != necessidades_especiais:
-            aluno.necessidades_especiais = necessidades_especiais
+        # Sincroniza a turma a partir dos dados oficiais do SUAP
+        # (vinculo.curso + vinculo.turno + ano de ingresso da matrícula),
+        # evitando a seleção manual quando o SUAP já identifica a turma.
+        if not turma_id and curso_suap:
+            turma_suap = resolver_turma_suap(matricula, curso_suap, vinculo_obj.get("turno"))
+            if turma_suap:
+                turma_id = turma_suap["id"]
+                aluno.turma_id = turma_id
+                aluno.curso_id = turma_suap["curso_id"]
+                aluno.ano_letivo = _ano_letivo_da_turma(turma_id)
+                session.add(aluno)
+                session.commit()
+                curso_id = aluno.curso_id
+                ano_letivo = aluno.ano_letivo
+                logger.info(f"Turma do aluno {matricula} resolvida via SUAP: {turma_id}")
+
+        # O perfil do aluno só é considerado completo após ele próprio concluir a
+        # complementação de perfil (e-mail institucional + declaração de PNEE). A
+        # turma resolvida pelo SUAP serve apenas para pré-preencher dados, não para
+        # dispensar essa etapa — que é justamente onde o PNEE é declarado.
+        perfil_completo = bool(aluno.perfil_completo)
+
+        # A declaração de PNEE vem da complementação de perfil (validada pelo
+        # mediador). O SUAP só pode PROMOVER para True; nunca sobrescrevemos para
+        # False, para não apagar a autodeclaração do aluno a cada login.
+        if necessidades_especiais and not aluno.necessidades_especiais:
+            aluno.necessidades_especiais = True
             session.add(aluno)
             session.commit()
+
+        # Valor efetivo de PNEE do aluno (fonte local, validada pelo mediador).
+        necessidades_especiais = bool(aluno.necessidades_especiais)
 
         turma = _get_turma(turma_id) if turma_id else None
         if turma:
@@ -367,7 +496,10 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
         ano_letivo = _ano_letivo_da_turma(turma_id) if turma_id else aluno.ano_letivo
         curso = get_curso(curso_id) if curso_id else None
-        curso_nome = curso["nome"] if curso else None
+        # Sem turma local resolvida, expõe o curso e o turno informados pelo SUAP.
+        curso_nome = (curso["nome"] if curso else None) or curso_suap
+        if not turma_id:
+            turno_label = turno_label or vinculo_obj.get("turno")
 
         if foto and not aluno.foto_suap:
             aluno.foto_suap = foto
@@ -378,7 +510,9 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     from deps.auth import create_access_token
     from repositories.usuario_repository import UsuarioRepository
 
-    disciplinas = _get_disciplinas(curso_id, ano_letivo) if curso_id and ano_letivo else []
+    disciplinas = disciplinas_suap_aluno if disciplinas_suap_aluno else (
+        _get_disciplinas(curso_id, ano_letivo) if curso_id and ano_letivo else []
+    )
     foto_resposta = foto or (aluno.foto_suap if aluno else None)
 
     role = "aluno" if is_aluno else UsuarioRepository(session).get_tipo_usuario(db_user.id)
@@ -402,9 +536,14 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
         "curso_id": curso_id,
         "curso_nome": curso_nome,
         "ano_letivo": ano_letivo,
+        "campus": campus,
+        "situacao": situacao,
         "necessidades_especiais": necessidades_especiais,
         "disciplinas": disciplinas,
         "access_token": token,
         "token_type": "bearer",
         "tipo_usuario": role,
+        "campus": campus,
+        "situacao": situacao,
+        "curso_suap": curso_suap,
     }

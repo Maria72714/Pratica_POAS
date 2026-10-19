@@ -56,15 +56,38 @@ def decode_access_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.") from exc
 
 
-def auth_user_from_token(session: Session, token: str) -> AuthUser:
+def auth_user_from_token(session: Session, token: str, check_mediador: bool = True) -> AuthUser:
     payload = decode_access_token(token)
     user_id = int(payload.get("sub", 0))
+    role = payload.get("role", "")
+    matricula = payload.get("matricula", "")
+    
+    # Se o JWT já tem role e matricula, não precisa query (otimizado)
+    if role and matricula:
+        if check_mediador and role == "mediador":
+            user = session.get(Usuario, user_id)
+            if not user:
+                raise HTTPException(status_code=401, detail="Usuário não encontrado.")
+            mediador = session.exec(select(Mediador).where(Mediador.id == user.id)).first()
+            if mediador and not mediador.aprovado:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cadastro de mediador aguardando aprovação do administrador.",
+                )
+        return AuthUser(
+            id=user_id,
+            matricula=matricula,
+            role=role,
+            email=payload.get("email", None),
+        )
+    
+    # Fallback: fazer query se informações estão incompletas
     user = session.get(Usuario, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="Usuário não encontrado.")
 
-    role = payload.get("role") or resolve_role(session, user.id)
-    if role == "mediador":
+    role = role or resolve_role(session, user.id)
+    if role == "mediador" and check_mediador:
         mediador = session.exec(select(Mediador).where(Mediador.id == user.id)).first()
         if mediador and not mediador.aprovado:
             raise HTTPException(
