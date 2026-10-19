@@ -66,6 +66,14 @@ class UsuarioService:
         if not db_user:
             raise HTTPException(status_code=400, detail="Usuário não encontrado.")
 
+        # Contas institucionais (aluno/professor) são criadas via SUAP e não
+        # possuem senha local. Elas só podem autenticar pelo SUAP.
+        if (db_user.senha or "") == "auth_suap":
+            raise HTTPException(
+                status_code=401,
+                detail="Esta conta é institucional. Faça login pelo SUAP.",
+            )
+
         senha_valida = False
         try:
             senha_valida = self.senha_context.verify(senha, db_user.senha)

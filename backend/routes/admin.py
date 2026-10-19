@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from sqlmodel import select
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
-AdminUser = Annotated[AuthUser, require_roles("admin")]
+AdminUser = Annotated[AuthUser, Depends(require_roles("admin"))]
 
 
 class DisciplinaInput(BaseModel):

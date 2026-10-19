@@ -48,7 +48,8 @@ class PerfilAlunoResponse:
         self.curso_nome = curso["nome"] if curso else None
         self.ano_letivo = ano_letivo_efetivo
         self.necessidades_especiais = aluno.necessidades_especiais if aluno else False
-        self.perfil_completo = True if aluno else True
+        self.tipo_necessidade = aluno.tipo_necessidade if aluno else None
+        self.perfil_completo = aluno.perfil_completo if aluno else False
         self.laudo_path = aluno.laudo_path if aluno else None
         self.disciplinas = disciplinas
 
@@ -69,6 +70,7 @@ def _as_dict(perfil: PerfilAlunoResponse):
         "curso_nome": perfil.curso_nome,
         "ano_letivo": perfil.ano_letivo,
         "necessidades_especiais": perfil.necessidades_especiais,
+        "tipo_necessidade": perfil.tipo_necessidade,
         "perfil_completo": perfil.perfil_completo,
         "laudo_path": perfil.laudo_path,
         "disciplinas": perfil.disciplinas,
@@ -155,6 +157,7 @@ class AlunoService:
         email: str,
         turma_id: str,
         necessidades_especiais: bool,
+        tipo_necessidade: str | None,
         foto: str | None,
         laudo,
     ):
@@ -192,6 +195,8 @@ class AlunoService:
         aluno.curso_id = turma["curso_id"]
         aluno.ano_letivo = ano_letivo_da_turma(turma_id)
         aluno.necessidades_especiais = necessidades_especiais
+        if tipo_necessidade and necessidades_especiais:
+            aluno.tipo_necessidade = tipo_necessidade
         aluno.perfil_completo = True
         aluno.laudo_path = laudo_path
         if foto:
@@ -201,6 +206,37 @@ class AlunoService:
         self.aluno_repository.update(aluno)
 
         return _as_dict(PerfilAlunoResponse(usuario, aluno, foto=foto))
+
+    async def atualizar_pnee(
+        self,
+        matricula: str,
+        necessidades_especiais: bool,
+        tipo_necessidade: str | None,
+        laudo,
+    ):
+        """Permite ao aluno (ou mediador/admin) declarar ou atualizar o status de PNEE
+        e enviar um laudo, sem refazer todo o complemento de perfil."""
+        usuario, aluno = self.get_usuario_e_aluno(matricula)
+
+        laudo_path = aluno.laudo_path
+        if necessidades_especiais and laudo and laudo.filename:
+            ext = Path(laudo.filename).suffix.lower()
+            if ext not in {".pdf", ".png", ".jpg", ".jpeg"}:
+                raise HTTPException(status_code=400, detail="Laudo deve ser PDF, PNG ou JPG.")
+            filename = f"{matricula}_{uuid.uuid4().hex}{ext}"
+            destino = UPLOAD_DIR / filename
+            destino.write_bytes(await laudo.read())
+            laudo_path = f"uploads/laudos/{filename}"
+
+        aluno.necessidades_especiais = necessidades_especiais
+        if tipo_necessidade:
+            aluno.tipo_necessidade = tipo_necessidade
+        if necessidades_especiais:
+            aluno.laudo_path = laudo_path
+
+        self.aluno_repository.update(aluno)
+
+        return _as_dict(PerfilAlunoResponse(usuario, aluno))
 
     def listar_laudos_pnee(self):
         """Retorna lista de alunos que enviaram laudo ou se autodeclararam PNEE para análise do Mediador."""

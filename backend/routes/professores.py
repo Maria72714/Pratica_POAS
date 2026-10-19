@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import select
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from datetime import date
 
 from deps.deps import SessionDep
+from deps.auth import AuthUser, get_current_user
 from models.users.user import Usuario
 from models.users.professor import Professor
 from models.disciplina import Disciplina
@@ -64,6 +65,96 @@ def obter_dados_complementares():
         "cursos": cursos_resumidos,
         "todas_disciplinas": sorted(list(disciplinas_set)),
         "turmas": turmas
+    }
+
+
+@router.post("/sincronizar-suap")
+async def sincronizar_disciplinas_suap(
+    current_user: Annotated[AuthUser, Depends(get_current_user)],
+    session: SessionDep,
+):
+    """
+    Sincroniza as disciplinas do professor a partir dos diários oficiais do SUAP
+    (fonte de verdade). Substitui a seleção manual de disciplinas.
+    """
+    import httpx
+
+    from services.suap_token_store import obter_token
+
+    token_suap = obter_token(current_user.id)
+    if not token_suap:
+        raise HTTPException(
+            status_code=401,
+            detail="Sessão do SUAP expirada. Faça login novamente pelo SUAP para sincronizar as disciplinas.",
+        )
+
+    ano_atual = date.today().year
+    diarios: List[dict] = []
+
+    async with httpx.AsyncClient() as client:
+        for periodo in (1, 2):
+            url = f"https://suap.ifrn.edu.br/api/ensino/meus-diarios/{ano_atual}/{periodo}/"
+            try:
+                resposta = await client.get(
+                    url,
+                    headers={"Authorization": f"Bearer {token_suap}"},
+                    timeout=8.0,
+                    follow_redirects=True,
+                )
+            except Exception:
+                continue
+            if resposta.status_code != 200:
+                continue
+            dados = resposta.json()
+            itens = dados.get("results") if isinstance(dados, dict) else dados
+            for item in itens or []:
+                nome = item.get("componente_curricular") or item.get("disciplina")
+                if not nome:
+                    continue
+                diarios.append({
+                    "componente_curricular": str(nome).strip(),
+                    "ano_letivo": item.get("ano_letivo", ano_atual),
+                    "periodo_letivo": item.get("periodo_letivo", periodo),
+                    "locais_de_aula": item.get("locais_de_aula") or [],
+                })
+
+    # Persiste os vínculos do professor com as disciplinas oficiais do SUAP.
+    prof = session.exec(select(Professor).where(Professor.id == current_user.id)).first()
+    if not prof:
+        prof = Professor(id=current_user.id)
+        session.add(prof)
+        session.commit()
+        session.refresh(prof)
+
+    nomes_unicos: List[str] = []
+    for diario in diarios:
+        nome = diario["componente_curricular"]
+        db_disc = session.exec(select(Disciplina).where(Disciplina.nome == nome)).first()
+        if not db_disc:
+            db_disc = Disciplina(nome=nome)
+            session.add(db_disc)
+            session.commit()
+            session.refresh(db_disc)
+
+        link = session.exec(
+            select(ProfessorDisciplina)
+            .where(ProfessorDisciplina.professor_id == prof.id)
+            .where(ProfessorDisciplina.disciplina_id == db_disc.id)
+        ).first()
+        if not link:
+            session.add(ProfessorDisciplina(professor_id=prof.id, disciplina_id=db_disc.id))
+
+        if nome not in nomes_unicos:
+            nomes_unicos.append(nome)
+
+    session.commit()
+
+    return {
+        "disciplinas": nomes_unicos,
+        "diarios": diarios,
+        "ano": ano_atual,
+        "total": len(nomes_unicos),
+        "message": "Disciplinas sincronizadas com o SUAP.",
     }
 
 

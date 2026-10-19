@@ -1,5 +1,5 @@
 """
-Definição estática das turmas do IFRN - Campus Natal-Central.
+Definição estática das turmas do IFRN - Campus Caicó.
 
 Formato do código de turma no SUAP (ex: 2023.1 2M):
   - ano_ingresso: ano em que a turma ingressou (extraído dos 4 primeiros dígitos da matrícula)
@@ -16,6 +16,8 @@ Formato de ID interno: "<curso>_<ano_ingresso>_<serie><turno>"
 """
 
 from datetime import date
+import re
+import unicodedata
 
 ANOS_LETIVOS = ["1º Ano", "2º Ano", "3º Ano", "4º Ano"]
 
@@ -190,3 +192,82 @@ def ano_letivo_da_turma(turma_id: str, ano_referencia: int | None = None) -> str
     if posicao > len(ANOS_LETIVOS):
         return ANOS_LETIVOS[-1]
     return None
+
+
+# ---------------------------------------------------------------------------
+# Resolução de turma a partir dos dados oficiais do SUAP (fonte de verdade).
+# O SUAP fornece, em vinculo: curso, turno, campus e situacao. O ano de
+# ingresso é extraído dos 4 primeiros dígitos da matrícula.
+# ---------------------------------------------------------------------------
+
+# Apelidos normalizados por curso, para casar o nome vindo do SUAP
+# (ex.: "Técnico de Nível Médio em Informática para Internet").
+_CURSO_ALIASES = {
+    "informatica_internet": [
+        "tecnico em informatica para internet",
+        "informatica para internet",
+        "informatica internet",
+        "informatica",
+    ],
+    "eletrotecnica": ["tecnico em eletrotecnica", "eletrotecnica"],
+    "vestuario": ["tecnico em vestuario", "vestuario"],
+    "textil": ["tecnico em textil", "textil"],
+}
+
+
+def _normalizar(texto: str | None) -> str:
+    """Remove acentos, pontuação e caixa para comparação tolerante."""
+    if not texto:
+        return ""
+    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", " ", sem_acento.lower()).strip()
+
+
+def identificar_curso_por_nome(curso_nome: str | None) -> str | None:
+    """Mapeia o nome de curso do SUAP para o id interno do catálogo local."""
+    normalizado = _normalizar(curso_nome)
+    if not normalizado:
+        return None
+    for curso_id, aliases in _CURSO_ALIASES.items():
+        for alias in aliases:
+            if alias in normalizado:
+                return curso_id
+    return None
+
+
+def normalizar_turno_suap(turno: str | None, ano_ingresso: int) -> str:
+    """Converte o turno do SUAP ("Matutino"/"Vespertino"/"M"/"V") em "M"/"V"."""
+    normalizado = _normalizar(turno)
+    if normalizado.startswith("m") or "matutin" in normalizado:
+        return "M"
+    if normalizado.startswith("v") or "vespertin" in normalizado:
+        return "V"
+    # Sem turno confiável no SUAP: usa a regra de negócio do campus.
+    return _turno_do_ano(ano_ingresso)
+
+
+def resolver_turma_suap(matricula: str, curso_nome: str | None, turno: str | None) -> dict | None:
+    """
+    Deriva a turma do aluno a partir dos dados do SUAP.
+
+    Usa o curso e o turno informados pelo SUAP e o ano de ingresso contido na
+    matrícula. Retorna ``None`` quando o curso não é reconhecido ou a
+    combinação não corresponde a uma turma válida do catálogo.
+    """
+    if not matricula or len(matricula) < 4 or not matricula[:4].isdigit():
+        return None
+
+    ano_ingresso = int(matricula[:4])
+    curso_id = identificar_curso_por_nome(curso_nome)
+    if not curso_id:
+        return None
+
+    info = CURSOS_TURMAS.get(curso_id)
+    if not info:
+        return None
+
+    turno_codigo = normalizar_turno_suap(turno, ano_ingresso)
+    if turno_codigo not in info["turnos"]:
+        return None
+
+    return get_turma(f"{curso_id}_{ano_ingresso}_1{turno_codigo}")

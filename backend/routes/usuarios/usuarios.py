@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from deps.auth import AuthUser, require_roles
@@ -13,7 +13,7 @@ router = APIRouter(
     tags=['Usuario']
 )
 
-AdminUser = Annotated[AuthUser, require_roles("admin")]
+AdminUser = Annotated[AuthUser, Depends(require_roles("admin"))]
 
 
 class UserResponseModel(BaseModel):
