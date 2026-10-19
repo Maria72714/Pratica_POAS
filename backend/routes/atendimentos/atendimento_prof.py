@@ -1,14 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.atendimento import Atendimento
 from models.solicitacao import Solicitacao
 from models.users.user import Usuario
 from models.users.professor import Professor
 from models.disciplina import Disciplina
 from deps.deps import SessionDep
+from deps.auth import AuthUser, get_current_user, require_roles, assert_self_or_roles
+from routes.atendimentos.atendimento import AtendimentoCreateModel
+from services.atendimento_service import AtendimentoService
 from sqlmodel import select
 from pydantic import BaseModel
 from datetime import date
-from typing import Optional
+from typing import Optional, Annotated
 
 
 router = APIRouter(
@@ -18,7 +21,13 @@ router = APIRouter(
 
 
 @router.get("/professor/{professor_matricula}")
-def listar_atendimentos_professor(professor_matricula: str, session: SessionDep):
+def listar_atendimentos_professor(
+    professor_matricula: str,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(get_current_user)] = None,
+):
+    assert_self_or_roles(current_user, professor_matricula, "admin", "mediador")
+
     usuario = session.exec(
         select(Usuario).where(Usuario.matricula == professor_matricula)
     ).first()
@@ -81,6 +90,7 @@ def listar_atendimentos_professor(professor_matricula: str, session: SessionDep)
             "modalidade": a.modalidade.value if hasattr(a.modalidade, "value") else str(a.modalidade),
             "assunto": a.assunto,
             "relatorio": a.relatorio,
+            "link_ca_online": a.link_ca_online,
             "status": a.status.value if hasattr(a.status, "value") else str(a.status),
             "disciplina_nome": disciplina.nome if disciplina else "Geral",
             "id_mediador": id_mediador,  # Selo do Mediador
@@ -90,3 +100,24 @@ def listar_atendimentos_professor(professor_matricula: str, session: SessionDep)
         })
 
     return resultado
+
+
+@router.post("/professor")
+def criar_atendimento_professor(
+    dados: AtendimentoCreateModel,
+    session: SessionDep,
+    current_user: Annotated[AuthUser, Depends(require_roles("professor", "admin"))] = None,
+):
+    """Cria um atendimento a partir do fluxo do professor.
+
+    Para contas de professor, o vínculo é sempre o próprio usuário logado
+    (a matrícula enviada no corpo é ignorada por segurança).
+    """
+    if current_user.role == "professor":
+        dados.professor_matricula = current_user.matricula
+
+    atendimento = AtendimentoService(session).criar_atendimento(dados)
+    return {
+        "id": atendimento.id,
+        "message": "Atendimento cadastrado com sucesso!",
+    }

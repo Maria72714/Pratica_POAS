@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {buscarPerfilProfessor,cadastrarAtendimentoProfessor,
+import {
+  buscarPerfilProfessor,
+  cadastrarAtendimentoProfessor,
 } from '../../services/professor/agendamento';
-import { fetchDisciplinasSuap } from '../../services/api';
+import PageShell from '../ui/PageShell';
+import PageHeader from '../ui/PageHeader';
 
 function hojeISO() {
   const d = new Date();
@@ -27,6 +30,7 @@ export default function NovoAtendimento() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
+
   const [form, setForm] = useState({
     assunto: '',
     disciplina: '',
@@ -58,8 +62,12 @@ export default function NovoAtendimento() {
     setEnviando(true);
     try {
       await cadastrarAtendimentoProfessor({
-        matricula_professor: usuario.matricula,
-        ...form,
+        professor_matricula: usuario.matricula,
+        disciplina: form.disciplina,
+        data_atendimento: form.data_atendimento,
+        tipo_atendimento: form.tipo_atendimento,
+        modalidade: form.modalidade,
+        link_ca_online: form.link_ca_online.trim() || null,
         assunto: form.assunto.trim(),
       });
       navigate('/professor/atendimentos');
@@ -90,18 +98,20 @@ export default function NovoAtendimento() {
   );
 
   const formularioValido =
-    form.assunto.trim() && form.disciplina && form.data_atendimento;
+    form.assunto.trim() &&
+    form.disciplina &&
+    form.data_atendimento;
 
   return (
-    <div className="flex-1 bg-gray-50 min-h-screen p-4 sm:p-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white p-6 rounded-xl shadow-sm">
-          <h1 className="text-xl sm:text-2xl font-bold mb-1">Novo Atendimento</h1>
-          <p className="text-emerald-100 text-sm">
-            Cadastre um atendimento do Centro de Aprendizagem.
-          </p>
-        </div>
+    <PageShell>
+      <PageHeader
+        role="professor"
+        badge="Novo"
+        title="Novo Atendimento"
+        subtitle="Cadastre um atendimento do Centro de Aprendizagem (CA/TAL) vinculado a uma disciplina."
+      />
 
+      <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-sm">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
@@ -216,6 +226,6 @@ export default function NovoAtendimento() {
           </form>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
