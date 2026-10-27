@@ -1,12 +1,14 @@
 import os
 import logging
+from pathlib import Path
 from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy.pool import QueuePool
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
