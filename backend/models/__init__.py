@@ -11,8 +11,10 @@ from .solicitacao import Solicitacao
 from .atendimento import Atendimento
 from .sala import Sala
 from .associativas.aluno_atendimento import AlunoAtendimento
+from .associativas.aluno_disciplina import AlunoDisciplina
 from .associativas.professor_turma import ProfessorTurma
 from .associativas.professor_disciplina import ProfessorDisciplina
 from .associativas.horario_sala import HorarioSala
 from .associativas.usuario_notificacao import UsuarioNotificacao
-from .pet import Pet
+from .chat_mensagem import ChatMensagem
+from .professor_horario import ProfessorHorario

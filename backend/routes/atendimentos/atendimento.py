@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from deps.deps import SessionDep
+from deps.auth import AuthUser, get_current_user
 from models.atendimento import Atendimento
 from services.atendimento_service import AtendimentoService
 
@@ -21,6 +22,19 @@ class AtendimentoCreateModel(BaseModel):
     matricula: Optional[str] = None            # compatibilidade (matrícula única)
     matriculas: Optional[List[str]] = None     # nova: várias matrículas (preferível)
     professor_matricula: Optional[str] = None  # matricula do professor (opcional)
+    # Campos extras usados pelo fluxo do professor (opcionais)
+    assunto: Optional[str] = None
+    tipo_atendimento: Optional[str] = None     # 'TAL' ou 'TAI'
+    modalidade: Optional[str] = None           # 'Presencial' ou 'Remoto'
+    link_ca_online: Optional[str] = None
+
+class AtendimentoUpdateModel(BaseModel):
+    status: Optional[str] = None
+    link_ca_online: Optional[str] = None
+    modalidade: Optional[str] = None
+    data_atendimento: Optional[date] = None
+    assunto: Optional[str] = None
+    relatorio: Optional[str] = None
 
 class AtendimentoResponse(BaseModel):
     id: int
@@ -36,7 +50,7 @@ class AtendimentoResponse(BaseModel):
 def listar_atendimento(session: SessionDep):
     return AtendimentoService(session).listar_atendimentos()
 
-@router.get('/aluno/{matricula}', response_model=list[Atendimento])
+@router.get('/aluno/{matricula}')
 def listar_atendimentos_por_matricula(matricula: str, session: SessionDep):
     return AtendimentoService(session).listar_por_matricula(matricula)
 
@@ -45,9 +59,70 @@ def buscar_atendimento_por_id(atendimento_id: int, session: SessionDep):
     return AtendimentoService(session).buscar_por_id(atendimento_id)
 
 
-@router.get('/professor/{matricula}')
-def listar_atendimentos_professor(matricula: str, session: SessionDep):
-    return AtendimentoService(session).listar_por_professor(matricula)
+@router.get('/mediador/tai')
+def listar_atendimentos_mediador_tai(session: SessionDep):
+    """Lista todos os atendimentos do tipo TAI para o mediador acompanhar e acessar o chat."""
+    from sqlmodel import select
+    from models.associativas.aluno_atendimento import AlunoAtendimento
+    from models.disciplina import Disciplina
+    from models.solicitacao import Solicitacao
+    from models.users.user import Usuario
+    from models.enums import TipoAtendimento
+
+    atendimentos = session.exec(
+        select(Atendimento)
+        .where(
+            (Atendimento.tipo_atendimento == TipoAtendimento.TAI) |
+            (Atendimento.id_solicitacao.is_not(None))
+        )
+        .order_by(Atendimento.data_atendimento.desc())
+    ).all()
+
+    resultado = []
+    for a in atendimentos:
+        disciplina = session.get(Disciplina, a.id_disciplina) if a.id_disciplina else None
+
+        # Aluno(s)
+        aluno_nome = None
+        aluno_matricula = None
+        assoc = session.exec(
+            select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id == a.id)
+        ).first()
+        if assoc:
+            u_aluno = session.get(Usuario, assoc.aluno_id)
+            if u_aluno:
+                aluno_nome = u_aluno.nome
+                aluno_matricula = u_aluno.matricula
+
+        # Professor
+        professor_nome = None
+        if a.id_professor:
+            u_prof = session.get(Usuario, a.id_professor)
+            if u_prof:
+                professor_nome = u_prof.nome
+
+        # Selo do Mediador
+        id_mediador = None
+        if a.id_solicitacao:
+            sol = session.get(Solicitacao, a.id_solicitacao)
+            if sol:
+                id_mediador = sol.id_mediador
+
+        resultado.append({
+            "id": a.id,
+            "assunto": a.assunto or "Atendimento TAI",
+            "tipo_atendimento": a.tipo_atendimento.value if hasattr(a.tipo_atendimento, "value") else str(a.tipo_atendimento),
+            "data_atendimento": a.data_atendimento.isoformat() if a.data_atendimento else None,
+            "status": a.status.value if hasattr(a.status, "value") else str(a.status),
+            "disciplina_nome": disciplina.nome if disciplina else "Disciplina TAI",
+            "aluno_nome": aluno_nome,
+            "aluno_matricula": aluno_matricula,
+            "professor_nome": professor_nome,
+            "id_mediador": id_mediador,
+            "tem_selo": bool(id_mediador),
+        })
+
+    return resultado
 
 
 @router.post("/", response_model=AtendimentoResponse)
@@ -60,7 +135,60 @@ def deletar_atendimento(atendimento_id: int, session: SessionDep):
     return AtendimentoService(session).deletar_atendimento(atendimento_id)
 
 
-@router.patch("/{atendimento_id}", response_model=Atendimento)
-def editar_atendimento(atendimento_id: int, dados: Atendimento, session: SessionDep):
-    return AtendimentoService(session).editar_atendimento(atendimento_id, dados)
+@router.patch("/{atendimento_id}")
+def editar_atendimento(atendimento_id: int, dados: AtendimentoUpdateModel, session: SessionDep,
+                       current_user: Annotated[AuthUser, Depends(get_current_user)] = None):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"PATCH /atendimentos/{atendimento_id} - User: {current_user.id if current_user else 'None'}, Dados: {dados}")
+    return AtendimentoService(session).editar_atendimento(atendimento_id, dados, current_user)
 
+
+@router.post("/{atendimento_id}/cancelar")
+def cancelar_atendimento(atendimento_id: int, session: SessionDep,
+                         current_user: Annotated[AuthUser, Depends(get_current_user)] = None):
+    """
+    Cancelar um atendimento agendado.
+    Apenas atendimentos com status AGENDADO ou CONFIRMADO podem ser cancelados.
+    """
+    import logging
+    from models.enums import StatusAtendimento
+    
+    logger = logging.getLogger(__name__)
+    
+    atendimento = session.get(Atendimento, atendimento_id)
+    if not atendimento:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Atendimento não encontrado.")
+    
+    # Validar status
+    status_atual = atendimento.status
+    status_valor = status_atual.value if hasattr(status_atual, "value") else str(status_atual)
+    if status_valor not in (StatusAtendimento.AGENDADO.value, "Confirmado"):
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Não é possível cancelar atendimento com status {status_valor}."
+        )
+
+    # CA/TAL aberto pelo professor para a turma não pode ser cancelado pelo aluno.
+    if getattr(current_user, "role", None) == "aluno" and AtendimentoService(session)._tal_aberto(atendimento):
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail="Este CA/TAL é aberto para a turma e não pode ser cancelado pelo aluno.",
+        )
+
+    # Cancelar
+    atendimento.status = StatusAtendimento.CANCELADO
+    session.add(atendimento)
+    session.commit()
+    session.refresh(atendimento)
+    
+    logger.info(f"Atendimento {atendimento_id} cancelado pelo usuário {current_user.id}")
+    
+    return {
+        "message": "Atendimento cancelado com sucesso.",
+        "id": atendimento_id,
+        "status": StatusAtendimento.CANCELADO.value if hasattr(StatusAtendimento.CANCELADO, 'value') else str(StatusAtendimento.CANCELADO)
+    }

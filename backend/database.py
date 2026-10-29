@@ -1,16 +1,55 @@
-from sqlmodel import Session, SQLModel, create_engine
-from dotenv import load_dotenv
 import os
+import logging
+from pathlib import Path
+from sqlmodel import Session, SQLModel, create_engine
+from sqlalchemy.pool import QueuePool
+from dotenv import load_dotenv
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-DATABASE_URL = "postgresql://neondb_owner:npg_Pf6CAmbDaJ7t@ep-long-bonus-aykbtgcj-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL não configurada no arquivo backend/.env"
+    )
+
+echo_sql = os.getenv("SQL_ECHO", "false").lower() in {"1", "true", "yes"}
+environment = os.getenv("ENVIRONMENT", "development").lower()
+
+if environment == "production":
+    engine = create_engine(
+        DATABASE_URL,
+        echo=False,
+        poolclass=QueuePool,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=3600,
+        pool_pre_ping=True,
+        connect_args={"connect_timeout": 10},
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        echo=echo_sql,
+        poolclass=QueuePool,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=3600,
+        pool_pre_ping=True,
+        connect_args={"connect_timeout": 10},
+    )
+
 
 def create_db():
-  SQLModel.metadata.create_all(engine)
+    if environment == "production":
+        return
+    if os.getenv("DB_CREATE_ALL", "false").lower() in {"1", "true", "yes"}:
+        SQLModel.metadata.create_all(engine)
+
 
 def get_session():
-  with Session(engine) as session:
-    yield session
- 
+    with Session(engine) as session:
+        yield session

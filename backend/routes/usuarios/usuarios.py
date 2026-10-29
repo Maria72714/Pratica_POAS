@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from deps.auth import AuthUser, require_roles
 from deps.deps import SessionDep
 from services.usuario_service import UsuarioService
 
@@ -10,12 +13,13 @@ router = APIRouter(
     tags=['Usuario']
 )
 
+AdminUser = Annotated[AuthUser, Depends(require_roles("admin"))]
+
 
 class UserResponseModel(BaseModel):
     nome_completo: str
     matricula: str
     email: str
-    senha: str
 
 
 class SolicitarMediadorInput(BaseModel):
@@ -30,18 +34,28 @@ class SolicitarMediadorInput(BaseModel):
 
 
 @router.get('/')
-def listar(session: SessionDep):
-    return UsuarioService(session).listar_usuarios()
+def listar(session: SessionDep, current_user: AdminUser):
+    usuarios = UsuarioService(session).listar_usuarios()
+    return [
+        {"nome": u.nome, "matricula": u.matricula, "email": u.email, "id": u.id}
+        for u in usuarios
+    ]
 
 
 @router.post('/', response_model=UserResponseModel)
-def cadastrar(session: SessionDep, nome_completo: str, matricula: str, email: str, senha: str) -> UserResponseModel:
+def cadastrar(
+    session: SessionDep,
+    current_user: AdminUser,
+    nome_completo: str,
+    matricula: str,
+    email: str,
+    senha: str,
+) -> UserResponseModel:
     usuario = UsuarioService(session).cadastrar_usuario(nome_completo, matricula, email, senha)
     return UserResponseModel(
         nome_completo=usuario.nome,
         matricula=usuario.matricula,
         email=usuario.email,
-        senha=usuario.senha,
     )
 
 
@@ -51,10 +65,10 @@ def solicitar_mediador(session: SessionDep, payload: SolicitarMediadorInput):
 
 
 @router.delete('/{matricula}')
-def deletar(session: SessionDep, matricula: str):
+def deletar(session: SessionDep, matricula: str, current_user: AdminUser):
     return UsuarioService(session).deletar_usuario(matricula)
 
 
 @router.put('/{matricula}')
-def atualizar(session: SessionDep, nome: str, matricula: str, email: str):
+def atualizar(session: SessionDep, nome: str, matricula: str, email: str, current_user: AdminUser):
     return UsuarioService(session).atualizar_usuario(nome, matricula, email)

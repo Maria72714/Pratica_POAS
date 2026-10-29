@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 
 from models.users.user import Usuario
+from models.users.aluno import Aluno
 from models.users.professor import Professor
 from models.users.mediador import Mediador
 
@@ -36,14 +37,20 @@ class UsuarioRepository:
         ).first()
 
     def get_tipo_usuario(self, usuario_id: int) -> str:
+        usuario = self.get_by_id(usuario_id)
+        if usuario and (usuario.matricula or "").lower() == "admin":
+            return "admin"
+
+        # Se tiver registro em Aluno, é Aluno
+        aluno = self.session.exec(select(Aluno).where(Aluno.id == usuario_id)).first()
+        if aluno:
+            return "aluno"
+
         if self.get_professor_by_user_id(usuario_id):
             return "professor"
         if self.get_mediador_by_user_id(usuario_id):
             return "mediador"
 
-        usuario = self.get_by_id(usuario_id)
-        if usuario and (usuario.matricula or "").lower() == "admin":
-            return "admin"
         return "aluno"
 
     def exists_by_matricula(self, matricula: str) -> bool:

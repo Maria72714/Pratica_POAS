@@ -1,9 +1,23 @@
-const API_BASE = "http://localhost:8000/api/atendimentos";
+import { apiJson } from '../httpClient';
 
-export async function buscarAtendimentosProfessor(professor_matricula) {
-    const response = await fetch(`${API_BASE}/professor/${professor_matricula}`);
-    if (!response.ok) {
-        throw new Error("Erro ao buscar atendimentos");
-    }
-    return response.json();
+export async function buscarAtendimentosProfessor(professorMatricula) {
+  return apiJson(`/atendimentos/professor/${professorMatricula}`);
+}
+
+export async function cadastrarAtendimentoProfessor(dados) {
+  return apiJson('/atendimentos/professor', {
+    method: 'POST',
+    body: JSON.stringify(dados),
+  });
+}
+
+export async function editarAtendimentoProfessor(atendimentoId, dados) {
+  return apiJson(`/atendimentos/${atendimentoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(dados),
+  });
+}
+
+export async function buscarPerfilProfessor(matricula) {
+  return apiJson(`/professores/perfil/${matricula}`);
 }

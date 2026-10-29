@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/suapAuth';
-
-const API_URL = 'http://localhost:8000/api/auth/suap';
+import { API_BASE, setAccessToken } from '../services/httpClient';
+import { salvarUsuarioLocal } from '../services/api';
 
 function formatarErro(e) {
   if (typeof e?.detail === 'string') return e.detail;
@@ -30,7 +30,7 @@ export default function Callback() {
       return;
     }
 
-    fetch(API_URL, {
+    fetch(`${API_BASE}/auth/suap`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
@@ -41,17 +41,31 @@ export default function Callback() {
         return data;
       })
       .then((usuario) => {
-        localStorage.setItem('usuario', JSON.stringify(usuario));
-        localStorage.setItem('suap_user', JSON.stringify(usuario));
-        localStorage.setItem('suap_access_token', 'suap-oauth');
+        if (usuario.access_token) {
+          setAccessToken(usuario.access_token);
+        }
+        salvarUsuarioLocal(usuario);
         localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
 
-        const isProfessor = (usuario.tipo_vinculo || '').toLowerCase().includes('professor');
-        const isAluno = usuario.is_aluno || (usuario.tipo_vinculo || '').toLowerCase().includes('aluno');
+        const vinculo = (usuario.tipo_vinculo || usuario.tipo || usuario.tipo_usuario || '').toLowerCase();
+        const isAluno = Boolean(usuario.is_aluno || vinculo.includes('aluno') || usuario.tipo_usuario === 'aluno');
+        const isProfessor = !isAluno && (
+          vinculo.includes('professor') ||
+          vinculo.includes('docente') ||
+          vinculo.includes('servidor') ||
+          usuario.tipo_usuario === 'professor'
+        );
 
         let destino = '/';
-        if (isProfessor) destino = '/professor';
-        else if (isAluno && !usuario.perfil_completo) destino = '/complementar-perfil';
+        if (usuario.tipo_usuario === 'admin') {
+          destino = '/admin';
+        } else if (isAluno) {
+          destino = (!usuario.perfil_completo) ? '/aluno/completar-perfil' : '/';
+        } else if (isProfessor) {
+          destino = '/professor';
+        } else if (usuario.tipo_usuario === 'mediador') {
+          destino = '/mediador';
+        }
 
         navigate(destino, { replace: true });
       })
@@ -63,17 +77,18 @@ export default function Callback() {
 
   if (erro) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif' }}>
-        <p style={{ color: 'red', fontSize: '18px', fontWeight: 'bold' }}>Erro na Autenticação</p>
-        <p style={{ color: '#555', margin: '20px 0' }}>{erro}</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 font-sans">
+        <p className="text-red-600 text-lg font-bold">Erro na Autenticação</p>
+        <p className="text-slate-600 mt-4 max-w-md text-center">{erro}</p>
+        <div className="flex flex-col gap-3 mt-8">
           <button
+            type="button"
             onClick={login}
-            style={{ padding: '10px 24px', fontSize: '16px', cursor: 'pointer', backgroundColor: '#047857', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
+            className="px-6 py-2.5 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800"
           >
             Tentar Novamente no SUAP
           </button>
-          <a href="/login" style={{ color: '#047857', textDecoration: 'underline' }}>
+          <a href="/login" className="text-emerald-700 text-center underline text-sm">
             Ir para a página de Login local
           </a>
         </div>
@@ -82,8 +97,8 @@ export default function Callback() {
   }
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px' }}>
-      <p>Autenticando...</p>
+    <div className="min-h-screen flex items-center justify-center text-slate-600">
+      Autenticando...
     </div>
   );
 }

@@ -48,6 +48,7 @@ class PerfilAlunoResponse:
         self.curso_nome = curso["nome"] if curso else None
         self.ano_letivo = ano_letivo_efetivo
         self.necessidades_especiais = aluno.necessidades_especiais if aluno else False
+        self.tipo_necessidade = aluno.tipo_necessidade if aluno else None
         self.perfil_completo = aluno.perfil_completo if aluno else False
         self.laudo_path = aluno.laudo_path if aluno else None
         self.disciplinas = disciplinas
@@ -69,6 +70,7 @@ def _as_dict(perfil: PerfilAlunoResponse):
         "curso_nome": perfil.curso_nome,
         "ano_letivo": perfil.ano_letivo,
         "necessidades_especiais": perfil.necessidades_especiais,
+        "tipo_necessidade": perfil.tipo_necessidade,
         "perfil_completo": perfil.perfil_completo,
         "laudo_path": perfil.laudo_path,
         "disciplinas": perfil.disciplinas,
@@ -155,6 +157,7 @@ class AlunoService:
         email: str,
         turma_id: str,
         necessidades_especiais: bool,
+        tipo_necessidade: str | None,
         foto: str | None,
         laudo,
     ):
@@ -192,6 +195,8 @@ class AlunoService:
         aluno.curso_id = turma["curso_id"]
         aluno.ano_letivo = ano_letivo_da_turma(turma_id)
         aluno.necessidades_especiais = necessidades_especiais
+        if tipo_necessidade and necessidades_especiais:
+            aluno.tipo_necessidade = tipo_necessidade
         aluno.perfil_completo = True
         aluno.laudo_path = laudo_path
         if foto:
@@ -201,3 +206,94 @@ class AlunoService:
         self.aluno_repository.update(aluno)
 
         return _as_dict(PerfilAlunoResponse(usuario, aluno, foto=foto))
+
+    async def atualizar_pnee(
+        self,
+        matricula: str,
+        necessidades_especiais: bool,
+        tipo_necessidade: str | None,
+        laudo,
+    ):
+        """Permite ao aluno (ou mediador/admin) declarar ou atualizar o status de PNEE
+        e enviar um laudo, sem refazer todo o complemento de perfil."""
+        usuario, aluno = self.get_usuario_e_aluno(matricula)
+
+        laudo_path = aluno.laudo_path
+        if necessidades_especiais and laudo and laudo.filename:
+            ext = Path(laudo.filename).suffix.lower()
+            if ext not in {".pdf", ".png", ".jpg", ".jpeg"}:
+                raise HTTPException(status_code=400, detail="Laudo deve ser PDF, PNG ou JPG.")
+            filename = f"{matricula}_{uuid.uuid4().hex}{ext}"
+            destino = UPLOAD_DIR / filename
+            destino.write_bytes(await laudo.read())
+            laudo_path = f"uploads/laudos/{filename}"
+
+        aluno.necessidades_especiais = necessidades_especiais
+        if tipo_necessidade:
+            aluno.tipo_necessidade = tipo_necessidade
+        if necessidades_especiais:
+            aluno.laudo_path = laudo_path
+
+        self.aluno_repository.update(aluno)
+
+        return _as_dict(PerfilAlunoResponse(usuario, aluno))
+
+    def listar_laudos_pnee(self):
+        """Retorna lista de alunos que enviaram laudo ou se autodeclararam PNEE para análise do Mediador."""
+        alunos_com_laudo = self.session.exec(
+            select(Aluno).where((Aluno.laudo_path != None) | (Aluno.necessidades_especiais == True))
+        ).all()
+
+        resultado = []
+        for a in alunos_com_laudo:
+            u = self.session.get(Usuario, a.id)
+            if not u:
+                continue
+            turma = get_turma(a.turma_id) if a.turma_id else None
+            curso = get_curso(a.curso_id) if a.curso_id else None
+
+            # Monta URL pública para o laudo
+            url_laudo = None
+            if a.laudo_path:
+                nome_arquivo = Path(a.laudo_path).name
+                url_laudo = f"http://localhost:8000/api/uploads/laudos/{nome_arquivo}"
+
+            resultado.append({
+                "aluno_id": a.id,
+                "nome": u.nome,
+                "email": u.email,
+                "matricula": u.matricula,
+                "turma_nome": turma["nome"] if turma else (a.turma_id or "Não informada"),
+                "curso_nome": curso["nome"] if curso else "Não informado",
+                "necessidades_especiais": a.necessidades_especiais,
+                "laudo_path": a.laudo_path,
+                "url_laudo": url_laudo,
+                "status_pnee": "Aprovado" if a.necessidades_especiais else "Pendente",
+            })
+        return resultado
+
+    def avaliar_laudo_pnee(self, aluno_id: int | str, aprovado: bool):
+        """Permite ao Mediador aprovar ou recusar o status de PNEE do aluno com base no laudo."""
+        aluno = None
+        if isinstance(aluno_id, int):
+            aluno = self.session.get(Aluno, aluno_id)
+        elif isinstance(aluno_id, str):
+            if aluno_id.isdigit():
+                aluno = self.session.get(Aluno, int(aluno_id))
+            if not aluno:
+                u = self.usuario_repository.get_by_matricula(aluno_id)
+                if u:
+                    aluno = self.aluno_repository.get_by_user_id(u.id)
+
+        if not aluno:
+            raise HTTPException(status_code=404, detail="Aluno não encontrado.")
+
+        aluno.necessidades_especiais = aprovado
+        self.aluno_repository.update(aluno)
+
+        u = self.session.get(Usuario, aluno.id)
+        return {
+            "message": f"Status PNEE do aluno {u.nome if u else ''} atualizado para {'Aprovado' if aprovado else 'Recusado'}.",
+            "aluno_id": aluno.id,
+            "necessidades_especiais": aluno.necessidades_especiais
+        }

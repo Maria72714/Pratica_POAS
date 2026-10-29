@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { fetchDisciplinas } from '../../services/api';
-import { cadastrarSolicitacao } from '../../services/aluno/solicitacao';
+import { fetchDisciplinas, fetchDisciplinasLocais, fetchDisciplinasSuap } from '../../services/api';
+import { cadastrarSolicitacao, buscarSolicitacoes } from '../../services/aluno/solicitacao';
+import { buscarAtendimentos } from '../../services/aluno/agendamento';
+import CalendarioAtendimentos from '../CalendarioAtendimentos';
 import { useNavigate } from 'react-router-dom';
-
 
 const SolicitacaoTAI = () => {
   const [suporte, setSuporte] = useState('');
@@ -11,6 +12,7 @@ const SolicitacaoTAI = () => {
   const [usuario, setUsuario] = useState(null);
   const [data, setData] = useState('');
   const [desc, setDesc] = useState('');
+  const [agendamentos, setAgendamentos] = useState([]);
 
   useEffect(() => {
     const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
@@ -18,13 +20,97 @@ const SolicitacaoTAI = () => {
     const parsed = JSON.parse(dados);
     setUsuario(parsed);
 
-    // Disciplinas vêm do localStorage (preenchidas no login/perfil) ou da API como fallback
-    if (parsed.disciplinas?.length) {
-      setDisciplinas(parsed.disciplinas);
-    } else if (parsed.curso_id && parsed.ano_letivo) {
-      fetchDisciplinas(parsed.curso_id, parsed.ano_letivo)
-        .then((res) => setDisciplinas(res.disciplinas ?? []))
-        .catch(() => setDisciplinas([]));
+    // Disciplinas: SUAP (real) → localStorage (salvo no login)
+    fetchDisciplinasSuap()
+      .then((lista) => {
+        if (lista.length > 0) {
+          setDisciplinas(lista);
+        } else {
+          // SUAP retornou vazio: usa o que foi salvo no login
+          setDisciplinas(parsed.disciplinas ?? []);
+        }
+      })
+      .catch(() => {
+        // SUAP inacessível: usa o que foi salvo no login
+        setDisciplinas(parsed.disciplinas ?? []);
+      });
+
+    if (parsed.matricula) {
+      Promise.allSettled([
+        buscarAtendimentos(parsed.matricula),
+        buscarSolicitacoes(parsed.matricula)
+      ])
+        .then(([resAtend, resSol]) => {
+          const listaAtend = resAtend.status === 'fulfilled' && Array.isArray(resAtend.value) ? resAtend.value : [];
+          const listaSol = resSol.status === 'fulfilled' && Array.isArray(resSol.value) ? resSol.value : [];
+
+          const formatados = [];
+
+          // 1. CAs reais (atendimentos agendados ou criados pela aprovação do mediador)
+          listaAtend.forEach((item) => {
+            const dataIso = item.data_atendimento ? String(item.data_atendimento).split('T')[0] : '';
+            if (dataIso) {
+              const statusNorm =
+                item.status === 'Agendado' || item.status === 'AGENDADO' || item.status === 'Confirmado'
+                  ? 'Confirmado'
+                  : item.status === 'CONCLUIDO' || item.status === 'Concluído'
+                  ? 'Concluído'
+                  : 'Pendente';
+
+              formatados.push({
+                id: `atend-${item.id}`,
+                disciplina:
+                  item.assunto?.split('|')?.[0]?.replace('Disciplina:', '')?.replace('TAI -', '')?.trim() ||
+                  item.disciplina ||
+                  'Atendimento CA',
+                tipo: item.tipo_atendimento || 'CA',
+                status: statusNorm,
+                data: dataIso,
+                horario: item.horario || 'Horário agendado',
+                local: item.sala || item.local || 'Campus IFRN',
+                assunto: item.assunto || item.relatorio || 'Atendimento agendado'
+              });
+            }
+          });
+
+          // 2. Solicitações do aluno com data preferencial
+          listaSol.forEach((item) => {
+            const dataSol = item.data_preferencial || item.data || item.data_atendimento;
+            if (dataSol) {
+              const dataIso = String(dataSol).split('T')[0];
+              const statusNorm =
+                item.status === 'Aprovado' || item.status === 'APROVADA'
+                  ? 'Confirmado'
+                  : item.status === 'Pendente' || item.status === 'PENDENTE'
+                  ? 'Pendente'
+                  : item.status;
+
+              const jaExiste = formatados.some(
+                (f) =>
+                  f.data === dataIso &&
+                  f.disciplina.toLowerCase().includes((item.disciplina || item.disciplina_nome || '').toLowerCase())
+              );
+
+              if (!jaExiste) {
+                formatados.push({
+                  id: `sol-${item.id}`,
+                  disciplina: item.disciplina || item.disciplina_nome || 'Atendimento TAI',
+                  tipo: 'TAI',
+                  status: statusNorm,
+                  data: dataIso,
+                  horario: 'Horário preferencial',
+                  local: 'Apoio TAI',
+                  assunto: item.descricao || item.tipo_suporte || 'Solicitação TAI'
+                });
+              }
+            }
+          });
+
+          setAgendamentos(formatados);
+        })
+        .catch(() => {
+          setAgendamentos([]);
+        });
     }
   }, []);
 
@@ -37,10 +123,13 @@ const SolicitacaoTAI = () => {
         matricula: usuario.matricula,
         disciplina,
         tipo_suporte: suporte,
-        descricao: desc || undefined
+        descricao: desc || undefined,
+        data_preferencial: data || undefined,
       });
       navigate('/historico');
     } catch (err) {
+      const mensagem = err.response?.data?.detail || err.message || 'Erro ao solicitar CA';
+      alert(mensagem);
       console.error('Erro ao solicitar CA:', err);
     }
   }
@@ -166,20 +255,46 @@ const SolicitacaoTAI = () => {
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
-                {disciplinas.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">Nenhuma disciplina encontrada para seu curso/ano.</p>
+                {disciplinas.length === 0 ? (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Nenhuma disciplina encontrada. Faça logout e login novamente pelo SUAP para sincronizar suas matérias.
+                  </p>
+                ) : (
+                  <p className="text-xs text-emerald-700 mt-1">
+                    {disciplinas.length} disciplina(s) carregada(s) do SUAP
+                  </p>
                 )}
               </div>
 
-              {/* Data Preferencial */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Data Preferencial (opcional)
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-                  onChange={(e) => (setData(e.target.value))}
+              {/* Data Preferencial com Calendário */}
+              <div className="md:col-span-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Data Preferencial (opcional)
+                  </label>
+                  {data && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-purple-700 font-semibold bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                        Selecionado: {data.split('-')[2]}/{data.split('-')[1]}/{data.split('-')[0]}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setData('')}
+                        className="text-xs text-gray-400 hover:text-red-500 underline"
+                      >
+                        Limpar data
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Clique diretamente em um dia do calendário abaixo para definir sua data preferencial. Os feriados e seus agendamentos já aparecem destacados.
+                </p>
+
+                <CalendarioAtendimentos
+                  agendamentos={agendamentos}
+                  diaSelecionado={data || null}
+                  onSelectDia={(diaIso) => setData(diaIso)}
                 />
               </div>
 
