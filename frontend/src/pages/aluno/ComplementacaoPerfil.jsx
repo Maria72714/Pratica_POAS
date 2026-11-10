@@ -107,7 +107,6 @@ export default function ComplementacaoPerfil() {
       if (isTai && laudo) formData.append('laudo', laudo);
 
       await completarPerfil(usuario.matricula, formData);
-      localStorage.setItem('suap_access_token', 'suap-oauth');
       localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
       navigate('/', { replace: true });
     } catch (err) {

@@ -3,7 +3,7 @@ import { apiJson } from '../httpClient';
 const PREFIX = '/solicitacao';
 
 export async function cadastrarSolicitacao(dados) {
-  return apiJson(PREFIX, {
+  return apiJson(`${PREFIX}/`, {
     method: 'POST',
     body: JSON.stringify(dados),
   });
