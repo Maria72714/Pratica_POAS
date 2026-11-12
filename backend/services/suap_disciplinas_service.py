@@ -77,75 +77,156 @@ def _nome_professor(dados_prof: dict) -> str:
     return (dados_prof.get("nome") or dados_prof.get("nome_usual") or "").strip()
 
 
-def _garantir_disciplina(session, nome: str) -> Disciplina:
-    nome = nome.strip()
-    disciplina = session.exec(select(Disciplina).where(Disciplina.nome == nome)).first()
-    if not disciplina:
-        disciplina = Disciplina(nome=nome)
-        session.add(disciplina)
-        session.commit()
-        session.refresh(disciplina)
-    return disciplina
+def _persistir_vinculos(
+    session,
+    aluno_id: int | None,
+    itens_boletim: list[tuple[str, object]],
+    profs_por_codigo: dict[str, list],
+    profs_por_id: dict[str, list],
+    profs_por_nome: dict[str, list],
+) -> int:
+    """Persiste disciplinas, vínculos aluno→disciplina e professor→disciplina.
 
+    Tudo é resolvido em consultas em lote e gravado com um único ``commit``.
+    Antes, cada disciplina/professor gerava selects e commits isolados e, com a
+    latência do banco (~250 ms por ida), a sincronização levava dezenas de
+    segundos. Retorna quantos vínculos professor→disciplina foram criados.
+    """
+    nomes: list[str] = []
+    for nome, _ in itens_boletim:
+        if nome not in nomes:
+            nomes.append(nome)
+    if not nomes:
+        return 0
 
-def _garantir_professor(session, dados_prof: dict) -> Professor | None:
-    """Garante um registro local de professor a partir dos dados oficiais do SUAP."""
-    matricula = str(dados_prof.get("matricula") or "").strip()
-    nome = _nome_professor(dados_prof)
-    if not matricula or not nome:
-        return None
+    # Disciplinas: uma única consulta traz todas as que já existem.
+    mapa_disc = {
+        d.nome: d
+        for d in session.exec(
+            select(Disciplina).where(Disciplina.nome.in_(nomes))
+        ).all()
+    }
+    for nome in nomes:
+        if nome not in mapa_disc:
+            disciplina = Disciplina(nome=nome)
+            session.add(disciplina)
+            mapa_disc[nome] = disciplina
+    session.flush()
 
-    usuario = session.exec(select(Usuario).where(Usuario.matricula == matricula)).first()
-    if not usuario:
-        email = (dados_prof.get("email") or "").strip() or f"{matricula}@academico.ifrn.edu.br"
-        if session.exec(select(Usuario).where(Usuario.email == email)).first():
-            email = f"{matricula}@academico.ifrn.edu.br"
-        usuario = Usuario(nome=nome, email=email, matricula=matricula, senha="auth_suap")
-        session.add(usuario)
-        session.commit()
-        session.refresh(usuario)
+    # Vínculo aluno → disciplinas (idempotente, em lote).
+    if aluno_id is not None:
+        ja_vinculadas = set(
+            session.exec(
+                select(AlunoDisciplina.disciplina_id).where(
+                    AlunoDisciplina.aluno_id == aluno_id
+                )
+            ).all()
+        )
+        for disciplina in mapa_disc.values():
+            if disciplina.id not in ja_vinculadas:
+                session.add(
+                    AlunoDisciplina(aluno_id=aluno_id, disciplina_id=disciplina.id)
+                )
 
-    prof = session.exec(select(Professor).where(Professor.id == usuario.id)).first()
-    if not prof:
-        prof = Professor(id=usuario.id)
-        session.add(prof)
-        session.commit()
-        session.refresh(prof)
-    return prof
-
-
-def _persistir_professores(session, disciplina: Disciplina, dados_profs: list) -> int:
-    """Vincula os professores (dados do SUAP) à disciplina. Retorna quantos vínculos novos."""
-    novos = 0
-    for dados_prof in dados_profs:
-        prof = _garantir_professor(session, dados_prof)
-        if not prof:
+    # Professores: agrupa os dados oficiais por disciplina.
+    dados_prof_por_matricula: dict[str, dict] = {}
+    profs_por_disciplina: dict[int, set[str]] = {}
+    for nome, codigo in itens_boletim:
+        dados_profs = (
+            profs_por_codigo.get(str(codigo))
+            or profs_por_id.get(str(codigo))
+            or profs_por_nome.get(nome)
+            or []
+        )
+        disciplina = mapa_disc.get(nome)
+        if not dados_profs or disciplina is None:
             continue
-        link = session.exec(
-            select(ProfessorDisciplina)
-            .where(ProfessorDisciplina.professor_id == prof.id)
-            .where(ProfessorDisciplina.disciplina_id == disciplina.id)
-        ).first()
-        if not link:
-            session.add(
-                ProfessorDisciplina(professor_id=prof.id, disciplina_id=disciplina.id)
+        matriculas_da_disciplina = profs_por_disciplina.setdefault(disciplina.id, set())
+        for dados_prof in dados_profs:
+            matricula = str(dados_prof.get("matricula") or "").strip()
+            if not matricula or not _nome_professor(dados_prof):
+                continue
+            dados_prof_por_matricula[matricula] = dados_prof
+            matriculas_da_disciplina.add(matricula)
+
+    if not dados_prof_por_matricula:
+        session.commit()
+        return 0
+
+    # Usuários: uma consulta para todas as matrículas, uma para os e-mails.
+    matriculas = set(dados_prof_por_matricula)
+    usuarios = {
+        u.matricula: u
+        for u in session.exec(
+            select(Usuario).where(Usuario.matricula.in_(matriculas))
+        ).all()
+    }
+    faltantes = matriculas - set(usuarios)
+    if faltantes:
+        emails = {
+            m: (
+                (dados_prof_por_matricula[m].get("email") or "").strip()
+                or f"{m}@academico.ifrn.edu.br"
             )
-            novos += 1
-    if novos:
-        session.commit()
+            for m in faltantes
+        }
+        emails_em_uso = set(
+            session.exec(
+                select(Usuario.email).where(Usuario.email.in_(set(emails.values())))
+            ).all()
+        )
+        for matricula, email in emails.items():
+            if email in emails_em_uso:
+                email = f"{matricula}@academico.ifrn.edu.br"
+            emails_em_uso.add(email)
+            usuario = Usuario(
+                nome=_nome_professor(dados_prof_por_matricula[matricula]),
+                email=email,
+                matricula=matricula,
+                senha="auth_suap",
+            )
+            session.add(usuario)
+            usuarios[matricula] = usuario
+        session.flush()
+
+    ids_usuarios = [u.id for u in usuarios.values()]
+    professores = {
+        p.id: p
+        for p in session.exec(
+            select(Professor).where(Professor.id.in_(ids_usuarios))
+        ).all()
+    }
+    for usuario_id in ids_usuarios:
+        if usuario_id not in professores:
+            professor = Professor(id=usuario_id)
+            session.add(professor)
+            professores[usuario_id] = professor
+    session.flush()
+
+    # Vínculos professor → disciplina (idempotente, em lote).
+    disciplina_ids = set(profs_por_disciplina)
+    desejados = {
+        (usuarios[matricula].id, disciplina_id)
+        for disciplina_id, matriculas_da_disciplina in profs_por_disciplina.items()
+        for matricula in matriculas_da_disciplina
+    }
+    existentes = {
+        (link.professor_id, link.disciplina_id)
+        for link in session.exec(
+            select(ProfessorDisciplina)
+            .where(ProfessorDisciplina.professor_id.in_(set(professores)))
+            .where(ProfessorDisciplina.disciplina_id.in_(disciplina_ids))
+        ).all()
+    }
+    novos = 0
+    for professor_id, disciplina_id in desejados - existentes:
+        session.add(
+            ProfessorDisciplina(professor_id=professor_id, disciplina_id=disciplina_id)
+        )
+        novos += 1
+
+    session.commit()
     return novos
-
-
-def _persistir_aluno_disciplina(session, aluno_id: int, disciplina: Disciplina) -> None:
-    """Vincula o aluno à disciplina (idempotente)."""
-    link = session.exec(
-        select(AlunoDisciplina)
-        .where(AlunoDisciplina.aluno_id == aluno_id)
-        .where(AlunoDisciplina.disciplina_id == disciplina.id)
-    ).first()
-    if not link:
-        session.add(AlunoDisciplina(aluno_id=aluno_id, disciplina_id=disciplina.id))
-        session.commit()
 
 
 async def sincronizar_disciplinas_aluno(
@@ -237,17 +318,19 @@ async def sincronizar_disciplinas_aluno(
                     if nome_diario:
                         profs_por_nome[str(nome_diario).strip()] = profs
 
-        # 4) Persiste os vínculos.
-        for nome, codigo in itens_boletim:
-            dados_profs = profs_por_codigo.get(str(codigo)) or []
-            if not dados_profs:
-                dados_profs = profs_por_id.get(str(codigo)) or profs_por_nome.get(nome) or []
-            disciplina = _garantir_disciplina(session, nome)
-            if aluno_id is not None:
-                _persistir_aluno_disciplina(session, aluno_id, disciplina)
-            if not dados_profs:
-                continue
-            total_vinculos += _persistir_professores(session, disciplina, dados_profs)
+        # 4) Persiste os vínculos (consultas em lote + commit único).
+        try:
+            total_vinculos = _persistir_vinculos(
+                session,
+                aluno_id,
+                itens_boletim,
+                profs_por_codigo,
+                profs_por_id,
+                profs_por_nome,
+            )
+        except Exception as e:
+            session.rollback()
+            logger.warning(f"Falha ao persistir vínculos do aluno {aluno_id}: {e}")
 
     if aluno_id is not None:
         _ultimo_sync[aluno_id] = datetime.now()
