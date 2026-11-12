@@ -6,6 +6,7 @@ import {
   faCalendarDays,
   faChalkboardUser,
   faClock,
+  faCommentDots,
   faLocationDot,
   faMagnifyingGlass,
   faShieldHalved,
@@ -18,6 +19,7 @@ import {
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
 import Loading from "../../components/ui/Loading";
+import ChatAtendimento from "../../components/ChatAtendimento";
 import { resolveRoleFromUser } from "../../theme/roles";
 import { buscarMuralCA } from "../../services/ca";
 
@@ -70,6 +72,7 @@ export default function MuralCA() {
   const [erro, setErro] = useState("");
   const [filtro, setFiltro] = useState("agendados");
   const [busca, setBusca] = useState("");
+  const [chat, setChat] = useState(null);
 
   useEffect(() => {
     let ativo = true;
@@ -295,11 +298,33 @@ export default function MuralCA() {
                       Entrar
                     </a>
                   )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setChat({
+                        id: c.id,
+                        titulo: c.assunto || c.disciplina_nome || "Atendimento",
+                      })
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                  >
+                    <FontAwesomeIcon icon={faCommentDots} className="w-3.5 h-3.5" />
+                    Chat
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {chat && (
+        <ChatAtendimento
+          atendimentoId={chat.id}
+          titulo={chat.titulo}
+          abertoInicial={true}
+          onFechar={() => setChat(null)}
+        />
       )}
     </PageShell>
   );

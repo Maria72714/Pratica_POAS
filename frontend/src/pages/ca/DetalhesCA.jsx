@@ -24,6 +24,7 @@ import {
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
 import Loading from "../../components/ui/Loading";
+import ChatAtendimento from "../../components/ChatAtendimento";
 import { resolveRoleFromUser } from "../../theme/roles";
 import {
   avaliarCA,
@@ -145,6 +146,7 @@ export default function DetalhesCA() {
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
   const [concluindo, setConcluindo] = useState(false);
   const [processandoPresenca, setProcessandoPresenca] = useState(false);
+  const [chatAberto, setChatAberto] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
@@ -490,6 +492,17 @@ export default function DetalhesCA() {
             </div>
           )}
 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setChatAberto(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
+            >
+              <FontAwesomeIcon icon={faCommentDots} className="w-4 h-4" />
+              Abrir chat do CA
+            </button>
+          </div>
+
           {dados.inscrito && (
             <p className="text-sm text-emerald-700 flex items-center gap-2">
               <FontAwesomeIcon icon={faCheckCircle} className="w-4 h-4" />
@@ -712,6 +725,15 @@ export default function DetalhesCA() {
           </button>
         </form>
       </div>
+
+      {chatAberto && (
+        <ChatAtendimento
+          atendimentoId={dados.id}
+          titulo={dados.assunto || dados.disciplina_nome || "Atendimento"}
+          abertoInicial={true}
+          onFechar={() => setChatAberto(false)}
+        />
+      )}
     </PageShell>
   );
 }
