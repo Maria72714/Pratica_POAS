@@ -132,6 +132,7 @@ export default function DetalhesCA() {
 
   const [dados, setDados] = useState(null);
   const [comentarios, setComentarios] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
@@ -149,12 +150,14 @@ export default function DetalhesCA() {
     setCarregando(true);
     setErro("");
     try {
-      const [det, com] = await Promise.all([
+      const [det, com, avals] = await Promise.all([
         buscarDetalhesCA(id),
         buscarComentariosCA(id).catch(() => []),
+        buscarAvaliacoesCA(id).catch(() => null),
       ]);
       setDados(det);
       setComentarios(Array.isArray(com) ? com : []);
+      setAvaliacoes(Array.isArray(avals?.avaliacoes) ? avals.avaliacoes : []);
     } catch (e) {
       setErro(e.message || "Não foi possível carregar este CA.");
     } finally {
@@ -604,6 +607,32 @@ export default function DetalhesCA() {
           <p className="mt-3 text-sm text-emerald-700 font-semibold">
             Avaliação registrada. Obrigado pelo feedback!
           </p>
+        )}
+
+        {avaliacoes.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+            <p className="text-xs font-semibold text-gray-500">
+              Avaliações dos alunos
+            </p>
+            {avaliacoes.map((a) => (
+              <div key={a.id} className="bg-gray-50 rounded-xl p-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {a.aluno_nome}
+                  </span>
+                  <Estrelas valor={a.nota} />
+                  <span className="text-[11px] text-gray-400 ml-auto">
+                    {formatarDataHora(a.criado_em)}
+                  </span>
+                </div>
+                {a.comentario && (
+                  <p className="text-sm text-gray-700 mt-1 break-words">
+                    {a.comentario}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
