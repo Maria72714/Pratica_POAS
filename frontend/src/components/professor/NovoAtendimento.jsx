@@ -4,6 +4,7 @@ import {
   buscarPerfilProfessor,
   cadastrarAtendimentoProfessor,
 } from '../../services/professor/agendamento';
+import { buscarHorariosProfessor } from '../../services/professor/horarios';
 import PageShell from '../ui/PageShell';
 import PageHeader from '../ui/PageHeader';
 
@@ -28,6 +29,7 @@ export default function NovoAtendimento() {
   );
 
   const [disciplinas, setDisciplinas] = useState([]);
+  const [horarios, setHorarios] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -48,7 +50,22 @@ export default function NovoAtendimento() {
     buscarPerfilProfessor(usuario.matricula)
       .then((perfil) => setDisciplinas(perfil.disciplinas ?? []))
       .catch(() => setDisciplinas([]));
+    buscarHorariosProfessor(usuario.matricula)
+      .then((lista) => setHorarios(Array.isArray(lista) ? lista.filter((h) => h.ativo) : []))
+      .catch(() => setHorarios([]));
   }, [usuario?.matricula]);
+
+  const aplicarHorario = (id) => {
+    const h = horarios.find((item) => String(item.id) === String(id));
+    if (!h) return;
+    setForm((f) => ({
+      ...f,
+      sala: h.local ?? f.sala,
+      horario_inicio: (h.hora_inicio || '').slice(0, 5) || f.horario_inicio,
+      horario_termino: (h.hora_fim || '').slice(0, 5) || f.horario_termino,
+      modalidade: MODALIDADES.includes(h.modalidade) ? h.modalidade : f.modalidade,
+    }));
+  };
 
   const atualizar = (campo) => (e) =>
     setForm((f) => ({ ...f, [campo]: e.target.value }));
@@ -190,6 +207,29 @@ export default function NovoAtendimento() {
                 <Opcoes campo="modalidade" valores={MODALIDADES} />
               </div>
             </div>
+
+            {horarios.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Usar um horário de atendimento cadastrado
+                </label>
+                <select
+                  value=""
+                  onChange={(e) => aplicarHorario(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Preencher sala e horário manualmente</option>
+                  {horarios.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.dia_semana} · {h.hora_inicio} às {h.hora_fim} · {h.local}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  Selecione para preencher sala, horário e modalidade automaticamente.
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
