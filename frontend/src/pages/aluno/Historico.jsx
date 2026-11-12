@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUser,
+  faCalendarDays,
+  faClock,
+  faLocationDot,
+} from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import { excluirSolicitacao, editarSolicitacao, buscarSolicitacoes } from "../../services/aluno/solicitacao";
+import {
+  excluirSolicitacao,
+  editarSolicitacao,
+  buscarSolicitacoes,
+} from "../../services/aluno/solicitacao";
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
 
@@ -49,29 +60,18 @@ function normalizarStatus(status) {
 }
 
 function Icone({ tipo }) {
-  const caminhos = {
-    pessoa: "M15 19a4 4 0 00-8 0m4-8a3 3 0 100-6 3 3 0 000 6z",
-    calendario:
-      "M8 7V3m8 4V3m-9 4h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-    relogio: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
-    local:
-      "M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z",
+  const icones = {
+    pessoa: faUser,
+    calendario: faCalendarDays,
+    relogio: faClock,
+    local: faLocationDot,
   };
 
   return (
-    <svg
+    <FontAwesomeIcon
+      icon={icones[tipo] || faCalendarDays}
       className="h-4 w-4 shrink-0 text-slate-500"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.8}
-        d={caminhos[tipo]}
-      />
-    </svg>
+    />
   );
 }
 
@@ -88,25 +88,27 @@ export default function Historico() {
     navigate("/");
   }
   async function handleExcluir(solicitacaoId) {
-      const confirmar = window.confirm(
-        "Tem certeza que deseja excluir esta solicitação de atendimento? Essa ação não pode ser desfeita."
-      );
-      if (!confirmar) return;
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir esta solicitação de atendimento? Essa ação não pode ser desfeita.",
+    );
+    if (!confirmar) return;
 
-      try {
-        await excluirSolicitacao(solicitacaoId);
-        setSolicitacoes((atuais) => atuais.filter((a) => a.id !== solicitacaoId));
-      } catch (erro) {
-        console.error(erro);
-        alert("Não foi possível excluir a solicitação. Tente novamente.");
-      }
+    try {
+      await excluirSolicitacao(solicitacaoId);
+      setSolicitacoes((atuais) => atuais.filter((a) => a.id !== solicitacaoId));
+    } catch (erro) {
+      console.error(erro);
+      alert("Não foi possível excluir a solicitação. Tente novamente.");
     }
-  
+  }
+
   async function handleEditar(solicitacaoId, dadosAtualizados) {
     try {
       await editarSolicitacao(solicitacaoId, dadosAtualizados);
       setSolicitacoes((atuais) =>
-        atuais.map((a) => (a.id === solicitacaoId ? { ...a, ...dadosAtualizados } : a))
+        atuais.map((a) =>
+          a.id === solicitacaoId ? { ...a, ...dadosAtualizados } : a,
+        ),
       );
     } catch (erro) {
       console.error(erro);
@@ -135,7 +137,7 @@ export default function Historico() {
 
   const mapaStatusFiltro = {
     Agendado: "AGENDADO",
-    "Concluído": "CONCLUIDO",
+    Concluído: "CONCLUIDO",
     Cancelado: "CANCELADO",
   };
 
@@ -157,8 +159,12 @@ export default function Historico() {
 
   const infoCA = {
     Total: solicitacoesFiltradas.length,
-    Concluídos: solicitacoesFiltradas.filter((a) => normalizarStatus(a.status) === "CONCLUIDO").length,
-    Agendados: solicitacoesFiltradas.filter((a) => normalizarStatus(a.status) === "AGENDADO").length,
+    Concluídos: solicitacoesFiltradas.filter(
+      (a) => normalizarStatus(a.status) === "CONCLUIDO",
+    ).length,
+    Agendados: solicitacoesFiltradas.filter(
+      (a) => normalizarStatus(a.status) === "AGENDADO",
+    ).length,
   };
   const caData = {
     status: ["Agendado", "Concluído", "Cancelado"],
@@ -176,7 +182,10 @@ export default function Historico() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {Object.entries(infoCA).map(([nome, valor]) => (
-          <div key={nome} className="bg-white py-5 border rounded-2xl flex flex-col items-center font-sans shadow-sm">
+          <div
+            key={nome}
+            className="bg-white py-5 border rounded-2xl flex flex-col items-center font-sans shadow-sm"
+          >
             <p
               className={`font-bold text-2xl ${nome === "Total" ? "text-gray-800" : nome === "Concluídos" ? "text-green-600" : "text-yellow-600"}`}
             >
@@ -206,7 +215,9 @@ export default function Historico() {
                 : `Todos os ${nome}`}
             </option>
             {valor.map((data) => (
-              <option key={data} value={data}>{data}</option>
+              <option key={data} value={data}>
+                {data}
+              </option>
             ))}
           </select>
         ))}
@@ -217,7 +228,6 @@ export default function Historico() {
           <h2 className="text-lg font-bold text-slate-800">
             Registro de Atendimentos
           </h2>
-          
         </div>
 
         {loading ? (
@@ -308,7 +318,9 @@ export default function Historico() {
                   <div className="flex items-center gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => navigate(`/solicitacoes/editar/${solicitacao.id}`)}
+                      onClick={() =>
+                        navigate(`/solicitacoes/editar/${solicitacao.id}`)
+                      }
                       className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors"
                     >
                       Editar Solicitação
@@ -328,8 +340,12 @@ export default function Historico() {
           </div>
         )}
       </section>
-      
-      <button type="button" className="text-gray-500 text-sm hover:text-emerald-700" onClick={backDashboard}>
+
+      <button
+        type="button"
+        className="text-gray-500 text-sm hover:text-emerald-700"
+        onClick={backDashboard}
+      >
         {"<"} Voltar ao dashboard
       </button>
     </PageShell>

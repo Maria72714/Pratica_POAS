@@ -4,22 +4,34 @@
  * Design desktop: painel dividido (informações + formulário)
  */
 
-import React, { useState } from 'react';
-import { login } from '../services/suapAuth';
-import { loginLocal, salvarUsuarioLocal } from '../services/api';
-import { setAccessToken } from '../services/httpClient';
-import { useAuth } from '../context/AuthContext';
-import { Navigate, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faLock,
+  faArrowRight,
+  faChevronDown,
+  faUserCog,
+  faUserPlus,
+  faGear,
+  faFileLines,
+  faArrowUpRightFromSquare,
+  faHeart,
+} from "@fortawesome/free-solid-svg-icons";
+import { login } from "../services/suapAuth";
+import { loginLocal, salvarUsuarioLocal } from "../services/api";
+import { setAccessToken } from "../services/httpClient";
+import { useAuth } from "../context/AuthContext";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const { isLogged, loading, setAuthenticatedUser } = useAuth();
   const navigate = useNavigate();
 
   const [showDevLogin, setShowDevLogin] = useState(false);
-  const [matricula, setMatricula] = useState('');
-  const [senha, setSenha] = useState('');
+  const [matricula, setMatricula] = useState("");
+  const [senha, setSenha] = useState("");
   const [devLoading, setDevLoading] = useState(false);
-  const [devError, setDevError] = useState('');
+  const [devError, setDevError] = useState("");
 
   if (!loading && isLogged) {
     return <Navigate to="/" replace />;
@@ -27,7 +39,7 @@ const Login = () => {
 
   async function handleDevLogin(e) {
     e.preventDefault();
-    setDevError('');
+    setDevError("");
     setDevLoading(true);
 
     try {
@@ -39,7 +51,7 @@ const Login = () => {
         nome: data.nome,
         email: data.email,
         foto: null,
-        campus: 'Caicó',
+        campus: "Caicó",
         tipo: data.tipo_usuario,
         tipo_usuario: data.tipo_usuario,
         necessidades_especiais: data.necessidades_especiais ?? false,
@@ -51,20 +63,23 @@ const Login = () => {
         setAccessToken(data.access_token);
       }
       salvarUsuarioLocal(userData);
-      localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
+      localStorage.setItem(
+        "suap_token_expiry",
+        String(Date.now() + 24 * 60 * 60 * 1000),
+      );
 
       setAuthenticatedUser(userData);
-      if (data.tipo_usuario === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (data.tipo_usuario === 'mediador') {
-        navigate('/mediador', { replace: true });
-      } else if (data.tipo_usuario === 'professor') {
-        navigate('/professor', { replace: true });
+      if (data.tipo_usuario === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (data.tipo_usuario === "mediador") {
+        navigate("/mediador", { replace: true });
+      } else if (data.tipo_usuario === "professor") {
+        navigate("/professor", { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate("/", { replace: true });
       }
     } catch (err) {
-      setDevError(err.message || 'Erro ao fazer login');
+      setDevError(err.message || "Erro ao fazer login");
     } finally {
       setDevLoading(false);
     }
@@ -74,10 +89,9 @@ const Login = () => {
       {/* Layout Mobile - Visível apenas em telas pequenas */}
       <div className="lg:hidden min-h-screen bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 p-4 flex flex-col justify-center relative">
         {/* Ícone de acessibilidade no canto superior direito */}
-        
+
         {/* Cartão principal centralizado */}
         <div className="w-full max-w-sm mx-auto bg-white rounded-3xl shadow-2xl p-8 relative z-10">
-          
           {/* Logo e título */}
           <div className="flex items-center gap-3 mb-8">
             <img
@@ -86,8 +100,12 @@ const Login = () => {
               className="h-12 w-auto"
             />
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">pratiCA</h1>
-              <p className="text-emerald-600 text-sm font-medium">IFRN — Campus Caicó</p>
+              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+                pratiCA
+              </h1>
+              <p className="text-emerald-600 text-sm font-medium">
+                IFRN — Campus Caicó
+              </p>
             </div>
           </div>
 
@@ -106,14 +124,12 @@ const Login = () => {
             onClick={login}
             className="w-full flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 shadow-lg mb-6"
           >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+            <FontAwesomeIcon icon={faLock} className="w-5 h-5 flex-shrink-0" />
             <span>Entrar com SUAP</span>
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <FontAwesomeIcon
+              icon={faArrowRight}
+              className="w-4 h-4 flex-shrink-0"
+            />
           </button>
           {/* Box informativo verde claro */}
           <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 mb-6">
@@ -121,8 +137,9 @@ const Login = () => {
               <span className="text-white text-xs font-bold">i</span>
             </div>
             <p className="text-sm text-emerald-800 leading-relaxed">
-              Use sua <strong>matrícula, nome de usuário</strong> ou <strong>email</strong> e sua senha. O
-              sistema detectará automaticamente seu tipo de usuário.
+              Use sua <strong>matrícula, nome de usuário</strong> ou{" "}
+              <strong>email</strong> e sua senha. O sistema detectará
+              automaticamente seu tipo de usuário.
             </p>
           </div>
 
@@ -135,10 +152,10 @@ const Login = () => {
               className="flex-shrink mx-4 flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
             >
               <span>Login Local (Dev)</span>
-              <svg className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <FontAwesomeIcon
+                icon={faChevronDown}
+                className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? "rotate-180" : ""}`}
+              />
             </button>
             <div className="flex-grow border-t border-gray-200"></div>
           </div>
@@ -180,7 +197,7 @@ const Login = () => {
                   disabled={devLoading}
                   className="w-full py-3 px-6 bg-gray-800 hover:bg-gray-700 active:bg-gray-900 text-white font-medium text-sm rounded-2xl transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                 >
-                  {devLoading ? 'Entrando...' : 'Entrar'}
+                  {devLoading ? "Entrando..." : "Entrar"}
                 </button>
               </form>
             </div>
@@ -192,51 +209,60 @@ const Login = () => {
               type="button"
               onClick={() => {
                 setShowDevLogin(true);
-                setMatricula('admin');
-                setSenha('123456');
+                setMatricula("admin");
+                setSenha("123456");
               }}
               className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-800 transition-colors py-2"
             >
-              <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <FontAwesomeIcon
+                icon={faGear}
+                className="w-4 h-4 text-emerald-700"
+              />
               <span>Acesso Administrativo</span>
             </button>
 
             <button
               type="button"
-              onClick={() => navigate('/solicitar-mediador')}
+              onClick={() => navigate("/solicitar-mediador")}
               className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-800 transition-colors py-2"
             >
-              <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+              <FontAwesomeIcon
+                icon={faUserPlus}
+                className="w-4 h-4 text-emerald-700"
+              />
               <span>Quero ser Mediador</span>
             </button>
           </div>
 
           {/* Links SUAP no rodapé do cartão */}
           <div className="pt-4 border-t border-gray-100 text-center">
-         
             <div className="flex justify-center gap-4">
-              <a href="https://suap.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
-                className="text-xs text-gray-500 hover:text-emerald-600 transition-colors font-medium">Portal SUAP</a>
-              <a href="https://www.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
-                className="text-xs text-gray-500 hover:text-emerald-600 transition-colors font-medium">Site IFRN</a>
+              <a
+                href="https://suap.ifrn.edu.br"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-500 hover:text-emerald-600 transition-colors font-medium"
+              >
+                Portal SUAP
+              </a>
+              <a
+                href="https://www.ifrn.edu.br"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-500 hover:text-emerald-600 transition-colors font-medium"
+              >
+                Site IFRN
+              </a>
             </div>
           </div>
         </div>
       </div>
       {/* Layout Desktop - Visível apenas em telas grandes */}
       <div className="hidden lg:flex min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 items-center justify-center p-4 relative">
-        
         {/* Container principal com cantos arredondados */}
         <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-row relative z-10">
-
           {/* Painel Esquerdo - Verde escuro */}
           <div className="w-1/2 bg-gradient-to-br from-emerald-800 to-emerald-900 p-14 flex flex-col justify-between">
-
             {/* Logo */}
             <div className="flex items-center gap-4 mb-8">
               <img
@@ -245,8 +271,12 @@ const Login = () => {
                 className="h-14 w-auto"
               />
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">pratiCA</h1>
-                <p className="text-emerald-200 text-sm font-medium">Gerenciamento de CA</p>
+                <h1 className="text-3xl font-bold text-white tracking-tight">
+                  pratiCA
+                </h1>
+                <p className="text-emerald-200 text-sm font-medium">
+                  Gerenciamento de CA
+                </p>
               </div>
             </div>
 
@@ -256,8 +286,9 @@ const Login = () => {
                 Bem-vindo(a) de volta!
               </h2>
               <p className="text-emerald-100 text-lg leading-relaxed">
-                Plataforma de gerenciamento de Centro de Aprendizagem do IFRN Campus Caicó.
-                Acesse para gerenciar seus atendimentos, inscrições e disciplinas.
+                Plataforma de gerenciamento de Centro de Aprendizagem do IFRN
+                Campus Caicó. Acesse para gerenciar seus atendimentos,
+                inscrições e disciplinas.
               </p>
             </div>
 
@@ -265,29 +296,38 @@ const Login = () => {
             <div className="space-y-5">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-600/50 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faFileLines}
+                    className="w-6 h-6 text-white"
+                  />
                 </div>
-                <span className="text-white text-lg font-medium">Gerenciamento de Atendimentos</span>
+                <span className="text-white text-lg font-medium">
+                  Gerenciamento de Atendimentos
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-600/50 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faUserPlus}
+                    className="w-6 h-6 text-white"
+                  />
                 </div>
-                <span className="text-white text-lg font-medium">Inscrições em CAs</span>
+                <span className="text-white text-lg font-medium">
+                  Inscrições em CAs
+                </span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-600/50 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faHeart}
+                    className="w-6 h-6 text-white"
+                  />
                 </div>
-                <span className="text-white text-lg font-medium">Suporte Inclusivo (TAI)</span>
+                <span className="text-white text-lg font-medium">
+                  Suporte Inclusivo (TAI)
+                </span>
               </div>
             </div>
           </div>
@@ -306,15 +346,15 @@ const Login = () => {
                 onClick={login}
                 className="w-full flex items-center justify-center gap-3 bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 group mb-6"
               >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                <FontAwesomeIcon
+                  icon={faLock}
+                  className="w-5 h-5 flex-shrink-0"
+                />
                 <span>Entrar com SUAP</span>
-                <svg className="w-4 h-4 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <FontAwesomeIcon
+                  icon={faArrowRight}
+                  className="w-4 h-4 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+                />
               </button>
 
               {/* Box informativo */}
@@ -323,8 +363,10 @@ const Login = () => {
                   <span className="text-white text-xs font-bold">i</span>
                 </div>
                 <p className="text-sm text-emerald-800 leading-relaxed">
-                  Use sua <strong>matrícula</strong>, <strong>nome de usuário ou email</strong>
-                  e sua <strong>senha</strong>. O sistema detectará automaticamente seu tipo de usuário.
+                  Use sua <strong>matrícula</strong>,{" "}
+                  <strong>nome de usuário ou email</strong>e sua{" "}
+                  <strong>senha</strong>. O sistema detectará automaticamente
+                  seu tipo de usuário.
                 </p>
               </div>
 
@@ -337,10 +379,10 @@ const Login = () => {
                   className="flex-shrink mx-4 flex items-center gap-1.5 text-xs text-gray-500 hover:text-emerald-700 font-medium transition-colors"
                 >
                   <span>Login Local</span>
-                  <svg className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? 'rotate-180' : ''}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className={`w-3.5 h-3.5 transition-transform ${showDevLogin ? "rotate-180" : ""}`}
+                  />
                 </button>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
@@ -382,9 +424,8 @@ const Login = () => {
                       disabled={devLoading}
                       className="w-full py-3.5 px-6 bg-[#212b36] hover:bg-[#161c24] active:bg-[#0f131a] text-white font-medium text-sm rounded-2xl transition-all duration-200 shadow-sm flex items-center justify-center gap-2"
                     >
-                      {devLoading ? 'Entrando...' : 'Entrar'}
+                      {devLoading ? "Entrando..." : "Entrar"}
                     </button>
-
                   </form>
                 </div>
               )}
@@ -395,26 +436,27 @@ const Login = () => {
                   type="button"
                   onClick={() => {
                     setShowDevLogin(true);
-                    setMatricula('admin');
-                    setSenha('123456');
+                    setMatricula("admin");
+                    setSenha("123456");
                   }}
                   className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors py-1"
                 >
-                  <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faGear}
+                    className="w-4 h-4 text-emerald-700"
+                  />
                   <span>Acesso Administrativo</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => navigate('/solicitar-mediador')}
+                  onClick={() => navigate("/solicitar-mediador")}
                   className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors py-1"
                 >
-                  <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
+                  <FontAwesomeIcon
+                    icon={faUserPlus}
+                    className="w-4 h-4 text-emerald-700"
+                  />
                   <span>Quero ser Mediador</span>
                 </button>
               </div>
@@ -422,11 +464,23 @@ const Login = () => {
               {/* Links SUAP */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="flex justify-center gap-6">
-                  <a href="https://suap.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-gray-400 hover:text-emerald-600 transition-colors">Portal SUAP</a>
+                  <a
+                    href="https://suap.ifrn.edu.br"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-emerald-600 transition-colors"
+                  >
+                    Portal SUAP
+                  </a>
                   <span className="text-gray-300">·</span>
-                  <a href="https://www.ifrn.edu.br" target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-gray-400 hover:text-emerald-600 transition-colors">Site IFRN</a>
+                  <a
+                    href="https://www.ifrn.edu.br"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-emerald-600 transition-colors"
+                  >
+                    Site IFRN
+                  </a>
                 </div>
               </div>
             </div>

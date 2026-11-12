@@ -1,18 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { completarPerfil } from '../../services/api';
+import React, { useEffect, useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCheck, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
+import { completarPerfil } from "../../services/api";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@escolar\.ifrn\.edu\.br$/;
 
 // Espelha CURSOS_TURMAS do backend — cursos e seus códigos de turma
 const CURSOS_TURMAS = [
-  { id: 'informatica_internet', nome: 'Informática para Internet', codigos: ['1M', '2M', '1V', '2V'] },
-  { id: 'eletrotecnica',        nome: 'Eletrotécnica',             codigos: ['1M', '1V'] },
-  { id: 'vestuario',            nome: 'Vestuário',                 codigos: ['1M', '1V'] },
-  { id: 'textil',               nome: 'Têxtil',                    codigos: ['1M', '1V'] },
+  {
+    id: "informatica_internet",
+    nome: "Informática para Internet",
+    codigos: ["1M", "2M", "1V", "2V"],
+  },
+  { id: "eletrotecnica", nome: "Eletrotécnica", codigos: ["1M", "1V"] },
+  { id: "vestuario", nome: "Vestuário", codigos: ["1M", "1V"] },
+  { id: "textil", nome: "Têxtil", codigos: ["1M", "1V"] },
 ];
 
-const TURNO_LABEL = { M: 'Matutino', V: 'Vespertino' };
+const TURNO_LABEL = { M: "Matutino", V: "Vespertino" };
 
 function anoIngressoDaMatricula(matricula) {
   if (!matricula || matricula.length < 4) return null;
@@ -24,26 +30,35 @@ export default function ComplementacaoPerfil() {
   const navigate = useNavigate();
 
   const [usuario, setUsuario] = useState(null);
-  const [email, setEmail]     = useState('');
-  const [turmaId, setTurmaId] = useState('');
-  const [isTai, setIsTai]     = useState(false);
-  const [tipoNecessidade, setTipoNecessidade] = useState('');
-  const [laudo, setLaudo]     = useState(null);
-  const [erro, setErro]       = useState('');
+  const [email, setEmail] = useState("");
+  const [turmaId, setTurmaId] = useState("");
+  const [isTai, setIsTai] = useState(false);
+  const [tipoNecessidade, setTipoNecessidade] = useState("");
+  const [laudo, setLaudo] = useState(null);
+  const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
-    if (!dados) { navigate('/login', { replace: true }); return; }
+    const dados =
+      localStorage.getItem("usuario") || localStorage.getItem("suap_user");
+    if (!dados) {
+      navigate("/login", { replace: true });
+      return;
+    }
     const parsed = JSON.parse(dados);
-    if (parsed.perfil_completo) { navigate('/', { replace: true }); return; }
+    if (parsed.perfil_completo) {
+      navigate("/", { replace: true });
+      return;
+    }
     setUsuario(parsed);
-    setEmail(parsed.email?.endsWith('@escolar.ifrn.edu.br') ? parsed.email : '');
+    setEmail(
+      parsed.email?.endsWith("@escolar.ifrn.edu.br") ? parsed.email : "",
+    );
   }, [navigate]);
 
   const anoIngresso = useMemo(
     () => (usuario ? anoIngressoDaMatricula(usuario.matricula) : null),
-    [usuario]
+    [usuario],
   );
 
   // Gera todas as turmas a exibir: { id, label, turno }
@@ -60,7 +75,7 @@ export default function ComplementacaoPerfil() {
           cod,
           cursoNome: curso.nome,
         };
-      })
+      }),
     );
   }, [anoIngresso]);
 
@@ -81,42 +96,49 @@ export default function ComplementacaoPerfil() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setErro('');
+    setErro("");
 
     if (!EMAIL_REGEX.test(email.trim().toLowerCase())) {
-      setErro('Use um e-mail terminado em @escolar.ifrn.edu.br');
+      setErro("Use um e-mail terminado em @escolar.ifrn.edu.br");
       return;
     }
     if (!turmaId) {
-      setErro('Selecione sua turma.');
+      setErro("Selecione sua turma.");
       return;
     }
     if (isTai && !tipoNecessidade) {
-      setErro('Selecione o tipo de necessidade educacional específica.');
+      setErro("Selecione o tipo de necessidade educacional específica.");
       return;
     }
 
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('email', email.trim().toLowerCase());
-      formData.append('turma_id', turmaId);
-      formData.append('necessidades_especiais', isTai ? 'true' : 'false');
-      if (isTai && tipoNecessidade) formData.append('tipo_necessidade', tipoNecessidade);
-      if (usuario.foto) formData.append('foto', usuario.foto);
-      if (isTai && laudo) formData.append('laudo', laudo);
+      formData.append("email", email.trim().toLowerCase());
+      formData.append("turma_id", turmaId);
+      formData.append("necessidades_especiais", isTai ? "true" : "false");
+      if (isTai && tipoNecessidade)
+        formData.append("tipo_necessidade", tipoNecessidade);
+      if (usuario.foto) formData.append("foto", usuario.foto);
+      if (isTai && laudo) formData.append("laudo", laudo);
 
       await completarPerfil(usuario.matricula, formData);
-      localStorage.setItem('suap_token_expiry', String(Date.now() + 24 * 60 * 60 * 1000));
-      navigate('/', { replace: true });
+      localStorage.setItem(
+        "suap_token_expiry",
+        String(Date.now() + 24 * 60 * 60 * 1000),
+      );
+      navigate("/", { replace: true });
     } catch (err) {
       // Se o usuário não foi encontrado no banco, a sessão do SUAP está desatualizada
-      if (err.message?.includes('não encontrado') || err.message?.includes('not found')) {
-        localStorage.removeItem('usuario');
-        localStorage.removeItem('suap_user');
-        localStorage.removeItem('suap_access_token');
-        localStorage.removeItem('suap_token_expiry');
-        navigate('/login', { replace: true });
+      if (
+        err.message?.includes("não encontrado") ||
+        err.message?.includes("not found")
+      ) {
+        localStorage.removeItem("usuario");
+        localStorage.removeItem("suap_user");
+        localStorage.removeItem("suap_access_token");
+        localStorage.removeItem("suap_token_expiry");
+        navigate("/login", { replace: true });
         return;
       }
       setErro(err.message);
@@ -128,39 +150,48 @@ export default function ComplementacaoPerfil() {
   if (!usuario) return null;
 
   const urlFoto = usuario.foto
-    ? usuario.foto.startsWith('http') ? usuario.foto : `https://suap.ifrn.edu.br${usuario.foto}`
+    ? usuario.foto.startsWith("http")
+      ? usuario.foto
+      : `https://suap.ifrn.edu.br${usuario.foto}`
     : null;
 
   const turmaSelecionada = todasTurmas.find((t) => t.id === turmaId) || null;
-  const turnoAlunoAtual = anoIngresso % 2 === 0 ? 'V' : 'M'; // Determina o turno do aluno com base no ano de ingresso'
+  const turnoAlunoAtual = anoIngresso % 2 === 0 ? "V" : "M"; // Determina o turno do aluno com base no ano de ingresso'
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-
         {/* Cabeçalho */}
         <div className="flex items-center gap-4 mb-6">
           {urlFoto ? (
-            <img src={urlFoto} alt={usuario.nome} className="w-16 h-16 rounded-full object-cover border-2 border-emerald-100" />
+            <img
+              src={urlFoto}
+              alt={usuario.nome}
+              className="w-16 h-16 rounded-full object-cover border-2 border-emerald-100"
+            />
           ) : (
             <div className="w-16 h-16 rounded-full bg-emerald-700 flex items-center justify-center text-white text-xl font-bold">
-              {usuario.nome?.charAt(0) || 'A'}
+              {usuario.nome?.charAt(0) || "A"}
             </div>
           )}
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Complementação de Perfil</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              Complementação de Perfil
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Olá, <strong>{usuario.nome}</strong> ({usuario.tipo_vinculo || 'Aluno'}) — complete suas informações acadêmicas para acessar a plataforma.
+              Olá, <strong>{usuario.nome}</strong> (
+              {usuario.tipo_vinculo || "Aluno"}) — complete suas informações
+              acadêmicas para acessar a plataforma.
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
           {/* Email */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-              Email Escolar / Institucional <span className="text-red-500">*</span>
+              Email Escolar / Institucional{" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -170,7 +201,9 @@ export default function ComplementacaoPerfil() {
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               required
             />
-            <p className="text-xs text-gray-400 mt-1">Somente e-mails @escolar.ifrn.edu.br são aceitos.</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Somente e-mails @escolar.ifrn.edu.br são aceitos.
+            </p>
           </div>
 
           {/* Turma */}
@@ -179,30 +212,42 @@ export default function ComplementacaoPerfil() {
               Turma <span className="text-red-500">*</span>
             </label>
             <p className="text-xs text-gray-400 mb-3">
-              Selecione a turma em que você está matriculado. O ano ({anoIngresso}) foi identificado automaticamente pela sua matrícula.
+              Selecione a turma em que você está matriculado. O ano (
+              {anoIngresso}) foi identificado automaticamente pela sua
+              matrícula.
             </p>
 
             {turmasPorTurno[turnoAlunoAtual] && (
               <div className="mb-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Seu turno: {TURNO_LABEL[turnoAlunoAtual]}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Seu turno: {TURNO_LABEL[turnoAlunoAtual]}
+                </p>
                 <div className="flex flex-wrap gap-2">
-                  <select name="" id="" value={turmaId} onChange={(e) => setTurmaId(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                  <select
+                    name=""
+                    id=""
+                    value={turmaId}
+                    onChange={(e) => setTurmaId(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                  >
                     <option value="">Selecione a turma</option>
-                      {turmasPorTurno[turnoAlunoAtual]?.map((t) => (
-                        <option key={t.id} value={t.id}>{t.label}</option>
+                    {turmasPorTurno[turnoAlunoAtual]?.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
-              )}
+            )}
 
             {/* Confirmação */}
             {turmaSelecionada && (
               <div className="mt-3 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
-                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <FontAwesomeIcon
+                  icon={faCheck}
+                  className="w-4 h-4 text-emerald-600 shrink-0"
+                />
                 <span className="text-sm text-emerald-800">
                   Turma selecionada: <strong>{turmaSelecionada.label}</strong>
                 </span>
@@ -224,7 +269,10 @@ export default function ComplementacaoPerfil() {
                   Sou PNEE (Pessoa com Necessidade Educacional Específica)
                 </span>
                 <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-                  Marque esta opção se você possui necessidade educacional específica e necessita de atendimento TAI. Sua solicitação será enviada para validação do Administrador. Enquanto aguarda, você acessa e solicita atendimentos normalmente.
+                  Marque esta opção se você possui necessidade educacional
+                  específica e necessita de atendimento TAI. Sua solicitação
+                  será enviada para validação do Administrador. Enquanto
+                  aguarda, você acessa e solicita atendimentos normalmente.
                 </p>
               </div>
             </label>
@@ -238,21 +286,53 @@ export default function ComplementacaoPerfil() {
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
-                      { id: 'Libras',                    label: 'Surdez / Deficiência Auditiva',    desc: 'Intérprete de Libras' },
-                      { id: 'Braille',                   label: 'Cegueira / Deficiência Visual',     desc: 'Apoio Braille / Audiodescrição' },
-                      { id: 'Mobilidade',                label: 'Deficiência Física / Mobilidade',   desc: 'Acessibilidade e apoio motor' },
-                      { id: 'TDA/TDAH',                  label: 'TDA / TDAH',                        desc: 'Transtorno de atenção e hiperatividade' },
-                      { id: 'TEA',                       label: 'Autismo (TEA)',                      desc: 'Transtorno do Espectro Autista' },
-                      { id: 'Dislexia',                  label: 'Dislexia / Dislalia',               desc: 'Transtornos de linguagem e aprendizagem' },
-                      { id: 'Transtornos Específicos',   label: 'Outros Transtornos',                desc: 'Outros transtornos específicos de aprendizagem' },
-                      { id: 'Outro',                     label: 'Outro',                             desc: 'Descreva no laudo ou observe com o mediador' },
+                      {
+                        id: "Libras",
+                        label: "Surdez / Deficiência Auditiva",
+                        desc: "Intérprete de Libras",
+                      },
+                      {
+                        id: "Braille",
+                        label: "Cegueira / Deficiência Visual",
+                        desc: "Apoio Braille / Audiodescrição",
+                      },
+                      {
+                        id: "Mobilidade",
+                        label: "Deficiência Física / Mobilidade",
+                        desc: "Acessibilidade e apoio motor",
+                      },
+                      {
+                        id: "TDA/TDAH",
+                        label: "TDA / TDAH",
+                        desc: "Transtorno de atenção e hiperatividade",
+                      },
+                      {
+                        id: "TEA",
+                        label: "Autismo (TEA)",
+                        desc: "Transtorno do Espectro Autista",
+                      },
+                      {
+                        id: "Dislexia",
+                        label: "Dislexia / Dislalia",
+                        desc: "Transtornos de linguagem e aprendizagem",
+                      },
+                      {
+                        id: "Transtornos Específicos",
+                        label: "Outros Transtornos",
+                        desc: "Outros transtornos específicos de aprendizagem",
+                      },
+                      {
+                        id: "Outro",
+                        label: "Outro",
+                        desc: "Descreva no laudo ou observe com o mediador",
+                      },
                     ].map((tipo) => (
                       <label
                         key={tipo.id}
                         className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-all ${
                           tipoNecessidade === tipo.id
-                            ? 'border-emerald-500 bg-emerald-100/50 ring-1 ring-emerald-400'
-                            : 'border-emerald-200 bg-white hover:border-emerald-300'
+                            ? "border-emerald-500 bg-emerald-100/50 ring-1 ring-emerald-400"
+                            : "border-emerald-200 bg-white hover:border-emerald-300"
                         }`}
                       >
                         <input
@@ -265,8 +345,12 @@ export default function ComplementacaoPerfil() {
                           required={isTai}
                         />
                         <div>
-                          <p className="text-xs font-semibold text-emerald-900">{tipo.label}</p>
-                          <p className="text-[11px] text-emerald-700">{tipo.desc}</p>
+                          <p className="text-xs font-semibold text-emerald-900">
+                            {tipo.label}
+                          </p>
+                          <p className="text-[11px] text-emerald-700">
+                            {tipo.desc}
+                          </p>
                         </div>
                       </label>
                     ))}
@@ -279,13 +363,21 @@ export default function ComplementacaoPerfil() {
                     Anexar laudo médico ou comprovante (PDF ou imagem)
                   </p>
                   <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-emerald-300 rounded-xl cursor-pointer bg-white hover:bg-emerald-50/50 transition-colors">
-                    <svg className="w-8 h-8 text-emerald-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+                    <FontAwesomeIcon
+                      icon={faUpload}
+                      className="w-8 h-8 text-emerald-500 mb-1"
+                    />
                     <span className="text-xs text-emerald-700 text-center px-4">
-                      {laudo ? laudo.name : 'Clique para selecionar ou arraste o laudo. PDF, PNG ou JPG.'}
+                      {laudo
+                        ? laudo.name
+                        : "Clique para selecionar ou arraste o laudo. PDF, PNG ou JPG."}
                     </span>
-                    <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="hidden" onChange={handleLaudoChange} />
+                    <input
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      className="hidden"
+                      onChange={handleLaudoChange}
+                    />
                   </label>
                 </div>
               </div>
@@ -294,12 +386,16 @@ export default function ComplementacaoPerfil() {
 
           {!isTai && (
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800">
-              Apenas alunos PNEE com atendimento TAI podem solicitar Centros de Aprendizagem (CA). Você poderá acessar a plataforma normalmente, mas a solicitação de CA ficará indisponível.
+              Apenas alunos PNEE com atendimento TAI podem solicitar Centros de
+              Aprendizagem (CA). Você poderá acessar a plataforma normalmente,
+              mas a solicitação de CA ficará indisponível.
             </div>
           )}
 
           {erro && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2">{erro}</p>
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2">
+              {erro}
+            </p>
           )}
 
           <button
@@ -307,7 +403,7 @@ export default function ComplementacaoPerfil() {
             disabled={loading}
             className="w-full py-3 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
           >
-            {loading ? 'Salvando...' : 'Concluir Cadastro e Acessar →'}
+            {loading ? "Salvando..." : "Concluir Cadastro e Acessar →"}
           </button>
         </form>
       </div>

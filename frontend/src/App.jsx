@@ -1,88 +1,126 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import Dashboard from './components/aluno/Dashboard';
-import DashboardProfessor from './components/professor/DashboardProfessor';
-import NovoAtendimento from './components/professor/NovoAtendimento';
-import DashboardMediador from './components/DashboardMediador';
-import SolicitacaoAtendimento from './components/aluno/SolicitacaoAtendimento';
-import Agendamentos from './pages/aluno/Agendamentos';
-import EditarSolicitacao from './components/aluno/Editarsolicitacao';
-import Historico from './pages/aluno/Historico';
-import Perfil from './pages/Perfil';
+import React from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
+import Dashboard from "./components/aluno/Dashboard";
+import DashboardProfessor from "./components/professor/DashboardProfessor";
+import NovoAtendimento from "./components/professor/NovoAtendimento";
+import DashboardMediador from "./components/DashboardMediador";
+import SolicitacaoAtendimento from "./components/aluno/SolicitacaoAtendimento";
+import Agendamentos from "./pages/aluno/Agendamentos";
+import EditarSolicitacao from "./components/aluno/Editarsolicitacao";
+import Historico from "./pages/aluno/Historico";
+import Perfil from "./pages/Perfil";
 // ── Rotas de autenticação OAuth2 SUAP ────────────────────────────────────────
-import Login from './pages/Login';
-import Callback from './pages/Callback';
-import DashboardAuth from './pages/DashboardAuth';
-import ComplementacaoPerfilProfessor from './pages/professor/ComplementacaoPerfilProfessor';
-import SolicitacaoMediador from './pages/SolicitacaoMediador';
-import NotFound from './pages/NotFound';
-import ProfessorAtendimentos from './pages/professor/ProfessorAtendimentos';
-import ProfessorHorarios from './pages/professor/ProfessorHorarios';
-import ProfessorRelatorios from './pages/professor/ProfessorRelatorios';
-import ComplementacaoPerfil from './pages/aluno/ComplementacaoPerfil';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminAtendimentos from './pages/admin/AdminAtendimentos';
+import Login from "./pages/Login";
+import Callback from "./pages/Callback";
+import DashboardAuth from "./pages/DashboardAuth";
+import ComplementacaoPerfilProfessor from "./pages/professor/ComplementacaoPerfilProfessor";
+import SolicitacaoMediador from "./pages/SolicitacaoMediador";
+import NotFound from "./pages/NotFound";
+import ProfessorAtendimentos from "./pages/professor/ProfessorAtendimentos";
+import ProfessorHorarios from "./pages/professor/ProfessorHorarios";
+import ProfessorRelatorios from "./pages/professor/ProfessorRelatorios";
+import ComplementacaoPerfil from "./pages/aluno/ComplementacaoPerfil";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminAtendimentos from "./pages/admin/AdminAtendimentos";
 
-import { AuthProvider } from './context/AuthContext';
-import { resolveRoleFromUser, getRoleTheme } from './theme/roles';
-import { SidebarProvider } from './context/SidebarContext';
-import { fetchPerfilAluno, salvarUsuarioLocal } from './services/api';
+import { AuthProvider } from "./context/AuthContext";
+import { resolveRoleFromUser, getRoleTheme } from "./theme/roles";
+import { SidebarProvider } from "./context/SidebarContext";
+import { fetchPerfilAluno, salvarUsuarioLocal } from "./services/api";
+import {
+  faHouse,
+  faClipboardList,
+  faUser,
+  faCalendarDays,
+  faPlus,
+  faClockRotateLeft,
+  faCircleInfo,
+  faChartColumn,
+} from "@fortawesome/free-solid-svg-icons";
 
-function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin = false, requerTai = false }) {
+function AppLayout({
+  children,
+  isProfessor = false,
+  isMediador = false,
+  isAdmin = false,
+  requerTai = false,
+}) {
   const navigate = useNavigate();
   const [usuarioLogado, setUsuarioLogado] = React.useState(() => {
-    const dados = localStorage.getItem('usuario') || localStorage.getItem('suap_user');
+    const dados =
+      localStorage.getItem("usuario") || localStorage.getItem("suap_user");
     return dados ? JSON.parse(dados) : null;
   });
 
   const role = resolveRoleFromUser(usuarioLogado);
-  const isAlunoUser = role === 'aluno';
-  const isAdminUser = !isAlunoUser && (isAdmin || role === 'admin');
-  const isMediadorUser = !isAlunoUser && (isMediador || role === 'mediador');
-  const isProfessorUser = !isAlunoUser && (isProfessor || role === 'professor');
+  const isAlunoUser = role === "aluno";
+  const isAdminUser = !isAlunoUser && (isAdmin || role === "admin");
+  const isMediadorUser = !isAlunoUser && (isMediador || role === "mediador");
+  const isProfessorUser = !isAlunoUser && (isProfessor || role === "professor");
   const theme = getRoleTheme(role);
 
   React.useEffect(() => {
     if (!usuarioLogado) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
     const path = window.location.pathname;
 
-    if (isAdminUser && !path.startsWith('/admin') && path !== '/perfil') {
-      navigate('/admin');
+    if (isAdminUser && !path.startsWith("/admin") && path !== "/perfil") {
+      navigate("/admin");
       return;
     }
 
-    if (isMediadorUser && !path.startsWith('/mediador') && path !== '/perfil') {
-      navigate('/mediador');
+    if (isMediadorUser && !path.startsWith("/mediador") && path !== "/perfil") {
+      navigate("/mediador");
       return;
     }
 
-    if (isProfessorUser && !isAdminUser && !path.startsWith('/professor') && path !== '/perfil') {
-      navigate('/professor');
+    if (
+      isProfessorUser &&
+      !isAdminUser &&
+      !path.startsWith("/professor") &&
+      path !== "/perfil"
+    ) {
+      navigate("/professor");
       return;
     }
 
-    if (isAlunoUser && (path.startsWith('/professor') || path.startsWith('/admin'))) {
-      navigate('/');
+    if (
+      isAlunoUser &&
+      (path.startsWith("/professor") || path.startsWith("/admin"))
+    ) {
+      navigate("/");
       return;
     }
 
     // Aluno com perfil incompleto precisa concluir a complementação de perfil
     // (é lá que ele declara o PNEE) antes de usar o restante da plataforma.
-    if (isAlunoUser && !usuarioLogado.perfil_completo && path !== '/aluno/completar-perfil') {
-      navigate('/aluno/completar-perfil');
+    if (
+      isAlunoUser &&
+      !usuarioLogado.perfil_completo &&
+      path !== "/aluno/completar-perfil"
+    ) {
+      navigate("/aluno/completar-perfil");
       return;
     }
 
     if (requerTai && !usuarioLogado.necessidades_especiais) {
-      navigate('/');
+      navigate("/");
     }
-  }, [usuarioLogado, navigate, isProfessor, isMediador, isAdminUser, isProfessorUser, isAlunoUser, requerTai]);
+  }, [
+    usuarioLogado,
+    navigate,
+    isProfessor,
+    isMediador,
+    isAdminUser,
+    isProfessorUser,
+    isAlunoUser,
+    requerTai,
+  ]);
 
   React.useEffect(() => {
     if (!usuarioLogado?.matricula || usuarioLogado?.foto) return;
@@ -94,47 +132,82 @@ function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin 
           setUsuarioLogado(atualizado);
         }
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [usuarioLogado]);
 
   if (!usuarioLogado) return null;
 
   const mediadorMenu = [
-    { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/mediador" },
-    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Solicitações TAI", link: "/mediador/solicitacoes" },
-    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
+    { icon: faHouse, texto: "Início", link: "/mediador" },
+    {
+      icon: faClipboardList,
+      texto: "Solicitações TAI",
+      link: "/mediador/solicitacoes",
+    },
+    { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
   const professorMenu = [
-    { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/professor" },
-    { icone: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Meus Atendimentos", link: "/professor/atendimentos" },
-    { icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Novo Atendimento", link: "/professor/atendimentos/novo" },
-    { icone: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Solicitações TAI", link: "/professor/atendimentos?tab=solicitacoes" },
-    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Horários Disponíveis", link: "/professor/horarios" },
-    { icone: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", texto: "Relatórios", link: "/professor/relatorios" },
-    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
+    { icon: faHouse, texto: "Início", link: "/professor" },
+    {
+      icon: faClipboardList,
+      texto: "Meus Atendimentos",
+      link: "/professor/atendimentos",
+    },
+    {
+      icon: faPlus,
+      texto: "Novo Atendimento",
+      link: "/professor/atendimentos/novo",
+    },
+    {
+      icon: faCircleInfo,
+      texto: "Solicitações TAI",
+      link: "/professor/atendimentos?tab=solicitacoes",
+    },
+    {
+      icon: faCalendarDays,
+      texto: "Horários Disponíveis",
+      link: "/professor/horarios",
+    },
+    { icon: faChartColumn, texto: "Relatórios", link: "/professor/relatorios" },
+    { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
   const adminMenu = [
-    { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Painel Admin", link: "/admin" },
-    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Atendimentos", link: "/admin/atendimentos" },
-    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" },
+    { icon: faHouse, texto: "Painel Admin", link: "/admin" },
+    {
+      icon: faCalendarDays,
+      texto: "Atendimentos",
+      link: "/admin/atendimentos",
+    },
+    { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
   const alunoMenu = [
-    { icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", texto: "Início", link: "/" },
-    { icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", texto: "Meus Agendamentos", link: "/agendamentos" },
-    // Somente alunos PNEE podem solicitar CA.
+    { icon: faHouse, texto: "Início", link: "/" },
+    { icon: faCalendarDays, texto: "Meus Agendamentos", link: "/agendamentos" },
     ...(usuarioLogado?.necessidades_especiais
-      ? [{ icone: "M12 6v6m0 0v6m0-6h6m-6 0H6", texto: "Solicitar Atendimento", link: "/solicitar-atendimento" }]
+      ? [
+          {
+            icon: faPlus,
+            texto: "Solicitar Atendimento",
+            link: "/solicitar-atendimento",
+          },
+        ]
       : []),
-    { icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", texto: "Histórico", link: "/historico" },
-    { icone: "M15 19a4 4 0 00-6 0m3-8a3 3 0 100-6 3 3 0 000 6zm7 8a7 7 0 00-14 0", texto: "Meu Perfil", link: "/perfil" }
+    { icon: faClockRotateLeft, texto: "Histórico", link: "/historico" },
+    { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
   const iniciais = usuarioLogado?.nome
-    ? usuarioLogado.nome.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : 'U';
+    ? usuarioLogado.nome
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : "U";
 
   const menuAtivo = isAdminUser
     ? adminMenu
@@ -148,11 +221,11 @@ function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin 
 
   const usuarioInfo = {
     nome: usuarioLogado?.nome || papelTexto,
-    descricao: `${papelTexto}${usuarioLogado?.matricula ? ' • Mat. ' + usuarioLogado.matricula : ''}`,
+    descricao: `${papelTexto}${usuarioLogado?.matricula ? " • Mat. " + usuarioLogado.matricula : ""}`,
     iniciais: iniciais,
     corAvatar: corAvatar,
     foto: usuarioLogado?.foto,
-    email: usuarioLogado?.email
+    email: usuarioLogado?.email,
   };
 
   return (
@@ -161,9 +234,7 @@ function AppLayout({ children, isProfessor = false, isMediador = false, isAdmin 
         <Sidebar itensMenu={menuAtivo} role={role} />
         <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
           <Header usuario={usuarioInfo} />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </SidebarProvider>
     </div>
@@ -182,30 +253,156 @@ function App() {
           <Route path="/solicitar-mediador" element={<SolicitacaoMediador />} />
 
           {/* ── Rotas do Aluno ───────────────────────────────────────────── */}
-          <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/solicitar-atendimento" element={<AppLayout requerTai={true}><SolicitacaoAtendimento /></AppLayout>} />
-          <Route path="/historico" element={<AppLayout><Historico /></AppLayout>} />
-          <Route path="/agendamentos" element={<AppLayout><Agendamentos /></AppLayout>} />
-          <Route path="/Agendamentos" element={<AppLayout><Agendamentos /></AppLayout>} />
-          <Route path="/aluno/completar-perfil" element={<AppLayout><ComplementacaoPerfil /></AppLayout>} />
-          <Route path="/perfil" element={<AppLayout><Perfil /></AppLayout>} />
-          <Route path="/solicitacoes/editar/:id" element={<AppLayout><EditarSolicitacao /></AppLayout>} />
+          <Route
+            path="/"
+            element={
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/solicitar-atendimento"
+            element={
+              <AppLayout requerTai={true}>
+                <SolicitacaoAtendimento />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/historico"
+            element={
+              <AppLayout>
+                <Historico />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/agendamentos"
+            element={
+              <AppLayout>
+                <Agendamentos />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/Agendamentos"
+            element={
+              <AppLayout>
+                <Agendamentos />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/aluno/completar-perfil"
+            element={
+              <AppLayout>
+                <ComplementacaoPerfil />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <AppLayout>
+                <Perfil />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/solicitacoes/editar/:id"
+            element={
+              <AppLayout>
+                <EditarSolicitacao />
+              </AppLayout>
+            }
+          />
 
           {/* ── Admin ──────────────────────────────────────────────────── */}
-          <Route path="/admin" element={<AppLayout isAdmin={true}><AdminDashboard /></AppLayout>} />
-          <Route path="/admin/atendimentos" element={<AppLayout isAdmin={true}><AdminAtendimentos /></AppLayout>} />
+          <Route
+            path="/admin"
+            element={
+              <AppLayout isAdmin={true}>
+                <AdminDashboard />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/admin/atendimentos"
+            element={
+              <AppLayout isAdmin={true}>
+                <AdminAtendimentos />
+              </AppLayout>
+            }
+          />
 
           {/* ── Rotas do Mediador ───────────────────────────────────────── */}
-          <Route path="/mediador" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />
-          <Route path="/mediador/solicitacoes" element={<AppLayout isMediador={true}><DashboardMediador /></AppLayout>} />
+          <Route
+            path="/mediador"
+            element={
+              <AppLayout isMediador={true}>
+                <DashboardMediador />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/mediador/solicitacoes"
+            element={
+              <AppLayout isMediador={true}>
+                <DashboardMediador />
+              </AppLayout>
+            }
+          />
 
           {/* ── Rotas do Professor ───────────────────────────────────────── */}
-          <Route path="/professor" element={<AppLayout isProfessor={true}><DashboardProfessor /></AppLayout>} />
-          <Route path="/professor/atendimentos/novo" element={<AppLayout isProfessor={true}><NovoAtendimento /></AppLayout>} />
-          <Route path="/professor/atendimentos" element={<AppLayout isProfessor={true}><ProfessorAtendimentos /></AppLayout>} />
-          <Route path="/professor/horarios" element={<AppLayout isProfessor={true}><ProfessorHorarios /></AppLayout>} />
-          <Route path="/professor/relatorios" element={<AppLayout isProfessor={true}><ProfessorRelatorios /></AppLayout>} />
-          <Route path="/professor/completar-perfil" element={<AppLayout isProfessor={true}><ComplementacaoPerfilProfessor /></AppLayout>} />
+          <Route
+            path="/professor"
+            element={
+              <AppLayout isProfessor={true}>
+                <DashboardProfessor />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/professor/atendimentos/novo"
+            element={
+              <AppLayout isProfessor={true}>
+                <NovoAtendimento />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/professor/atendimentos"
+            element={
+              <AppLayout isProfessor={true}>
+                <ProfessorAtendimentos />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/professor/horarios"
+            element={
+              <AppLayout isProfessor={true}>
+                <ProfessorHorarios />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/professor/relatorios"
+            element={
+              <AppLayout isProfessor={true}>
+                <ProfessorRelatorios />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/professor/completar-perfil"
+            element={
+              <AppLayout isProfessor={true}>
+                <ComplementacaoPerfilProfessor />
+              </AppLayout>
+            }
+          />
           {/* ── Rota 404 - Fallback ──────────────────────────────────────── */}
           <Route path="*" element={<NotFound />} />
         </Routes>

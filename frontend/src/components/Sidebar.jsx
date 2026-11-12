@@ -1,34 +1,36 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSidebar } from '../context/SidebarContext';
-import { getRoleTheme } from '../theme/roles';
+import { Link, useLocation } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faHouse,
+  faCalendarDays,
+  faPlus,
+  faClockRotateLeft,
+} from "@fortawesome/free-solid-svg-icons";
+import { useSidebar } from "../context/SidebarContext";
+import { getRoleTheme } from "../theme/roles";
 
-const Sidebar = ({ itensMenu, role = 'aluno' }) => {
+const iconePadrao = faHouse;
+
+const resolverIcone = (item) => {
+  if (item?.icon) return item.icon;
+  if (item?.icone && typeof item.icone === "object") return item.icone;
+  return iconePadrao;
+};
+
+const Sidebar = ({ itensMenu, role = "aluno" }) => {
   const location = useLocation();
   const { isOpen, setIsOpen } = useSidebar();
   const theme = getRoleTheme(role);
 
   const itens = itensMenu || [
+    { texto: "Início", link: "/", icon: faHouse },
+    { texto: "Meus Agendamentos", link: "/agendamentos", icon: faCalendarDays },
     {
-      icone: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-      texto: "Início",
-      link: "/"
-    },
-    {
-      icone: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-      texto: "Meus Agendamentos",
-      link: "/agendamentos"
-    },
-    {
-      icone: "M12 6v6m0 0v6m0-6h6m-6 0H6",
       texto: "Solicitar Atendimento",
-      link: "/solicitar-atendimento"
+      link: "/solicitar-atendimento",
+      icon: faPlus,
     },
-    {
-      icone: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
-      texto: "Histórico",
-      link: "/historico"
-    }
+    { texto: "Histórico", link: "/historico", icon: faClockRotateLeft },
   ];
 
   return (
@@ -44,7 +46,7 @@ const Sidebar = ({ itensMenu, role = 'aluno' }) => {
         className={`
         fixed lg:static inset-y-0 left-0 z-40 w-72 ${theme.sidebar} min-h-screen flex flex-col
         transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
       >
         <div className={`p-4 sm:p-6 border-b ${theme.sidebarBorder}`}>
@@ -55,11 +57,17 @@ const Sidebar = ({ itensMenu, role = 'aluno' }) => {
               className="w-9 sm:w-10 h-auto flex-shrink-0 object-contain"
             />
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">pratiCA</h1>
-              <p className={`${theme.sidebarMuted} text-xs sm:text-sm mt-0.5`}>Centro de Aprendizagem</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">
+                pratiCA
+              </h1>
+              <p className={`${theme.sidebarMuted} text-xs sm:text-sm mt-0.5`}>
+                Centro de Aprendizagem
+              </p>
             </div>
           </div>
-          <p className={`${theme.sidebarSubtle} text-xs mt-1 sm:mt-2`}>IFRN - Campus Caicó</p>
+          <p className={`${theme.sidebarSubtle} text-xs mt-1 sm:mt-2`}>
+            IFRN - Campus Caicó
+          </p>
         </div>
 
         <nav className="flex-1 p-2 sm:p-4">
@@ -70,16 +78,20 @@ const Sidebar = ({ itensMenu, role = 'aluno' }) => {
               return (
                 <li key={index}>
                   <Link
-                    to={item.link || '#'}
+                    to={item.link || "#"}
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base transition-colors ${
                       isAtivo ? theme.navActive : theme.navIdle
                     }`}
                   >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icone} />
-                    </svg>
-                    <span className="truncate" dangerouslySetInnerHTML={{ __html: item.texto }} />
+                    <FontAwesomeIcon
+                      icon={resolverIcone(item)}
+                      className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
+                    />
+                    <span
+                      className="truncate"
+                      dangerouslySetInnerHTML={{ __html: item.texto }}
+                    />
                   </Link>
                 </li>
               );
@@ -88,8 +100,11 @@ const Sidebar = ({ itensMenu, role = 'aluno' }) => {
         </nav>
 
         <div className={`p-2 sm:p-4 border-t ${theme.sidebarBorder}`}>
-          <p className={`${theme.sidebarSubtle} text-xs text-center leading-relaxed`}>
-            Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte
+          <p
+            className={`${theme.sidebarSubtle} text-xs text-center leading-relaxed`}
+          >
+            Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do
+            Norte
           </p>
         </div>
       </aside>
