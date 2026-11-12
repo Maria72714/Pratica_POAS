@@ -5,6 +5,7 @@ import {
   faClipboardList,
   faList,
   faCheck,
+  faClock,
   faComments,
   faCircleInfo,
   faShieldHalved,
@@ -114,6 +115,12 @@ const ProfessorAtendimentos = () => {
       .replaceAll("_", " ")
       .toLowerCase()
       .replace(/\b\w/g, (letra) => letra.toUpperCase());
+  }
+
+  function formatarHorario(inicio, termino) {
+    const corta = (v) => (v ? String(v).slice(0, 5) : "");
+    if (inicio && termino) return `${corta(inicio)} às ${corta(termino)}`;
+    return corta(inicio || termino) || null;
   }
 
   const handleAbrirChat = (item) => {
@@ -288,6 +295,21 @@ const ProfessorAtendimentos = () => {
                             />
                             {formatarData(atendimento.data_atendimento)}
                           </span>
+                          {formatarHorario(
+                            atendimento.horario_inicio,
+                            atendimento.horario_termino,
+                          ) && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <FontAwesomeIcon
+                                icon={faClock}
+                                className="w-3.5 h-3.5 text-gray-400"
+                              />
+                              {formatarHorario(
+                                atendimento.horario_inicio,
+                                atendimento.horario_termino,
+                              )}
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1.5">
                             <FontAwesomeIcon
                               icon={faLocationDot}
@@ -295,6 +317,15 @@ const ProfessorAtendimentos = () => {
                             />
                             {formatarTexto(atendimento.modalidade)}
                           </span>
+                          {atendimento.sala_nome && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <FontAwesomeIcon
+                                icon={faLocationDot}
+                                className="w-3.5 h-3.5 text-gray-400"
+                              />
+                              {atendimento.sala_nome}
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1.5">
                             <FontAwesomeIcon
                               icon={faTag}

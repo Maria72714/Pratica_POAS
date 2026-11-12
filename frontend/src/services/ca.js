@@ -42,3 +42,11 @@ export function avaliarCA(atendimentoId, nota, comentario) {
     body: JSON.stringify({ nota, comentario }),
   });
 }
+
+/** Conclui o CA (professor responsável, mediador ou admin). Libera a avaliação. */
+export function concluirCA(atendimentoId) {
+  return apiJson(`${PREFIX}/${atendimentoId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "Concluído" }),
+  });
+}

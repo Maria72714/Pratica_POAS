@@ -26,6 +26,8 @@ from models.users.professor import Professor
 from models.users.mediador import Mediador
 from models.disciplina import Disciplina
 from models.solicitacao import Solicitacao
+from models.sala import Sala
+from models.horario import Horario
 from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.associativas.aluno_disciplina import AlunoDisciplina
 from models.avaliacao_ca import AvaliacaoCA
@@ -171,6 +173,8 @@ def listar_mural_ca(
     disc_ids = {a.id_disciplina for a in atendimentos if a.id_disciplina}
     prof_ids = {a.id_professor for a in atendimentos if a.id_professor}
     sol_ids = {a.id_solicitacao for a in atendimentos if a.id_solicitacao}
+    sala_ids = {a.id_sala for a in atendimentos if a.id_sala}
+    horario_ids = {a.id_horario for a in atendimentos if a.id_horario}
 
     # Todas as consultas abaixo são feitas em lote para evitar N+1 (cada query
     # custa um round-trip completo até o banco).
@@ -186,6 +190,14 @@ def listar_mural_ca(
         s.id: s
         for s in session.exec(select(Solicitacao).where(Solicitacao.id.in_(sol_ids))).all()
     } if sol_ids else {}
+    sala_map = {
+        s.id: s
+        for s in session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+    } if sala_ids else {}
+    horario_map = {
+        h.id: h
+        for h in session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+    } if horario_ids else {}
 
     contagem: dict[int, int] = {}
     for aa in session.exec(
@@ -218,6 +230,13 @@ def listar_mural_ca(
                 if a.data_atendimento
                 else None,
                 "link_ca_online": a.link_ca_online,
+                "sala_nome": sala_map[a.id_sala].nome if a.id_sala in sala_map else None,
+                "horario_inicio": horario_map[a.id_horario].horario_inicio.isoformat()
+                if a.id_horario in horario_map and horario_map[a.id_horario].horario_inicio
+                else None,
+                "horario_termino": horario_map[a.id_horario].horario_termino.isoformat()
+                if a.id_horario in horario_map and horario_map[a.id_horario].horario_termino
+                else None,
                 "total_alunos": contagem.get(a.id, 0),
                 "tem_selo": bool(sol and sol.id_mediador),
                 "avaliacao_media": round(sum(notas_ca) / len(notas_ca), 2)
@@ -283,6 +302,9 @@ def detalhes_atendimento(
     status_valor = _valor(atendimento.status)
     eh_aluno_vinculado = _usuario_e_aluno_do_atendimento(session, atendimento, current.id)
 
+    sala = session.get(Sala, atendimento.id_sala) if atendimento.id_sala else None
+    horario = session.get(Horario, atendimento.id_horario) if atendimento.id_horario else None
+
     minha_avaliacao = None
     if eh_aluno_vinculado:
         av = session.exec(
@@ -314,6 +336,13 @@ def detalhes_atendimento(
         "modalidade": _valor(atendimento.modalidade),
         "status": status_valor,
         "link_ca_online": atendimento.link_ca_online,
+        "sala_nome": sala.nome if sala else None,
+        "horario_inicio": horario.horario_inicio.isoformat()
+        if horario and horario.horario_inicio
+        else None,
+        "horario_termino": horario.horario_termino.isoformat()
+        if horario and horario.horario_termino
+        else None,
         "total_alunos": len(alunos),
         "alunos": alunos,
         "avaliacao": {"media": media, "total": total_avaliacoes},

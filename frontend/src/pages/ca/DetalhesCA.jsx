@@ -6,7 +6,10 @@ import {
   faArrowUpRightFromSquare,
   faCalendarDays,
   faChalkboardUser,
+  faCheckCircle,
+  faClock,
   faCommentDots,
+  faLocationDot,
   faPaperPlane,
   faShieldHalved,
   faSpinner,
@@ -26,6 +29,7 @@ import {
   buscarAvaliacoesCA,
   buscarComentariosCA,
   buscarDetalhesCA,
+  concluirCA,
   criarComentarioCA,
   excluirComentarioCA,
 } from "../../services/ca";
@@ -61,6 +65,21 @@ function formatarDataHora(iso) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatarHorario(inicio, termino) {
+  const corta = (v) => (v ? String(v).slice(0, 5) : "");
+  if (inicio && termino) return `${corta(inicio)} às ${corta(termino)}`;
+  return corta(inicio || termino) || null;
+}
+
+// O backend devolve o status com acento ("Concluído"/"Agendado"), então a
+// comparação precisa ignorar acentos para reconhecer o estado corretamente.
+function normalizarStatus(status) {
+  return String(status || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 }
 
 function Estrelas({ valor = 0, interativo = false, onChange = null }) {
@@ -120,6 +139,7 @@ export default function DetalhesCA() {
   const [comentarioAvaliacao, setComentarioAvaliacao] = useState("");
   const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
+  const [concluindo, setConcluindo] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
@@ -208,6 +228,25 @@ export default function DetalhesCA() {
     }
   };
 
+  const concluir = async () => {
+    if (
+      !window.confirm(
+        "Concluir este CA? Os alunos poderão avaliá-lo e o status não poderá ser alterado.",
+      )
+    ) {
+      return;
+    }
+    setConcluindo(true);
+    try {
+      await concluirCA(id);
+      await carregar();
+    } catch (err) {
+      alert(err.message || "Não foi possível concluir o CA.");
+    } finally {
+      setConcluindo(false);
+    }
+  };
+
   if (carregando) {
     return (
       <PageShell>
@@ -235,8 +274,23 @@ export default function DetalhesCA() {
     );
   }
 
-  const concluido = String(dados.status || "").toUpperCase() === "CONCLUIDO";
-  const statusCancelado = String(dados.status || "").toUpperCase() === "CANCELADO";
+  const statusNormalizado = normalizarStatus(dados.status);
+  const concluido = statusNormalizado === "CONCLUIDO";
+  const statusCancelado = statusNormalizado === "CANCELADO";
+  const dataFutura = (() => {
+    const iso = String(dados.data_atendimento || "").split("T")[0];
+    if (!iso) return false;
+    const [ano, mes, dia] = iso.split("-").map(Number);
+    const data = new Date(ano, (mes || 1) - 1, dia || 1);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return data.getTime() > hoje.getTime();
+  })();
+  const podeGerenciar = Boolean(dados.pode_gerenciar);
+  const podeConcluir =
+    podeGerenciar && !concluido && !statusCancelado && !dataFutura;
+  const avisoDataFutura =
+    podeGerenciar && dataFutura && !concluido && !statusCancelado;
   const minhaAvaliacao = dados.minha_avaliacao;
 
   return (
@@ -300,10 +354,22 @@ export default function DetalhesCA() {
               <FontAwesomeIcon icon={faCalendarDays} className="w-4 h-4 text-gray-400" />
               <span>{formatarData(dados.data_atendimento)}</span>
             </span>
+            {formatarHorario(dados.horario_inicio, dados.horario_termino) && (
+              <span className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faClock} className="w-4 h-4 text-gray-400" />
+                <span>{formatarHorario(dados.horario_inicio, dados.horario_termino)}</span>
+              </span>
+            )}
             <span className="flex items-center gap-2">
               <FontAwesomeIcon icon={faVideo} className="w-4 h-4 text-gray-400" />
               <span>{dados.modalidade || "Modalidade não informada"}</span>
             </span>
+            {dados.sala_nome && (
+              <span className="flex items-center gap-2">
+                <FontAwesomeIcon icon={faLocationDot} className="w-4 h-4 text-gray-400" />
+                <span>{dados.sala_nome}</span>
+              </span>
+            )}
             <span className="flex items-center gap-2">
               <FontAwesomeIcon icon={faUsers} className="w-4 h-4 text-gray-400" />
               <span>
@@ -327,17 +393,43 @@ export default function DetalhesCA() {
             </div>
           )}
 
-          {dados.link_ca_online && (
-            <a
-              href={dados.link_ca_online}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors"
-            >
-              <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
-              Entrar na videochamada
-              <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5" />
-            </a>
+          {(dados.link_ca_online || podeConcluir) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {dados.link_ca_online && (
+                <a
+                  href={dados.link_ca_online}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors"
+                >
+                  <FontAwesomeIcon icon={faVideo} className="w-4 h-4" />
+                  Entrar na videochamada
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {podeConcluir && (
+                <button
+                  type="button"
+                  onClick={concluir}
+                  disabled={concluindo}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors disabled:opacity-60"
+                >
+                  {concluindo ? (
+                    <FontAwesomeIcon icon={faSpinner} spin className="w-4 h-4" />
+                  ) : (
+                    <FontAwesomeIcon icon={faCheckCircle} className="w-4 h-4" />
+                  )}
+                  Concluir CA
+                </button>
+              )}
+            </div>
+          )}
+
+          {avisoDataFutura && (
+            <p className="text-xs text-gray-500">
+              A conclusão deste CA será liberada em{" "}
+              {formatarData(dados.data_atendimento)}.
+            </p>
           )}
         </div>
 

@@ -26,6 +26,12 @@ import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
 import Loading from "../../components/ui/Loading";
 
+function formatarHorario(inicio, termino) {
+  const corta = (v) => (v ? String(v).slice(0, 5) : "");
+  if (inicio && termino) return `${corta(inicio)} às ${corta(termino)}`;
+  return corta(inicio || termino) || null;
+}
+
 const Agendamentos = () => {
   const navigate = useNavigate();
   const [agendamentos, setAgendamentos] = useState([]);
@@ -87,8 +93,11 @@ const Agendamentos = () => {
             data: item.data_atendimento
               ? String(item.data_atendimento).split("T")[0]
               : "",
-            horario: item.horario || "Horário agendado",
-            local: item.sala || item.local || "Campus IFRN",
+            horario:
+              formatarHorario(item.horario_inicio, item.horario_termino) ||
+              item.horario ||
+              "Horário agendado",
+            local: item.sala_nome || item.sala || item.local || "Campus IFRN",
             assunto: item.assunto || item.relatorio || "",
             professor: item.professor_nome || "",
             modalidade: item.modalidade || "",

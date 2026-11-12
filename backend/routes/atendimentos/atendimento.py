@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, time
 from typing import List, Optional, Annotated
 
 from deps.deps import SessionDep
@@ -28,6 +28,10 @@ class AtendimentoCreateModel(BaseModel):
     tipo_atendimento: Optional[str] = None     # 'TAL' ou 'TAI'
     modalidade: Optional[str] = None           # 'Presencial' ou 'Remoto'
     link_ca_online: Optional[str] = None
+    # Local e horário do encontro (opcionais)
+    sala: Optional[str] = None
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
 
 class AtendimentoUpdateModel(BaseModel):
     status: Optional[str] = None
@@ -36,6 +40,9 @@ class AtendimentoUpdateModel(BaseModel):
     data_atendimento: Optional[date] = None
     assunto: Optional[str] = None
     relatorio: Optional[str] = None
+    sala: Optional[str] = None
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
 
 class AtendimentoResponse(BaseModel):
     id: int
@@ -70,6 +77,8 @@ def listar_atendimentos_mediador_tai(session: SessionDep):
     from models.disciplina import Disciplina
     from models.solicitacao import Solicitacao
     from models.users.user import Usuario
+    from models.sala import Sala
+    from models.horario import Horario
     from models.enums import TipoAtendimento
 
     atendimentos = session.exec(
@@ -115,6 +124,15 @@ def listar_atendimentos_mediador_tai(session: SessionDep):
         u.id: u for u in session.exec(select(Usuario).where(Usuario.id.in_(usuario_ids))).all()
     } if usuario_ids else {}
 
+    sala_ids = {a.id_sala for a in atendimentos if a.id_sala}
+    horario_ids = {a.id_horario for a in atendimentos if a.id_horario}
+    sala_map = {
+        s.id: s for s in session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+    } if sala_ids else {}
+    horario_map = {
+        h.id: h for h in session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+    } if horario_ids else {}
+
     resultado = []
     for a in atendimentos:
         disciplina = disc_map.get(a.id_disciplina) if a.id_disciplina else None
@@ -158,6 +176,13 @@ def listar_atendimentos_mediador_tai(session: SessionDep):
             "status": a.status.value if hasattr(a.status, "value") else str(a.status),
             "link_ca_online": a.link_ca_online,
             "disciplina_nome": disciplina.nome if disciplina else "Disciplina TAI",
+            "sala_nome": sala_map[a.id_sala].nome if a.id_sala in sala_map else None,
+            "horario_inicio": horario_map[a.id_horario].horario_inicio.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_inicio
+            else None,
+            "horario_termino": horario_map[a.id_horario].horario_termino.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_termino
+            else None,
             "aluno_nome": aluno_nome,
             "aluno_matricula": aluno_matricula,
             "professor_nome": professor_nome,

@@ -4,6 +4,8 @@ from models.solicitacao import Solicitacao
 from models.users.user import Usuario
 from models.users.professor import Professor
 from models.disciplina import Disciplina
+from models.sala import Sala
+from models.horario import Horario
 from models.associativas.aluno_atendimento import AlunoAtendimento
 from deps.deps import SessionDep
 from deps.auth import AuthUser, get_current_user, require_roles, assert_self_or_roles
@@ -84,6 +86,15 @@ def listar_atendimentos_professor(
         for u in session.exec(select(Usuario).where(Usuario.id.in_(aluno_ids))).all()
     } if aluno_ids else {}
 
+    sala_ids = {a.id_sala for a in atendimentos if a.id_sala}
+    horario_ids = {a.id_horario for a in atendimentos if a.id_horario}
+    sala_map = {
+        s.id: s for s in session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+    } if sala_ids else {}
+    horario_map = {
+        h.id: h for h in session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+    } if horario_ids else {}
+
     resultado = []
     for a in atendimentos:
         disciplina = disc_map.get(a.id_disciplina) if a.id_disciplina else None
@@ -118,6 +129,13 @@ def listar_atendimentos_professor(
             "link_ca_online": a.link_ca_online,
             "status": a.status.value if hasattr(a.status, "value") else str(a.status),
             "disciplina_nome": disciplina.nome if disciplina else "Geral",
+            "sala_nome": sala_map[a.id_sala].nome if a.id_sala in sala_map else None,
+            "horario_inicio": horario_map[a.id_horario].horario_inicio.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_inicio
+            else None,
+            "horario_termino": horario_map[a.id_horario].horario_termino.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_termino
+            else None,
             "id_mediador": id_mediador,  # Selo do Mediador
             "aluno_nome": aluno_nome or "Aluno Geral",
             "aluno_matricula": aluno_matricula or "—",
@@ -178,6 +196,15 @@ def listar_atendimentos_admin(
         for u in session.exec(select(Usuario).where(Usuario.id.in_(usuario_ids))).all()
     } if usuario_ids else {}
 
+    sala_ids = {a.id_sala for a in atendimentos if a.id_sala}
+    horario_ids = {a.id_horario for a in atendimentos if a.id_horario}
+    sala_map = {
+        s.id: s for s in session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+    } if sala_ids else {}
+    horario_map = {
+        h.id: h for h in session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+    } if horario_ids else {}
+
     resultado = []
     for a in atendimentos:
         disciplina = disc_map.get(a.id_disciplina) if a.id_disciplina else None
@@ -204,6 +231,13 @@ def listar_atendimentos_admin(
             "data_atendimento": a.data_atendimento.isoformat() if a.data_atendimento else None,
             "link_ca_online": a.link_ca_online,
             "disciplina_nome": disciplina.nome if disciplina else "Geral",
+            "sala_nome": sala_map[a.id_sala].nome if a.id_sala in sala_map else None,
+            "horario_inicio": horario_map[a.id_horario].horario_inicio.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_inicio
+            else None,
+            "horario_termino": horario_map[a.id_horario].horario_termino.isoformat()
+            if a.id_horario in horario_map and horario_map[a.id_horario].horario_termino
+            else None,
             "professor_nome": u_prof.nome if u_prof else None,
             "aluno_nome": u_aluno.nome if u_aluno else None,
             "aluno_matricula": u_aluno.matricula if u_aluno else None,

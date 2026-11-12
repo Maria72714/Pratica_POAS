@@ -5,6 +5,7 @@ import {
   faClock,
   faCommentDots,
   faFileLines,
+  faLocationDot,
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
@@ -24,6 +25,12 @@ function formatarData(iso) {
     return `${dia}/${mes}/${ano}`;
   }
   return iso;
+}
+
+function formatarHorario(inicio, termino) {
+  const corta = (v) => (v ? String(v).slice(0, 5) : "");
+  if (inicio && termino) return `${corta(inicio)} às ${corta(termino)}`;
+  return corta(inicio || termino) || null;
 }
 
 const Dashboard = () => {
@@ -239,8 +246,22 @@ const Dashboard = () => {
                               icon={faClock}
                               className="w-3.5 h-3.5 text-gray-400"
                             />
-                            {agendamento.horario || "Horário a definir"}
+                            {formatarHorario(
+                              agendamento.horario_inicio,
+                              agendamento.horario_termino,
+                            ) ||
+                              agendamento.horario ||
+                              "Horário a definir"}
                           </span>
+                          {agendamento.sala_nome && (
+                            <span className="inline-flex items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faLocationDot}
+                                className="w-3.5 h-3.5 text-gray-400"
+                              />
+                              {agendamento.sala_nome}
+                            </span>
+                          )}
                         </div>
                       </div>
 

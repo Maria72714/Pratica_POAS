@@ -38,6 +38,9 @@ export default function NovoAtendimento() {
     tipo_atendimento: 'TAL',
     modalidade: 'Presencial',
     link_ca_online: '',
+    sala: '',
+    horario_inicio: '',
+    horario_termino: '',
   });
 
   useEffect(() => {
@@ -69,6 +72,9 @@ export default function NovoAtendimento() {
         modalidade: form.modalidade,
         link_ca_online: form.link_ca_online.trim() || null,
         assunto: form.assunto.trim(),
+        sala: form.sala.trim() || null,
+        horario_inicio: form.horario_inicio || null,
+        horario_termino: form.horario_termino || null,
       });
       navigate('/professor/atendimentos');
     } catch (err) {
@@ -184,6 +190,48 @@ export default function NovoAtendimento() {
                 <Opcoes campo="modalidade" valores={MODALIDADES} />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sala / Local
+                </label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  value={form.sala}
+                  onChange={atualizar('sala')}
+                  placeholder="Ex.: Sala 12 - Bloco B"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Horário de início
+                </label>
+                <input
+                  type="time"
+                  value={form.horario_inicio}
+                  onChange={atualizar('horario_inicio')}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Horário de término
+                </label>
+                <input
+                  type="time"
+                  value={form.horario_termino}
+                  onChange={atualizar('horario_termino')}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 -mt-3">
+              Sala e horário são opcionais, mas ajudam os alunos a encontrarem o
+              local do atendimento.
+            </p>
 
             {form.modalidade === 'Remoto' && (
               <div>

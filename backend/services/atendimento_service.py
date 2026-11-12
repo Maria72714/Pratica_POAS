@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlmodel import select
 import logging
+from datetime import date, datetime, timedelta, timezone
 
 from models.atendimento import Atendimento
 from models.users.aluno import Aluno
@@ -8,12 +9,21 @@ from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.users.professor import Professor
 from models.users.user import Usuario
 from models.disciplina import Disciplina
+from models.sala import Sala
+from models.horario import Horario
 from models.enums import TipoAtendimento, ModalidadeAula
 from repositories.atendimento_repository import AtendimentoRepository
 from repositories.usuario_repository import UsuarioRepository
 from services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
+
+# O servidor pode rodar em UTC; a referência de "hoje" é sempre a do Brasil.
+_FUSO_BRASIL = timezone(timedelta(hours=-3))
+
+
+def _hoje_brasil() -> date:
+    return datetime.now(_FUSO_BRASIL).date()
 
 
 class AtendimentoService:
@@ -66,6 +76,18 @@ class AtendimentoService:
             for u in self.session.exec(select(Usuario).where(Usuario.id.in_(prof_ids))).all()
         } if prof_ids else {}
 
+        # Sala e horário do atendimento (carregados em lote).
+        sala_ids = {a.id_sala for a, _ in atendimentos if a.id_sala}
+        horario_ids = {a.id_horario for a, _ in atendimentos if a.id_horario}
+        sala_map = {
+            s.id: s
+            for s in self.session.exec(select(Sala).where(Sala.id.in_(sala_ids))).all()
+        } if sala_ids else {}
+        horario_map = {
+            h.id: h
+            for h in self.session.exec(select(Horario).where(Horario.id.in_(horario_ids))).all()
+        } if horario_ids else {}
+
         # Contagem de alunos por atendimento (para exibir "N alunos" no card).
         contagem_map: dict[int, int] = {}
         at_ids = {a.id for a, _ in atendimentos}
@@ -81,6 +103,8 @@ class AtendimentoService:
                 aberto=aberto,
                 disc_map=disc_map,
                 prof_map=prof_map,
+                sala_map=sala_map,
+                horario_map=horario_map,
                 total_alunos=contagem_map.get(atendimento.id, 0),
             )
             for atendimento, aberto in atendimentos
@@ -92,6 +116,8 @@ class AtendimentoService:
         aberto: bool = False,
         disc_map: dict | None = None,
         prof_map: dict | None = None,
+        sala_map: dict | None = None,
+        horario_map: dict | None = None,
         total_alunos: int = 0,
     ) -> dict:
         """Formata o atendimento para o aluno, incluindo professor e disciplina.
@@ -113,6 +139,14 @@ class AtendimentoService:
             u_prof = prof_map.get(atendimento.id_professor) if prof_map is not None else self.session.get(Usuario, atendimento.id_professor)
             professor_nome = u_prof.nome if u_prof else None
 
+        sala = None
+        if atendimento.id_sala:
+            sala = sala_map.get(atendimento.id_sala) if sala_map is not None else self.session.get(Sala, atendimento.id_sala)
+
+        horario = None
+        if atendimento.id_horario:
+            horario = horario_map.get(atendimento.id_horario) if horario_map is not None else self.session.get(Horario, atendimento.id_horario)
+
         return {
             "id": atendimento.id,
             "assunto": atendimento.assunto,
@@ -132,6 +166,13 @@ class AtendimentoService:
             "link_ca_online": atendimento.link_ca_online,
             "disciplina_nome": disciplina.nome if disciplina else None,
             "professor_nome": professor_nome,
+            "sala_nome": sala.nome if sala else None,
+            "horario_inicio": horario.horario_inicio.isoformat()
+            if horario and horario.horario_inicio
+            else None,
+            "horario_termino": horario.horario_termino.isoformat()
+            if horario and horario.horario_termino
+            else None,
             "total_alunos": total_alunos,
             "aberto": aberto,
             "pode_cancelar": not aberto,
@@ -142,6 +183,40 @@ class AtendimentoService:
         if not atendimento:
             raise HTTPException(status_code=404, detail="Atendimento não encontrado")
         return atendimento
+
+    def _resolver_sala(self, nome: str | None) -> int | None:
+        """Resolve o id de uma sala pelo nome, criando-a se ainda não existir."""
+        if not nome or not str(nome).strip():
+            return None
+        nome = str(nome).strip()[:100]
+        sala = self.session.exec(select(Sala).where(Sala.nome == nome)).first()
+        if not sala:
+            sala = Sala(nome=nome)
+            self.session.add(sala)
+            self.session.commit()
+            self.session.refresh(sala)
+        return sala.id
+
+    def _resolver_horario(self, inicio, termino) -> int | None:
+        """Resolve o id de um horário (início/término), criando-o se não existir."""
+        if inicio is None and termino is None:
+            return None
+        if inicio is None or termino is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Informe o horário de início e de término.",
+            )
+        horario = self.session.exec(
+            select(Horario)
+            .where(Horario.horario_inicio == inicio)
+            .where(Horario.horario_termino == termino)
+        ).first()
+        if not horario:
+            horario = Horario(horario_inicio=inicio, horario_termino=termino)
+            self.session.add(horario)
+            self.session.commit()
+            self.session.refresh(horario)
+        return horario.id
 
     def criar_atendimento(self, dados):
         # coleta as matrículas (opcional): preferir 'matriculas' (lista), senão 'matricula' único
@@ -218,12 +293,22 @@ class AtendimentoService:
             except ValueError:
                 pass
 
+        # Sala e horário informados pelo professor (opcionais): resolvidos/
+        # criados no catálogo para permitir exibi-los no CA.
+        id_sala = self._resolver_sala(getattr(dados, "sala", None))
+        id_horario = self._resolver_horario(
+            getattr(dados, "horario_inicio", None),
+            getattr(dados, "horario_termino", None),
+        )
+
         # cria atendimento
         atendimento = Atendimento(
             data_atendimento=dados.data_atendimento,
             assunto=assunto[:250],
             id_professor=id_professor,
             id_disciplina=id_disciplina,
+            id_sala=id_sala,
+            id_horario=id_horario,
             tipo_atendimento=tipo_atendimento,
             modalidade=modalidade,
             link_ca_online=(dados.link_ca_online.strip()[:500] if getattr(dados, "link_ca_online", None) else None),
@@ -294,6 +379,24 @@ class AtendimentoService:
         ).first()
         return vinculo is None
 
+    def _pode_concluir(self, atendimento: Atendimento, current_user) -> bool:
+        """Admin e mediador concluem qualquer CA; professor apenas os seus."""
+        role = getattr(current_user, "role", None)
+        if role in ("admin", "mediador"):
+            return True
+        if role == "professor":
+            return getattr(atendimento, "id_professor", None) == getattr(current_user, "id", None)
+        return False
+
+    def _data_futura(self, atendimento: Atendimento) -> bool:
+        """True quando o encontro do CA ainda não aconteceu."""
+        data = getattr(atendimento, "data_atendimento", None)
+        if data is None:
+            return False
+        if isinstance(data, datetime):
+            data = data.date()
+        return data > _hoje_brasil()
+
     def editar_atendimento(self, atendimento_id: int, dados: Atendimento, current_user=None):
         import logging
         from models.enums import StatusAtendimento
@@ -338,9 +441,40 @@ class AtendimentoService:
                         status_code=403,
                         detail="Este CA/TAL é aberto para a turma e não pode ser cancelado pelo aluno.",
                     )
-        
+
+            if status_enum == StatusAtendimento.CONCLUIDO:
+                status_atual = atendimento.status
+                status_valor = status_atual.value if hasattr(status_atual, "value") else str(status_atual)
+                logger.info(f"Tentando concluir. Status atual: {status_valor}")
+                if status_valor not in (StatusAtendimento.AGENDADO.value, "Confirmado"):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Não é possível concluir atendimento com status {status_valor}."
+                    )
+                if not self._pode_concluir(atendimento, current_user):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Apenas o professor responsável, o mediador ou o admin podem concluir este CA."
+                    )
+                if self._data_futura(atendimento):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Não é possível concluir um CA cuja data ainda não chegou."
+                    )
+
+        # Sala e horário vêm como texto/hora e precisam ser resolvidos para os
+        # respectivos ids antes de aplicar no atendimento.
+        sala_nome = dados_update.pop("sala", None)
+        hora_inicio = dados_update.pop("horario_inicio", None)
+        hora_termino = dados_update.pop("horario_termino", None)
+
         for campo, valor in dados_update.items():
             setattr(atendimento, campo, valor)
+
+        if sala_nome is not None:
+            atendimento.id_sala = self._resolver_sala(sala_nome)
+        if hora_inicio is not None or hora_termino is not None:
+            atendimento.id_horario = self._resolver_horario(hora_inicio, hora_termino)
 
         resultado = self.repository.update(atendimento)
         

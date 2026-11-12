@@ -5,6 +5,8 @@ import {
   faArrowUpRightFromSquare,
   faCalendarDays,
   faChalkboardUser,
+  faClock,
+  faLocationDot,
   faMagnifyingGlass,
   faShieldHalved,
   faStar,
@@ -24,6 +26,21 @@ function formatarData(iso) {
     "pt-BR",
     { day: "2-digit", month: "short", year: "numeric" },
   );
+}
+
+function formatarHorario(inicio, termino) {
+  const corta = (v) => (v ? String(v).slice(0, 5) : "");
+  if (inicio && termino) return `${corta(inicio)} às ${corta(termino)}`;
+  return corta(inicio || termino) || null;
+}
+
+// O backend devolve o status com acento ("Concluído"/"Agendado"), então a
+// comparação precisa ignorar acentos para reconhecer o estado corretamente.
+function normalizarStatus(status) {
+  return String(status || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 }
 
 const FILTROS = [
@@ -77,7 +94,7 @@ export default function MuralCA() {
   const listaFiltrada = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return cas.filter((c) => {
-      const status = String(c.status || "").toUpperCase();
+      const status = normalizarStatus(c.status);
       if (filtro === "agendados" && status !== "AGENDADO") return false;
       if (filtro === "concluidos" && status !== "CONCLUIDO") return false;
       if (!termo) return true;
@@ -142,7 +159,7 @@ export default function MuralCA() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {listaFiltrada.map((c) => {
-            const concluido = String(c.status || "").toUpperCase() === "CONCLUIDO";
+            const concluido = normalizarStatus(c.status) === "CONCLUIDO";
             return (
               <div
                 key={c.id}
@@ -201,6 +218,24 @@ export default function MuralCA() {
                     />
                     {formatarData(c.data_atendimento)}
                   </span>
+                  {formatarHorario(c.horario_inicio, c.horario_termino) && (
+                    <span className="flex items-center gap-2">
+                      <FontAwesomeIcon
+                        icon={faClock}
+                        className="w-3.5 h-3.5 text-gray-400"
+                      />
+                      {formatarHorario(c.horario_inicio, c.horario_termino)}
+                    </span>
+                  )}
+                  {c.sala_nome && (
+                    <span className="flex items-center gap-2">
+                      <FontAwesomeIcon
+                        icon={faLocationDot}
+                        className="w-3.5 h-3.5 text-gray-400"
+                      />
+                      <span className="truncate">{c.sala_nome}</span>
+                    </span>
+                  )}
                   <span className="flex items-center gap-2">
                     <FontAwesomeIcon
                       icon={faUsers}
