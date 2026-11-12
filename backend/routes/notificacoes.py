@@ -10,6 +10,7 @@ from deps.deps import SessionDep
 from models.users.user import Usuario
 from models.notificacao import Notificacao
 from models.associativas.usuario_notificacao import UsuarioNotificacao
+from utils.cache import cache_read
 router = APIRouter(
     prefix="/notificacoes",
     tags=["Notificações"]
@@ -21,9 +22,11 @@ class CriarNotificacaoInput(BaseModel):
     matricula: str | None = None
     titulo: str
     mensagem: str
+    link_destino: str | None = None
 
 
 @router.get("/{matricula_ou_id}")
+@cache_read(ttl=20)
 def listar_notificacoes(
     matricula_ou_id: str,
     session: SessionDep,
@@ -44,13 +47,19 @@ def listar_notificacoes(
     # Se usuário existe, carrega suas notificações do Neon DB
     notificacoes = db_user.notificacoes
 
-    # Formata lista de retorno
+    # Formata lista de retorno (mais recentes primeiro)
+    notificacoes_ordenadas = sorted(
+        notificacoes,
+        key=lambda n: n.criado_em or datetime.min,
+        reverse=True,
+    )
     resultado = []
-    for n in notificacoes:
+    for n in notificacoes_ordenadas:
         resultado.append({
             "id": n.id,
             "titulo": n.titulo,
             "mensagem": n.mensagem,
+            "link_destino": n.link_destino,
             "lida": n.lida,
             "criado_em": n.criado_em.isoformat() if n.criado_em else None,
             "lido_em": n.lido_em.isoformat() if n.lido_em else None,
@@ -76,7 +85,12 @@ def criar_notificacao(
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário destinatário não encontrado.")
 
-    notif = Notificacao(titulo=payload.titulo.strip(), mensagem=payload.mensagem.strip(), lida=False)
+    notif = Notificacao(
+        titulo=payload.titulo.strip(),
+        mensagem=payload.mensagem.strip(),
+        lida=False,
+        link_destino=(payload.link_destino.strip() if payload.link_destino else None),
+    )
     session.add(notif)
     session.commit()
     session.refresh(notif)

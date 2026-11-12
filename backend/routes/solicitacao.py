@@ -7,6 +7,7 @@ from deps.deps import SessionDep
 from deps.auth import AuthUser, get_current_user, require_roles
 from models.solicitacao import Solicitacao
 from services.solicitacao_service import SolicitacaoService
+from utils.cache import cache_read
 
 router = APIRouter(
     prefix='/solicitacao',
@@ -87,6 +88,7 @@ async def listar_solicitacoes_aluno(matricula: str, session: SessionDep,
 
 
 @router.get("/pendentes")
+@cache_read(ttl=30)
 def listar_solicitacoes_pendentes(session: SessionDep,
                                   current_user: Annotated[AuthUser, Depends(require_roles("professor", "mediador", "admin"))] = None):
     role = current_user.role if current_user else "admin"
@@ -94,6 +96,7 @@ def listar_solicitacoes_pendentes(session: SessionDep,
 
 
 @router.get("/recusadas")
+@cache_read(ttl=30)
 def listar_solicitacoes_recusadas(session: SessionDep,
                                   current_user: Annotated[AuthUser, Depends(require_roles("mediador", "admin"))] = None):
     return SolicitacaoService(session).listar_solicitacoes_recusadas()

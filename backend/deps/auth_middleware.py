@@ -8,6 +8,7 @@ import logging
 
 from database import engine
 from deps.auth import auth_user_from_token
+from utils.cache import invalidate_all
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,11 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         method = request.method.upper()
         path = request.url.path
+
+        # Qualquer escrita pode alterar dados exibidos em telas já cacheadas;
+        # limpar o cache garante que a próxima leitura traga dados atualizados.
+        if method not in ("GET", "HEAD", "OPTIONS"):
+            invalidate_all()
 
         # Sempre permitir OPTIONS (CORS preflight)
         if method == "OPTIONS":

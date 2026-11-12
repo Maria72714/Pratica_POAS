@@ -14,7 +14,7 @@ reduzir a latência.
 """
 import asyncio
 import logging
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import httpx
 from sqlmodel import select
@@ -29,6 +29,22 @@ logger = logging.getLogger(__name__)
 
 SUAP_BASE = "https://suap.ifrn.edu.br/api"
 TIMEOUT = 8.0
+
+# Cooldown para evitar consultar o SUAP a cada login do aluno. Como a fonte de
+# verdade é o próprio SUAP, mas os dados mudam pouco ao longo do dia, mantemos um
+# cache em memória: dentro da janela usamos o que já está no banco local.
+COOLDOWN_SEGUNDOS = 600
+_ultimo_sync: dict[int, datetime] = {}
+
+
+def _disciplinas_locais(session, aluno_id: int) -> list[str]:
+    """Nomes das disciplinas já sincronizadas localmente para o aluno."""
+    disciplinas = session.exec(
+        select(Disciplina)
+        .join(AlunoDisciplina, AlunoDisciplina.disciplina_id == Disciplina.id)
+        .where(AlunoDisciplina.aluno_id == aluno_id)
+    ).all()
+    return [d.nome for d in disciplinas if d.nome]
 
 
 def _extrair_itens(dados: dict | list | None) -> list:
@@ -137,15 +153,29 @@ async def sincronizar_disciplinas_aluno(
     suap_token: str,
     ano: int | None = None,
     aluno_id: int | None = None,
+    forcar: bool = False,
 ) -> list[str]:
     """Consulta o boletim do aluno no SUAP e persiste disciplinas + professores.
 
     Quando ``aluno_id`` é informado, também persiste o vínculo aluno→disciplina
     (usado para exibir o CA/TAL aberto apenas para alunos da disciplina).
 
-    Retorna os nomes das disciplinas encontradas (sem duplicatas).
+    Respeita um cooldown (``COOLDOWN_SEGUNDOS``): se o aluno já foi sincronizado
+    recentemente, usa os dados locais em vez de chamar o SUAP de novo — a menos
+    que ``forcar=True``. Retorna os nomes das disciplinas encontradas.
     """
     ano = ano or date.today().year
+
+    # Cooldown: evita chamadas repetidas ao SUAP dentro da janela.
+    if aluno_id is not None and not forcar:
+        ultimo = _ultimo_sync.get(aluno_id)
+        if ultimo and datetime.now() - ultimo < timedelta(seconds=COOLDOWN_SEGUNDOS):
+            locais = _disciplinas_locais(session, aluno_id)
+            logger.info(
+                f"SUAP sync aluno {aluno_id} em cooldown: {len(locais)} disciplinas locais"
+            )
+            return locais
+
     nomes: list[str] = []
     itens_boletim: list[tuple[str, object]] = []  # (nome_disciplina, codigo_diario)
     total_vinculos = 0
@@ -218,6 +248,9 @@ async def sincronizar_disciplinas_aluno(
             if not dados_profs:
                 continue
             total_vinculos += _persistir_professores(session, disciplina, dados_profs)
+
+    if aluno_id is not None:
+        _ultimo_sync[aluno_id] = datetime.now()
 
     logger.info(
         f"SUAP sync aluno: {len(nomes)} disciplinas, {total_vinculos} novos vínculos professor→disciplina"

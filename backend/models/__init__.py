@@ -18,3 +18,5 @@ from .associativas.horario_sala import HorarioSala
 from .associativas.usuario_notificacao import UsuarioNotificacao
 from .chat_mensagem import ChatMensagem
 from .professor_horario import ProfessorHorario
+from .avaliacao_ca import AvaliacaoCA
+from .comentario_ca import ComentarioCA

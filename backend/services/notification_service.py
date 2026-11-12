@@ -15,7 +15,7 @@ class NotificationService:
     def __init__(self, session: Session):
         self.session = session
 
-    def notificar_usuario(self, usuario_id: int, titulo: str, mensagem: str) -> bool:
+    def notificar_usuario(self, usuario_id: int, titulo: str, mensagem: str, link_destino: str | None = None) -> bool:
         """Notifica um usuário específico"""
         try:
             usuario = self.session.get(Usuario, usuario_id)
@@ -23,7 +23,12 @@ class NotificationService:
                 logger.warning(f"Usuário {usuario_id} não encontrado para notificação")
                 return False
             
-            notif = Notificacao(titulo=titulo, mensagem=mensagem, lida=False)
+            notif = Notificacao(
+                titulo=titulo,
+                mensagem=mensagem,
+                lida=False,
+                link_destino=(link_destino or None),
+            )
             self.session.add(notif)
             self.session.commit()
             self.session.refresh(notif)
@@ -38,14 +43,19 @@ class NotificationService:
             logger.error(f"Erro ao notificar usuário {usuario_id}: {e}")
             return False
 
-    def notificar_multiplos(self, usuario_ids: list, titulo: str, mensagem: str) -> int:
+    def notificar_multiplos(self, usuario_ids: list, titulo: str, mensagem: str, link_destino: str | None = None) -> int:
         """Notifica múltiplos usuários com a mesma mensagem. Retorna quantidade de sucessos."""
         if not usuario_ids:
             return 0
         
         count = 0
         try:
-            notif = Notificacao(titulo=titulo, mensagem=mensagem, lida=False)
+            notif = Notificacao(
+                titulo=titulo,
+                mensagem=mensagem,
+                lida=False,
+                link_destino=(link_destino or None),
+            )
             self.session.add(notif)
             self.session.commit()
             self.session.refresh(notif)
@@ -81,7 +91,7 @@ class NotificationService:
             mensagem = f"O aluno {aluno_nome} solicitou apoio em {disciplina_nome}. Verificar e validar conforme necessário."
             
             if mediador_ids:
-                self.notificar_multiplos(mediador_ids, titulo, mensagem)
+                self.notificar_multiplos(mediador_ids, titulo, mensagem, link_destino="/mediador/solicitacoes")
             
             return True
         except Exception as e:
@@ -92,69 +102,73 @@ class NotificationService:
         """Notifica aluno quando mediador aprova (sela) sua solicitação"""
         titulo = "Seu Pedido de Apoio foi Validado"
         mensagem = f"O Mediador Pedagógico ({mediador_nome}) validou sua solicitação de TAI em {disciplina_nome}. O professor agora pode conferir."
-        return self.notificar_usuario(aluno_id, titulo, mensagem)
+        return self.notificar_usuario(aluno_id, titulo, mensagem, link_destino="/historico")
 
     def notificar_mediador_negou_solicitacao(self, aluno_id: int, disciplina_nome: str) -> bool:
         """Notifica aluno quando mediador recusa sua solicitação"""
         titulo = "Solicitação de Apoio Não Validada"
         mensagem = f"Infelizmente, sua solicitação de TAI em {disciplina_nome} não foi validada pelo mediador. Você pode tentar novamente."
-        return self.notificar_usuario(aluno_id, titulo, mensagem)
+        return self.notificar_usuario(aluno_id, titulo, mensagem, link_destino="/historico")
 
     def notificar_professor_aprovou_solicitacao(self, aluno_id: int, aluno_nome: str, disciplina_nome: str) -> bool:
         """Notifica aluno quando professor aprova sua solicitação (cria atendimento)"""
         titulo = "Seu Atendimento foi Agendado"
         mensagem = f"Seu pedido de apoio em {disciplina_nome} foi aprovado. Um atendimento será agendado em breve. Confira sua agenda."
-        return self.notificar_usuario(aluno_id, titulo, mensagem)
+        return self.notificar_usuario(aluno_id, titulo, mensagem, link_destino="/agendamentos")
 
     def notificar_professor_negou_solicitacao(self, aluno_id: int, disciplina_nome: str) -> bool:
         """Notifica aluno quando professor recusa sua solicitação"""
         titulo = "Solicitação de Apoio Recusada"
         mensagem = f"Sua solicitação de TAI em {disciplina_nome} foi recusada pelo professor."
-        return self.notificar_usuario(aluno_id, titulo, mensagem)
+        return self.notificar_usuario(aluno_id, titulo, mensagem, link_destino="/historico")
 
-    def notificar_atendimento_criado(self, aluno_ids: list, professor_id: int | None, disciplina_nome: str, data_atendimento: str) -> int:
+    def notificar_atendimento_criado(self, aluno_ids: list, professor_id: int | None, disciplina_nome: str, data_atendimento: str, atendimento_id: int | None = None) -> int:
         """Notifica alunos e professor quando um atendimento é criado"""
         count = 0
+        link_aluno = f"/ca/{atendimento_id}" if atendimento_id else "/agendamentos"
+        link_prof = f"/ca/{atendimento_id}" if atendimento_id else "/professor/atendimentos"
         
         # Notificar alunos
         if aluno_ids:
             titulo = f"Atendimento Registrado: {disciplina_nome}"
             mensagem = f"Seu atendimento em {disciplina_nome} foi agendado para {data_atendimento}."
-            count += self.notificar_multiplos(aluno_ids, titulo, mensagem)
+            count += self.notificar_multiplos(aluno_ids, titulo, mensagem, link_destino=link_aluno)
         
         # Notificar professor
         if professor_id:
             titulo = f"Novo Atendimento: {disciplina_nome}"
             mensagem = f"Um atendimento foi agendado para {data_atendimento} em {disciplina_nome}."
-            if self.notificar_usuario(professor_id, titulo, mensagem):
+            if self.notificar_usuario(professor_id, titulo, mensagem, link_destino=link_prof):
                 count += 1
         
         return count
 
-    def notificar_atendimento_cancelado(self, aluno_ids: list, professor_id: int | None, disciplina_nome: str) -> int:
+    def notificar_atendimento_cancelado(self, aluno_ids: list, professor_id: int | None, disciplina_nome: str, atendimento_id: int | None = None) -> int:
         """Notifica quando um atendimento é cancelado"""
         count = 0
+        link_destino = f"/ca/{atendimento_id}" if atendimento_id else "/agendamentos"
         
         # Notificar alunos
         if aluno_ids:
             titulo = f"Atendimento Cancelado: {disciplina_nome}"
             mensagem = f"O atendimento em {disciplina_nome} foi cancelado."
-            count += self.notificar_multiplos(aluno_ids, titulo, mensagem)
+            count += self.notificar_multiplos(aluno_ids, titulo, mensagem, link_destino=link_destino)
         
         # Notificar professor
         if professor_id:
             titulo = f"Atendimento Cancelado: {disciplina_nome}"
             mensagem = f"Um atendimento em {disciplina_nome} foi cancelado."
-            if self.notificar_usuario(professor_id, titulo, mensagem):
+            if self.notificar_usuario(professor_id, titulo, mensagem, link_destino=link_destino):
                 count += 1
         
         return count
 
-    def notificar_atendimento_concluido(self, aluno_ids: list, disciplina_nome: str) -> int:
+    def notificar_atendimento_concluido(self, aluno_ids: list, disciplina_nome: str, atendimento_id: int | None = None) -> int:
         """Notifica alunos quando um atendimento é concluído"""
         if not aluno_ids:
             return 0
         
         titulo = f"Atendimento Concluído: {disciplina_nome}"
-        mensagem = f"Seu atendimento em {disciplina_nome} foi concluído. Confira o relatório."
-        return self.notificar_multiplos(aluno_ids, titulo, mensagem)
+        mensagem = f"Seu atendimento em {disciplina_nome} foi concluído. Avalie o CA e veja o relatório."
+        link_destino = f"/ca/{atendimento_id}" if atendimento_id else "/historico"
+        return self.notificar_multiplos(aluno_ids, titulo, mensagem, link_destino=link_destino)

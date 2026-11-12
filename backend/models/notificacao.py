@@ -11,6 +11,9 @@ class Notificacao(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     titulo: str = Field(max_length=250)
     mensagem: str = Field(max_length=500)
+    # Rota interna do frontend para onde o usuário deve ser levado ao clicar
+    # na notificação (ex.: "/ca/12", "/agendamentos", "/professor/atendimentos").
+    link_destino: str | None = Field(default=None, max_length=300)
     lida: bool = Field(default=False)   
     criado_em: datetime = Field(default_factory=datetime.now)
     lido_em: datetime | None = None

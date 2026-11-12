@@ -11,7 +11,7 @@ from sqlmodel import select
 
 from config.security import SecurityConfig
 from config.logging_config import setup_logging
-from routes.atendimentos import atendimento, atendimento_prof
+from routes.atendimentos import atendimento, atendimento_prof, ca
 from routes.usuarios import usuarios
 from routes.alunos import alunos
 from fastapi.staticfiles import StaticFiles
@@ -65,6 +65,9 @@ app.add_middleware(
 # Routers
 from routes import notificacoes, professores, solicitacao, chat, admin, suap
 
+# O router do CA é registrado ANTES do router genérico de atendimentos para que
+# a rota fixa "/atendimentos/mural" não seja capturada por "/atendimentos/{id}".
+app.include_router(ca.router, prefix="/api")
 app.include_router(atendimento.router, prefix="/api")
 app.include_router(atendimento_prof.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
@@ -351,6 +354,7 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
     is_professor = not is_aluno and any(x in vinculo_lower for x in ["professor", "servidor", "docente"])
     if is_professor:
         try:
+            import asyncio
             from datetime import date
             from models.turma import Turma
             from models.disciplina import Disciplina
@@ -359,21 +363,31 @@ async def auth_suap(payload: AuthCode, session: SessionDep):
 
             ano_atual = date.today().year
             diarios = []
-            
-            for sem in [1, 2]:
-                diarios_url = f"https://suap.ifrn.edu.br/api/ensino/meus-diarios/{ano_atual}/{sem}/"
-                async with httpx.AsyncClient() as diario_client:
-                    r_diario = await diario_client.get(
-                        diarios_url,
-                        headers={"Authorization": f"Bearer {access_token}"},
-                        timeout=5.0
-                    )
-                    if r_diario.status_code == 200:
-                        res_json = r_diario.json()
-                        if isinstance(res_json, dict):
-                            res_json = res_json.get("results") or []
-                        if isinstance(res_json, list):
-                            diarios.extend(res_json)
+
+            async def _buscar_diarios(sem: int):
+                """Busca os diários de um semestre no SUAP (executado em paralelo)."""
+                url = f"https://suap.ifrn.edu.br/api/ensino/meus-diarios/{ano_atual}/{sem}/"
+                try:
+                    async with httpx.AsyncClient() as diario_client:
+                        resposta = await diario_client.get(
+                            url,
+                            headers={"Authorization": f"Bearer {access_token}"},
+                            timeout=8.0,
+                        )
+                    if resposta.status_code == 200:
+                        dados = resposta.json()
+                        if isinstance(dados, dict):
+                            dados = dados.get("results") or []
+                        if isinstance(dados, list):
+                            return dados
+                except Exception as e_sem:
+                    logger.debug(f"Diários do semestre {sem} indisponíveis: {e_sem}")
+                return []
+
+            # Os dois semestres são consultados em paralelo para reduzir a
+            # latência do login (antes eram sequenciais).
+            for lista in await asyncio.gather(_buscar_diarios(1), _buscar_diarios(2)):
+                diarios.extend(lista)
 
             prof_obj = session.exec(select(Professor).where(Professor.id == db_user.id)).first()
             if prof_obj and diarios:

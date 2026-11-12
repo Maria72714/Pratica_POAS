@@ -66,8 +66,23 @@ class AtendimentoService:
             for u in self.session.exec(select(Usuario).where(Usuario.id.in_(prof_ids))).all()
         } if prof_ids else {}
 
+        # Contagem de alunos por atendimento (para exibir "N alunos" no card).
+        contagem_map: dict[int, int] = {}
+        at_ids = {a.id for a, _ in atendimentos}
+        if at_ids:
+            for aa in self.session.exec(
+                select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id.in_(at_ids))
+            ).all():
+                contagem_map[aa.atendimento_id] = contagem_map.get(aa.atendimento_id, 0) + 1
+
         return [
-            self._serializar_para_aluno(atendimento, aberto=aberto, disc_map=disc_map, prof_map=prof_map)
+            self._serializar_para_aluno(
+                atendimento,
+                aberto=aberto,
+                disc_map=disc_map,
+                prof_map=prof_map,
+                total_alunos=contagem_map.get(atendimento.id, 0),
+            )
             for atendimento, aberto in atendimentos
         ]
 
@@ -77,6 +92,7 @@ class AtendimentoService:
         aberto: bool = False,
         disc_map: dict | None = None,
         prof_map: dict | None = None,
+        total_alunos: int = 0,
     ) -> dict:
         """Formata o atendimento para o aluno, incluindo professor e disciplina.
 
@@ -116,6 +132,7 @@ class AtendimentoService:
             "link_ca_online": atendimento.link_ca_online,
             "disciplina_nome": disciplina.nome if disciplina else None,
             "professor_nome": professor_nome,
+            "total_alunos": total_alunos,
             "aberto": aberto,
             "pode_cancelar": not aberto,
         }
@@ -222,13 +239,15 @@ class AtendimentoService:
         # notificações usando NotificationService
         try:
             data_str = dados.data_atendimento.strftime("%d/%m/%Y")
+            link_ca = f"/ca/{atendimento.id}"
             
             # Notificar alunos
             if aluno_ids:
                 self.notification_service.notificar_multiplos(
                     usuario_ids=aluno_ids,
                     titulo=f"Atendimento Registrado: {dados.disciplina}",
-                    mensagem=f"Seu atendimento em {dados.disciplina} foi agendado para {data_str}."
+                    mensagem=f"Seu atendimento em {dados.disciplina} foi agendado para {data_str}.",
+                    link_destino=link_ca,
                 )
             
             # Notificar professor
@@ -236,7 +255,8 @@ class AtendimentoService:
                 self.notification_service.notificar_usuario(
                     usuario_id=professor.id,
                     titulo=f"Atendimento Agendado: {dados.disciplina}",
-                    mensagem=f"Um atendimento foi agendado em {dados.disciplina} para {data_str}."
+                    mensagem=f"Um atendimento foi agendado em {dados.disciplina} para {data_str}.",
+                    link_destino=link_ca,
                 )
             
             # Notificar mediadores se TAI
@@ -248,7 +268,8 @@ class AtendimentoService:
                     self.notification_service.notificar_multiplos(
                         usuario_ids=mediador_ids,
                         titulo=f"Nova Demanda TAI: {dados.tipo_suporte}",
-                        mensagem=f"Demanda TAI registrada para {dados.disciplina} em {data_str}."
+                        mensagem=f"Demanda TAI registrada para {dados.disciplina} em {data_str}.",
+                        link_destino=link_ca,
                     )
                     
         except Exception as exc:
@@ -323,9 +344,17 @@ class AtendimentoService:
 
         resultado = self.repository.update(atendimento)
         
-        # Notificar sobre cancelamento se aplicável
+        # Notificações conforme a mudança de status
         try:
-            if 'status' in dados_update and dados_update['status'] == 'Cancelado':
+            novo_status_valor = None
+            if 'status' in dados_update:
+                novo_status_valor = (
+                    dados_update['status'].value
+                    if hasattr(dados_update['status'], 'value')
+                    else str(dados_update['status'])
+                )
+
+            if novo_status_valor in ('Cancelado', 'Concluído'):
                 # Buscar alunos associados
                 aluno_atendimentos = self.session.exec(
                     select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id == atendimento_id)
@@ -335,13 +364,21 @@ class AtendimentoService:
                 disciplina_nome = getattr(atendimento, 'assunto', 'Atendimento').split('|')[0].replace('Disciplina:', '').strip()
                 professor_id = getattr(atendimento, 'id_professor', None)
                 
-                self.notification_service.notificar_atendimento_cancelado(
-                    aluno_ids=aluno_ids,
-                    professor_id=professor_id,
-                    disciplina_nome=disciplina_nome
-                )
+                if novo_status_valor == 'Cancelado':
+                    self.notification_service.notificar_atendimento_cancelado(
+                        aluno_ids=aluno_ids,
+                        professor_id=professor_id,
+                        disciplina_nome=disciplina_nome,
+                        atendimento_id=atendimento_id,
+                    )
+                else:
+                    self.notification_service.notificar_atendimento_concluido(
+                        aluno_ids=aluno_ids,
+                        disciplina_nome=disciplina_nome,
+                        atendimento_id=atendimento_id,
+                    )
         except Exception as e:
-            logger.error(f"Erro ao notificar cancelamento: {e}")
+            logger.error(f"Erro ao notificar mudança de status: {e}")
         
         logger.info(f"Atendimento {atendimento_id} atualizado: {resultado}")
         return resultado

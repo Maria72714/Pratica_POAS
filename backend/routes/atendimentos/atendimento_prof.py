@@ -9,6 +9,7 @@ from deps.deps import SessionDep
 from deps.auth import AuthUser, get_current_user, require_roles, assert_self_or_roles
 from routes.atendimentos.atendimento import AtendimentoCreateModel
 from services.atendimento_service import AtendimentoService
+from utils.cache import cache_read
 from sqlmodel import select
 from pydantic import BaseModel
 from datetime import date
@@ -22,6 +23,7 @@ router = APIRouter(
 
 
 @router.get("/professor/{professor_matricula}")
+@cache_read(ttl=30)
 def listar_atendimentos_professor(
     professor_matricula: str,
     session: SessionDep,
@@ -62,11 +64,13 @@ def listar_atendimentos_professor(
         for s in session.exec(select(Solicitacao).where(Solicitacao.id.in_(sol_ids))).all()
     } if sol_ids else {}
     assoc_map: dict[int, int] = {}
+    alunos_por_atendimento: dict[int, list[int]] = {}
     if at_ids:
         for aa in session.exec(
             select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id.in_(at_ids))
         ).all():
             assoc_map.setdefault(aa.atendimento_id, aa.aluno_id)
+            alunos_por_atendimento.setdefault(aa.atendimento_id, []).append(aa.aluno_id)
 
     aluno_ids = set()
     for a in atendimentos:
@@ -94,6 +98,10 @@ def listar_atendimentos_professor(
         aluno_nome = u_aluno.nome if u_aluno else None
         aluno_matricula = u_aluno.matricula if u_aluno else None
 
+        total_alunos = len(alunos_por_atendimento.get(a.id, []))
+        if total_alunos == 0 and aluno_id:
+            total_alunos = 1
+
         resultado.append({
             "id": a.id,
             "id_professor": a.id_professor,
@@ -114,12 +122,14 @@ def listar_atendimentos_professor(
             "aluno_nome": aluno_nome or "Aluno Geral",
             "aluno_matricula": aluno_matricula or "—",
             "aluno_id": aluno_id,
+            "total_alunos": total_alunos,
         })
 
     return resultado
 
 
 @router.get("/admin/todos")
+@cache_read(ttl=30)
 def listar_atendimentos_admin(
     session: SessionDep,
     current_user: Annotated[AuthUser, Depends(require_roles("admin"))] = None,
@@ -145,11 +155,13 @@ def listar_atendimentos_admin(
         for s in session.exec(select(Solicitacao).where(Solicitacao.id.in_(sol_ids))).all()
     } if sol_ids else {}
     assoc_map: dict[int, int] = {}
+    alunos_por_atendimento: dict[int, list[int]] = {}
     if at_ids:
         for aa in session.exec(
             select(AlunoAtendimento).where(AlunoAtendimento.atendimento_id.in_(at_ids))
         ).all():
             assoc_map.setdefault(aa.atendimento_id, aa.aluno_id)
+            alunos_por_atendimento.setdefault(aa.atendimento_id, []).append(aa.aluno_id)
 
     usuario_ids = set(prof_ids)
     for a in atendimentos:
@@ -179,6 +191,10 @@ def listar_atendimentos_admin(
             aluno_id = sol.id_aluno
         u_aluno = usuario_map.get(aluno_id) if aluno_id else None
 
+        total_alunos = len(alunos_por_atendimento.get(a.id, []))
+        if total_alunos == 0 and aluno_id:
+            total_alunos = 1
+
         resultado.append({
             "id": a.id,
             "assunto": a.assunto or "Atendimento",
@@ -193,6 +209,7 @@ def listar_atendimentos_admin(
             "aluno_matricula": u_aluno.matricula if u_aluno else None,
             "id_mediador": id_mediador,
             "tem_selo": bool(id_mediador),
+            "total_alunos": total_alunos,
         })
 
     return resultado

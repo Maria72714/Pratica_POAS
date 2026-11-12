@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from deps.auth import AuthUser, assert_self_or_roles, get_current_user, require_roles
 from deps.deps import SessionDep
 from services.aluno_service import AlunoService
+from utils.cache import cache_read
 
 router = APIRouter(tags=["Alunos"])
 
@@ -69,6 +70,7 @@ MediadorOuAdmin = Annotated[AuthUser, Depends(require_roles("mediador", "admin")
 
 
 @router.get("/alunos/laudos")
+@cache_read(ttl=30)
 def listar_laudos_pnee(session: SessionDep, current_user: MediadorOuAdmin):
     """Lista todos os alunos que enviaram laudo ou solicitaram atendimento PNEE."""
     return AlunoService(session).listar_laudos_pnee()
@@ -90,6 +92,7 @@ def avaliar_laudo_pnee(
 
 
 @router.get("/alunos/perfil/{matricula}", response_model=PerfilAlunoResponse, response_model_exclude_none=True)
+@cache_read(ttl=60)
 def obter_perfil(
     matricula: str,
     session: SessionDep,
