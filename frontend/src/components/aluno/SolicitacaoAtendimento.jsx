@@ -8,6 +8,7 @@ import {
 } from "../../services/aluno/solicitacao";
 import { buscarAtendimentos } from "../../services/aluno/agendamento";
 import CalendarioAtendimentos from "../CalendarioAtendimentos";
+import Loading from "../ui/Loading";
 import { useNavigate } from "react-router-dom";
 
 const SolicitacaoTAI = () => {
@@ -18,11 +19,15 @@ const SolicitacaoTAI = () => {
   const [data, setData] = useState("");
   const [desc, setDesc] = useState("");
   const [agendamentos, setAgendamentos] = useState([]);
+  const [carregandoDisciplinas, setCarregandoDisciplinas] = useState(true);
 
   useEffect(() => {
     const dados =
       localStorage.getItem("usuario") || localStorage.getItem("suap_user");
-    if (!dados) return;
+    if (!dados) {
+      setCarregandoDisciplinas(false);
+      return;
+    }
     const parsed = JSON.parse(dados);
     setUsuario(parsed);
 
@@ -39,7 +44,8 @@ const SolicitacaoTAI = () => {
       .catch(() => {
         // SUAP inacessível: usa o que foi salvo no login
         setDisciplinas(parsed.disciplinas ?? []);
-      });
+      })
+      .finally(() => setCarregandoDisciplinas(false));
 
     if (parsed.matricula) {
       Promise.allSettled([
@@ -203,6 +209,10 @@ const SolicitacaoTAI = () => {
       desc: "Descreva nas observações abaixo",
     },
   ];
+
+  if (carregandoDisciplinas) {
+    return <Loading texto="Carregando disciplinas..." telaInteira />;
+  }
 
   return (
     <div className="flex-1 bg-gray-50 min-h-screen p-8">
