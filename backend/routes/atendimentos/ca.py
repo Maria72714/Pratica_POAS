@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlmodel import select
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from typing import Annotated
 
 from deps.deps import SessionDep
@@ -30,6 +30,7 @@ from models.sala import Sala
 from models.horario import Horario
 from models.associativas.aluno_atendimento import AlunoAtendimento
 from models.associativas.aluno_disciplina import AlunoDisciplina
+from models.associativas.professor_disciplina import ProfessorDisciplina
 from models.avaliacao_ca import AvaliacaoCA
 from models.comentario_ca import ComentarioCA
 from models.enums import StatusAtendimento, TipoAtendimento
@@ -129,6 +130,43 @@ def _usuario_e_aluno_do_atendimento(session, atendimento: Atendimento, user_id: 
     return False
 
 
+def _pode_confirmar_presenca(session, atendimento: Atendimento, user_id: int) -> bool:
+    """Aluno só confirma presença em CAs das suas disciplinas e professores.
+
+    Vale quando o aluno já está vinculado (inscrito ou via solicitação) ou
+    quando cursa a disciplina do CA e o professor responsável ministra essa
+    mesma disciplina.
+    """
+    aluno = session.exec(select(Aluno).where(Aluno.id == user_id)).first()
+    if not aluno:
+        return False
+
+    if _usuario_e_aluno_do_atendimento(session, atendimento, user_id):
+        return True
+
+    if not atendimento.id_disciplina:
+        return False
+
+    cursando = session.exec(
+        select(AlunoDisciplina)
+        .where(AlunoDisciplina.aluno_id == user_id)
+        .where(AlunoDisciplina.disciplina_id == atendimento.id_disciplina)
+    ).first()
+    if not cursando:
+        return False
+
+    if atendimento.id_professor:
+        ministra = session.exec(
+            select(ProfessorDisciplina)
+            .where(ProfessorDisciplina.professor_id == atendimento.id_professor)
+            .where(ProfessorDisciplina.disciplina_id == atendimento.id_disciplina)
+        ).first()
+        if not ministra:
+            return False
+
+    return True
+
+
 @router.get("/mural")
 @cache_read(ttl=30)
 def listar_mural_ca(
@@ -155,12 +193,18 @@ def listar_mural_ca(
         disciplinas_aluno = select(AlunoDisciplina.disciplina_id).where(
             AlunoDisciplina.aluno_id == current.id
         )
+        professores_aluno = select(ProfessorDisciplina.professor_id).where(
+            ProfessorDisciplina.disciplina_id.in_(disciplinas_aluno)
+        )
         inscricoes_aluno = select(AlunoAtendimento.atendimento_id).where(
             AlunoAtendimento.aluno_id == current.id
         )
         stmt = stmt.where(
             or_(
-                Atendimento.id_disciplina.in_(disciplinas_aluno),
+                and_(
+                    Atendimento.id_disciplina.in_(disciplinas_aluno),
+                    Atendimento.id_professor.in_(professores_aluno),
+                ),
                 Atendimento.id.in_(inscricoes_aluno),
             )
         )
@@ -205,6 +249,15 @@ def listar_mural_ca(
     ).all():
         contagem[aa.atendimento_id] = contagem.get(aa.atendimento_id, 0) + 1
 
+    # CAs em que o usuário logado já está inscrito (para o selo de presença).
+    meus_at_ids = set(
+        session.exec(
+            select(AlunoAtendimento.atendimento_id)
+            .where(AlunoAtendimento.atendimento_id.in_(at_ids))
+            .where(AlunoAtendimento.aluno_id == current.id)
+        ).all()
+    )
+
     notas: dict[int, list[int]] = {}
     for av in session.exec(
         select(AvaliacaoCA).where(AvaliacaoCA.atendimento_id.in_(at_ids))
@@ -238,6 +291,7 @@ def listar_mural_ca(
                 if a.id_horario in horario_map and horario_map[a.id_horario].horario_termino
                 else None,
                 "total_alunos": contagem.get(a.id, 0),
+                "inscrito": a.id in meus_at_ids,
                 "tem_selo": bool(sol and sol.id_mediador),
                 "avaliacao_media": round(sum(notas_ca) / len(notas_ca), 2)
                 if notas_ca
@@ -302,6 +356,25 @@ def detalhes_atendimento(
     status_valor = _valor(atendimento.status)
     eh_aluno_vinculado = _usuario_e_aluno_do_atendimento(session, atendimento, current.id)
 
+    presenca_aberta = status_valor not in (
+        StatusAtendimento.CONCLUIDO.value,
+        StatusAtendimento.CANCELADO.value,
+    )
+    pode_confirmar_presenca = (
+        current.role == "aluno"
+        and presenca_aberta
+        and not eh_aluno_vinculado
+        and _pode_confirmar_presenca(session, atendimento, current.id)
+    )
+    # Só é possível desmarcar inscrições voluntárias (CA aberto à turma). CAs
+    # originados de solicitação mantêm o vínculo com o pedido aprovado.
+    pode_desmarcar_presenca = (
+        current.role == "aluno"
+        and presenca_aberta
+        and eh_aluno_vinculado
+        and not atendimento.id_solicitacao
+    )
+
     sala = session.get(Sala, atendimento.id_sala) if atendimento.id_sala else None
     horario = session.get(Horario, atendimento.id_horario) if atendimento.id_horario else None
 
@@ -354,7 +427,94 @@ def detalhes_atendimento(
         ),
         "total_comentarios": total_comentarios,
         "pode_gerenciar": pode_gerenciar,
+        "inscrito": eh_aluno_vinculado,
+        "pode_confirmar_presenca": pode_confirmar_presenca,
+        "pode_desmarcar_presenca": pode_desmarcar_presenca,
     }
+
+
+@router.post("/{atendimento_id}/presenca")
+def confirmar_presenca(
+    atendimento_id: int,
+    session: SessionDep,
+    current: Annotated[AuthUser, Depends(get_current_user)],
+):
+    """Aluno confirma presença (inscrição) em um CA da sua disciplina/professor."""
+    if current.role != "aluno":
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas alunos podem confirmar presença em um CA.",
+        )
+
+    atendimento = session.get(Atendimento, atendimento_id)
+    if not atendimento:
+        raise HTTPException(status_code=404, detail="Atendimento não encontrado.")
+
+    if _valor(atendimento.status) in (
+        StatusAtendimento.CONCLUIDO.value,
+        StatusAtendimento.CANCELADO.value,
+    ):
+        raise HTTPException(status_code=400, detail="Este CA já foi encerrado.")
+
+    if not _pode_confirmar_presenca(session, atendimento, current.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Você só pode confirmar presença em CAs das suas disciplinas e professores.",
+        )
+
+    existente = session.exec(
+        select(AlunoAtendimento)
+        .where(AlunoAtendimento.atendimento_id == atendimento_id)
+        .where(AlunoAtendimento.aluno_id == current.id)
+    ).first()
+    if not existente:
+        session.add(
+            AlunoAtendimento(aluno_id=current.id, atendimento_id=atendimento_id)
+        )
+        session.commit()
+
+    return {"message": "Presença confirmada.", "inscrito": True}
+
+
+@router.delete("/{atendimento_id}/presenca")
+def cancelar_presenca(
+    atendimento_id: int,
+    session: SessionDep,
+    current: Annotated[AuthUser, Depends(get_current_user)],
+):
+    """Aluno desmarca a própria presença (inscrição voluntária) no CA."""
+    if current.role != "aluno":
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas alunos podem desmarcar presença em um CA.",
+        )
+
+    atendimento = session.get(Atendimento, atendimento_id)
+    if not atendimento:
+        raise HTTPException(status_code=404, detail="Atendimento não encontrado.")
+
+    if _valor(atendimento.status) in (
+        StatusAtendimento.CONCLUIDO.value,
+        StatusAtendimento.CANCELADO.value,
+    ):
+        raise HTTPException(status_code=400, detail="Este CA já foi encerrado.")
+
+    if atendimento.id_solicitacao:
+        raise HTTPException(
+            status_code=400,
+            detail="A presença deste CA é vinculada à sua solicitação aprovada.",
+        )
+
+    vinculo = session.exec(
+        select(AlunoAtendimento)
+        .where(AlunoAtendimento.atendimento_id == atendimento_id)
+        .where(AlunoAtendimento.aluno_id == current.id)
+    ).first()
+    if vinculo:
+        session.delete(vinculo)
+        session.commit()
+
+    return {"message": "Presença desmarcada.", "inscrito": False}
 
 
 class ComentarioInput(BaseModel):

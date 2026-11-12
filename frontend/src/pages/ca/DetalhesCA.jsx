@@ -17,6 +17,7 @@ import {
   faTag,
   faTrash,
   faUser,
+  faUserCheck,
   faUsers,
   faVideo,
 } from "@fortawesome/free-solid-svg-icons";
@@ -29,7 +30,9 @@ import {
   buscarAvaliacoesCA,
   buscarComentariosCA,
   buscarDetalhesCA,
+  cancelarPresencaCA,
   concluirCA,
+  confirmarPresencaCA,
   criarComentarioCA,
   excluirComentarioCA,
 } from "../../services/ca";
@@ -140,6 +143,7 @@ export default function DetalhesCA() {
   const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
   const [avaliacaoEnviada, setAvaliacaoEnviada] = useState(false);
   const [concluindo, setConcluindo] = useState(false);
+  const [processandoPresenca, setProcessandoPresenca] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
@@ -244,6 +248,31 @@ export default function DetalhesCA() {
       alert(err.message || "Não foi possível concluir o CA.");
     } finally {
       setConcluindo(false);
+    }
+  };
+
+  const confirmarPresenca = async () => {
+    setProcessandoPresenca(true);
+    try {
+      await confirmarPresencaCA(id);
+      await carregar();
+    } catch (err) {
+      alert(err.message || "Não foi possível confirmar a presença.");
+    } finally {
+      setProcessandoPresenca(false);
+    }
+  };
+
+  const desmarcarPresenca = async () => {
+    if (!window.confirm("Desmarcar sua presença neste CA?")) return;
+    setProcessandoPresenca(true);
+    try {
+      await cancelarPresencaCA(id);
+      await carregar();
+    } catch (err) {
+      alert(err.message || "Não foi possível desmarcar a presença.");
+    } finally {
+      setProcessandoPresenca(false);
     }
   };
 
@@ -393,7 +422,10 @@ export default function DetalhesCA() {
             </div>
           )}
 
-          {(dados.link_ca_online || podeConcluir) && (
+          {(dados.link_ca_online ||
+            podeConcluir ||
+            dados.pode_confirmar_presenca ||
+            dados.pode_desmarcar_presenca) && (
             <div className="flex flex-wrap items-center gap-2">
               {dados.link_ca_online && (
                 <a
@@ -406,6 +438,36 @@ export default function DetalhesCA() {
                   Entrar na videochamada
                   <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5" />
                 </a>
+              )}
+              {dados.pode_confirmar_presenca && (
+                <button
+                  type="button"
+                  onClick={confirmarPresenca}
+                  disabled={processandoPresenca}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors disabled:opacity-60"
+                >
+                  {processandoPresenca ? (
+                    <FontAwesomeIcon icon={faSpinner} spin className="w-4 h-4" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUserCheck} className="w-4 h-4" />
+                  )}
+                  Confirmar presença
+                </button>
+              )}
+              {dados.pode_desmarcar_presenca && (
+                <button
+                  type="button"
+                  onClick={desmarcarPresenca}
+                  disabled={processandoPresenca}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors disabled:opacity-60"
+                >
+                  {processandoPresenca ? (
+                    <FontAwesomeIcon icon={faSpinner} spin className="w-4 h-4" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUserCheck} className="w-4 h-4" />
+                  )}
+                  Desmarcar presença
+                </button>
               )}
               {podeConcluir && (
                 <button
@@ -423,6 +485,13 @@ export default function DetalhesCA() {
                 </button>
               )}
             </div>
+          )}
+
+          {dados.inscrito && (
+            <p className="text-sm text-emerald-700 flex items-center gap-2">
+              <FontAwesomeIcon icon={faCheckCircle} className="w-4 h-4" />
+              Presença confirmada neste CA.
+            </p>
           )}
 
           {avisoDataFutura && (

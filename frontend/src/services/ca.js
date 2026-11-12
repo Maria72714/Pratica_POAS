@@ -50,3 +50,13 @@ export function concluirCA(atendimentoId) {
     body: JSON.stringify({ status: "Concluído" }),
   });
 }
+
+/** Aluno confirma presença (inscrição) em um CA da sua disciplina/professor. */
+export function confirmarPresencaCA(atendimentoId) {
+  return apiJson(`${PREFIX}/${atendimentoId}/presenca`, { method: "POST" });
+}
+
+/** Aluno desmarca a própria presença (inscrição voluntária) no CA. */
+export function cancelarPresencaCA(atendimentoId) {
+  return apiJson(`${PREFIX}/${atendimentoId}/presenca`, { method: "DELETE" });
+}

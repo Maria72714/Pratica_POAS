@@ -11,6 +11,7 @@ import {
   faShieldHalved,
   faStar,
   faTag,
+  faUserCheck,
   faUsers,
   faVideo,
 } from "@fortawesome/free-solid-svg-icons";
@@ -186,6 +187,15 @@ export default function MuralCA() {
                     >
                       <FontAwesomeIcon icon={faShieldHalved} className="w-3 h-3" />
                       Selo
+                    </span>
+                  )}
+                  {c.inscrito && (
+                    <span
+                      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-700"
+                      title="Você confirmou presença neste CA"
+                    >
+                      <FontAwesomeIcon icon={faUserCheck} className="w-3 h-3" />
+                      Presença confirmada
                     </span>
                   )}
                 </div>
