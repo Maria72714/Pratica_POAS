@@ -9,7 +9,7 @@ export default function NotFound() {
           <img
             src="/images/logo_verde_pratica_vetorizada.png"
             alt="pratiCA"
-            className="w-16 h-auto object-contain"
+            className="w-14 h-auto object-contain"
           />
         </div>
 

@@ -9,6 +9,11 @@ import {
   faCircleInfo,
   faShieldHalved,
   faArrowUpRightFromSquare,
+  faLocationDot,
+  faTag,
+  faUsers,
+  faVideo,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   buscarAtendimentosProfessor,
@@ -23,6 +28,7 @@ import CalendarioAtendimentos from "../../components/CalendarioAtendimentos";
 import ChatAtendimento from "../../components/ChatAtendimento";
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
+import Loading from "../../components/ui/Loading";
 
 const ProfessorAtendimentos = () => {
   const navigate = useNavigate();
@@ -247,9 +253,10 @@ const ProfessorAtendimentos = () => {
           <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-3 sm:p-4">
               {loading ? (
-                <p className="text-gray-500 text-sm py-4 text-center">
-                  Carregando agendamentos...
-                </p>
+                <Loading
+                  texto="Carregando agendamentos..."
+                  minHeight="min-h-[180px]"
+                />
               ) : erro ? (
                 <p className="text-red-600 bg-red-50 rounded-lg p-4 text-sm">
                   {erro}
@@ -274,14 +281,36 @@ const ProfessorAtendimentos = () => {
                         </p>
 
                         <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 text-xs sm:text-sm text-gray-600">
-                          <span className="inline-flex items-center gap-1">
-                            📅 {formatarData(atendimento.data_atendimento)}
+                          <span className="inline-flex items-center gap-1.5">
+                            <FontAwesomeIcon
+                              icon={faCalendarDays}
+                              className="w-3.5 h-3.5 text-gray-400"
+                            />
+                            {formatarData(atendimento.data_atendimento)}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            📍 {formatarTexto(atendimento.modalidade)}
+                          <span className="inline-flex items-center gap-1.5">
+                            <FontAwesomeIcon
+                              icon={faLocationDot}
+                              className="w-3.5 h-3.5 text-gray-400"
+                            />
+                            {formatarTexto(atendimento.modalidade)}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            🏷️ {formatarTexto(atendimento.tipo_atendimento)}
+                          <span className="inline-flex items-center gap-1.5">
+                            <FontAwesomeIcon
+                              icon={faTag}
+                              className="w-3.5 h-3.5 text-gray-400"
+                            />
+                            {formatarTexto(atendimento.tipo_atendimento)}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <FontAwesomeIcon
+                              icon={faUsers}
+                              className="w-3.5 h-3.5 text-gray-400"
+                            />
+                            {atendimento.total_alunos ?? 0}{" "}
+                            {(atendimento.total_alunos ?? 0) === 1
+                              ? "aluno inscrito"
+                              : "alunos inscritos"}
                           </span>
                         </div>
                       </div>
@@ -306,6 +335,17 @@ const ProfessorAtendimentos = () => {
                             Selo do Mediador
                           </span>
                         )}
+
+                        <button
+                          onClick={() => navigate(`/ca/${atendimento.id}`)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 transition-colors"
+                        >
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            className="w-3.5 h-3.5"
+                          />
+                          Ver CA
+                        </button>
 
                         <button
                           onClick={() => {
@@ -350,9 +390,13 @@ const ProfessorAtendimentos = () => {
                                 href={atendimento.link_ca_online}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
                               >
-                                🌐 CA Online
+                                <FontAwesomeIcon
+                                  icon={faVideo}
+                                  className="w-3.5 h-3.5"
+                                />
+                                CA Online
                               </a>
                               <button
                                 onClick={() =>

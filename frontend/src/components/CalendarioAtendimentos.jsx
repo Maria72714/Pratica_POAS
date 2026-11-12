@@ -322,7 +322,7 @@ export default function CalendarioAtendimentos({
               <div className="flex justify-center mb-2">
                 <FontAwesomeIcon
                   icon={faCalendarDay}
-                  className="w-10 h-10 text-gray-300 shrink-0"
+                  className="w-8 h-8 text-gray-300 shrink-0"
                 />
               </div>
               {diaSelecionado

@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCommentDots } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCommentDots,
+  faUsers,
+  faVideo,
+  faArrowUpRightFromSquare,
+} from "@fortawesome/free-solid-svg-icons";
 import { apiFetch } from "../../services/httpClient";
 import ChatAtendimento from "../../components/ChatAtendimento";
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
+import Loading from "../../components/ui/Loading";
 
 function formatarData(iso) {
   if (!iso) return "—";
@@ -26,6 +33,7 @@ async function buscarAtendimentosAdmin() {
 }
 
 export default function AdminAtendimentos() {
+  const navigate = useNavigate();
   const [atendimentos, setAtendimentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -75,9 +83,7 @@ export default function AdminAtendimentos() {
         )}
 
         {carregando ? (
-          <p className="text-sm text-gray-500 py-8 text-center">
-            Carregando atendimentos...
-          </p>
+          <Loading texto="Carregando atendimentos..." minHeight="min-h-[200px]" />
         ) : atendimentos.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500 shadow-sm">
             <p className="font-semibold text-gray-800">
@@ -144,10 +150,28 @@ export default function AdminAtendimentos() {
                         {formatarData(atend.data_atendimento)}
                       </strong>
                     </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5 text-slate-500" />
+                      <strong className="text-gray-700">
+                        {atend.total_alunos ?? 0}
+                      </strong>{" "}
+                      aluno(s) inscrito(s)
+                    </span>
                   </div>
                 </div>
 
-                <div className="shrink-0 flex items-center justify-end gap-2">
+                <div className="shrink-0 flex items-center justify-end gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/ca/${atend.id}`)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
+                  >
+                    <FontAwesomeIcon
+                      icon={faArrowUpRightFromSquare}
+                      className="w-3.5 h-3.5"
+                    />
+                    Ver CA
+                  </button>
                   {atend.link_ca_online && (
                     <a
                       href={atend.link_ca_online}
@@ -155,7 +179,8 @@ export default function AdminAtendimentos() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
                     >
-                      🌐 CA Online
+                      <FontAwesomeIcon icon={faVideo} className="w-3.5 h-3.5" />
+                      CA Online
                     </a>
                   )}
                   <button

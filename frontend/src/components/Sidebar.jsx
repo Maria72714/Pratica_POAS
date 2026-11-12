@@ -54,7 +54,7 @@ const Sidebar = ({ itensMenu, role = "aluno" }) => {
             <img
               src="/images/logo_branca_pratica_vetorizada.png"
               alt="Logo Prática"
-              className="w-9 sm:w-10 h-auto flex-shrink-0 object-contain"
+              className="w-8 sm:w-9 h-auto flex-shrink-0 object-contain"
             />
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-white truncate">

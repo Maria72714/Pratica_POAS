@@ -13,3 +13,36 @@ body {
   outline: 2px solid #059669;
   outline-offset: 2px;
 }
+
+/* ── Animação de carregamento (componente Loading) ─────────────────── */
+@keyframes pratica-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pratica-logo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.animate-pratica-ring {
+  animation: pratica-ring-spin 1.3s linear infinite;
+}
+
+.animate-pratica-logo {
+  animation: pratica-logo-pulse 1.8s ease-in-out infinite;
+}
+
+/* Respeita quem prefere menos movimento (acessibilidade). */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pratica-ring,
+  .animate-pratica-logo {
+    animation: none;
+  }
+}

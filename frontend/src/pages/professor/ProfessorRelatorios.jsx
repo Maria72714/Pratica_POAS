@@ -475,7 +475,7 @@ export default function ProfessorRelatorios() {
             <div className="p-16 text-center">
               <FontAwesomeIcon
                 icon={faFileInvoice}
-                className="w-12 h-12 text-gray-300 mx-auto mb-4"
+                className="w-10 h-10 text-gray-300 mx-auto mb-4"
               />
               <p className="text-gray-500 font-medium">
                 Nenhum atendimento encontrado

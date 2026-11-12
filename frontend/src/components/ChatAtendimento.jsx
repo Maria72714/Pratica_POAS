@@ -235,7 +235,7 @@ export default function ChatAtendimento({
               <div className="flex flex-col items-center justify-center h-full text-center py-8 text-gray-400">
                 <FontAwesomeIcon
                   icon={faCommentDots}
-                  className="w-10 h-10 mb-2 text-gray-300"
+                  className="w-8 h-8 mb-2 text-gray-300"
                 />
                 <p className="text-xs font-medium text-gray-500">
                   Nenhuma mensagem ainda.
@@ -356,14 +356,14 @@ export default function ChatAtendimento({
       {/* Botão flutuante */}
       <button
         onClick={() => setAberto((v) => !v)}
-        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 shadow-lg hover:shadow-xl text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        className="relative w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 shadow-lg hover:shadow-xl text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95"
         title="Abrir chat do atendimento"
       >
         {aberto ? (
-          <FontAwesomeIcon icon={faXmark} className="w-6 h-6" />
+          <FontAwesomeIcon icon={faXmark} className="w-5 h-5" />
         ) : (
           <>
-            <FontAwesomeIcon icon={faCommentDots} className="w-6 h-6" />
+            <FontAwesomeIcon icon={faCommentDots} className="w-5 h-5" />
             {naoLidas > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
                 {naoLidas > 9 ? "9+" : naoLidas}

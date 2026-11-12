@@ -15,6 +15,7 @@ import CardAgendamento from "../CardAgendamento";
 import ChatAtendimento from "../ChatAtendimento";
 import PageShell from "../ui/PageShell";
 import PageHeader from "../ui/PageHeader";
+import Loading from "../ui/Loading";
 
 function formatarData(iso) {
   if (!iso) return "—";
@@ -105,6 +106,16 @@ const Dashboard = () => {
     </span>
   ) : null;
 
+  // Enquanto os dados não chegam, o indicador ocupa a tela inteira em vez de
+  // aparecer apenas dentro dos cards.
+  if (loading) {
+    return (
+      <PageShell>
+        <Loading texto="Carregando seus dados" telaInteira />
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell>
       <PageHeader
@@ -186,11 +197,7 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            {loading ? (
-              <p className="text-xs text-gray-500 text-center py-6">
-                Carregando...
-              </p>
-            ) : proximosAtendimentos.length === 0 ? (
+            {proximosAtendimentos.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <p className="text-xs">
                   Nenhum atendimento agendado no momento.
@@ -283,11 +290,7 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            {loading ? (
-              <p className="text-xs text-gray-500 text-center py-6">
-                Carregando...
-              </p>
-            ) : solicitacoesRecentes.length === 0 ? (
+            {solicitacoesRecentes.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <p className="text-xs">Nenhuma solicitação registrada.</p>
                 <Link

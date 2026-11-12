@@ -31,7 +31,7 @@ export default function DashboardAuth() {
         <img
           src={usuario.foto}
           alt="Foto do perfil"
-          style={{ width: '120px', borderRadius: '50%', display: 'block', marginBottom: '16px' }}
+          style={{ width: '96px', borderRadius: '50%', display: 'block', marginBottom: '16px' }}
         />
       )}
 

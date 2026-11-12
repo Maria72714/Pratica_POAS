@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarDays,
@@ -8,6 +9,7 @@ import {
   faCommentDots,
   faXmark,
   faArrowUpRightFromSquare,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { abrirNoGoogleCalendar } from "../../utils/googleCalendar";
 import CalendarioAtendimentos from "../../components/CalendarioAtendimentos";
@@ -22,9 +24,12 @@ import {
 import ChatAtendimento from "../../components/ChatAtendimento";
 import PageShell from "../../components/ui/PageShell";
 import PageHeader from "../../components/ui/PageHeader";
+import Loading from "../../components/ui/Loading";
 
 const Agendamentos = () => {
+  const navigate = useNavigate();
   const [agendamentos, setAgendamentos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
 
   const [abaAtiva, setAbaAtiva] = useState("proximos");
   const [modoVisualizacao, setModoVisualizacao] = useState("calendario"); // 'calendario' ou 'lista'
@@ -34,10 +39,16 @@ const Agendamentos = () => {
   useEffect(() => {
     const dadosUsuario =
       localStorage.getItem("usuario") || localStorage.getItem("suap_user");
-    if (!dadosUsuario) return;
+    if (!dadosUsuario) {
+      setCarregando(false);
+      return;
+    }
     try {
       const usuario = JSON.parse(dadosUsuario);
-      if (!usuario?.matricula) return;
+      if (!usuario?.matricula) {
+        setCarregando(false);
+        return;
+      }
 
       Promise.allSettled([
         buscarAtendimentos(usuario.matricula),
@@ -82,6 +93,7 @@ const Agendamentos = () => {
             professor: item.professor_nome || "",
             modalidade: item.modalidade || "",
             link_ca_online: item.link_ca_online || "",
+            total_alunos: item.total_alunos ?? 0,
             aberto: !!item.aberto,
             podeCancelar: item.pode_cancelar !== false,
           });
@@ -130,9 +142,10 @@ const Agendamentos = () => {
         });
 
         setAgendamentos(formatados);
-      });
+      }).finally(() => setCarregando(false));
     } catch (e) {
       console.error(e);
+      setCarregando(false);
     }
   }, []);
 
@@ -231,6 +244,12 @@ const Agendamentos = () => {
         actions={toggleModo}
       />
 
+      {carregando ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <Loading texto="Carregando agendamentos..." />
+        </div>
+      ) : (
+        <>
       {/* Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
@@ -362,6 +381,19 @@ const Agendamentos = () => {
                       />
                       <span>{item.local}</span>
                     </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <FontAwesomeIcon
+                        icon={faUsers}
+                        className="w-4 h-4 text-gray-400 shrink-0"
+                      />
+                      <span>
+                        {item.total_alunos}{" "}
+                        {item.total_alunos === 1
+                          ? "aluno inscrito"
+                          : "alunos inscritos"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Assunto */}
@@ -400,6 +432,22 @@ const Agendamentos = () => {
                           />
                           CA Online
                         </a>
+                      )}
+                      {/* Página específica do CA */}
+                      {item.id?.toString().startsWith("atend-") && (
+                        <button
+                          onClick={() =>
+                            navigate(`/ca/${item.id.replace("atend-", "")}`)
+                          }
+                          className="py-2 px-3 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          title="Abrir a página do CA"
+                        >
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            className="w-3.5 h-3.5 shrink-0"
+                          />
+                          Ver CA
+                        </button>
                       )}
                       {/* Botão de Chat: só para atendimentos reais (prefixo "atend-") */}
                       {item.id?.toString().startsWith("atend-") && (
@@ -446,6 +494,8 @@ const Agendamentos = () => {
             )}
           </div>
         </div>
+      )}
+        </>
       )}
 
       {chatAtendimentoId && (

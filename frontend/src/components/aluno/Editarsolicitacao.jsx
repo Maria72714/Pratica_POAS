@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheck,
   faCircleExclamation,
-  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -18,6 +17,7 @@ import {
   fetchDisciplinasSuap,
 } from "../../services/api";
 import CalendarioAtendimentos from "../CalendarioAtendimentos";
+import Loading from "../ui/Loading";
 
 const OPCOES_SUPORTE = [
   {
@@ -245,12 +245,8 @@ export default function EditarSolicitacao() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen text-slate-500 text-sm gap-2">
-        <FontAwesomeIcon
-          icon={faSpinner}
-          className="w-5 h-5 text-emerald-500 animate-spin"
-        />
-        Carregando solicitação...
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Loading texto="Carregando solicitação..." />
       </div>
     );
   }

@@ -7,6 +7,7 @@ import {
   faMagnifyingGlass,
   faXmark,
   faRightFromBracket,
+  faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
@@ -16,6 +17,22 @@ import {
   marcarTodasNotificacoesComoLidas,
   deletarNotificacao,
 } from "../services/api";
+
+function formatarDataNotificacao(iso) {
+  if (!iso) return "";
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "";
+  const agora = new Date();
+  const diffMs = agora - data;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "agora";
+  if (diffMin < 60) return `${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH} h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD} d`;
+  return data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
 
 const Header = ({ usuario }) => {
   const navigate = useNavigate();
@@ -85,6 +102,16 @@ const Header = ({ usuario }) => {
     try {
       await marcarNotificacaoComoLida(id);
     } catch (err) {}
+  }
+
+  // Ao clicar numa notificação: marca como lida e navega para a página
+  // relacionada (quando houver um link de destino definido pelo backend).
+  async function handleNotificacaoClick(notif) {
+    await handleMarcarComoLida(notif.id);
+    if (notif.link_destino) {
+      setDropdownAberto(false);
+      navigate(notif.link_destino);
+    }
   }
 
   async function handleMarcarTodasComoLidas() {
@@ -188,8 +215,13 @@ const Header = ({ usuario }) => {
                     notificacoes.map((notif) => (
                       <div
                         key={notif.id}
-                        onClick={() => handleMarcarComoLida(notif.id)}
+                        onClick={() => handleNotificacaoClick(notif)}
                         className={`p-2 sm:p-4 border-b border-gray-50 flex gap-2 sm:gap-3 cursor-pointer transition-colors hover:bg-gray-50 ${!notif.lida ? "bg-emerald-50/30" : ""}`}
+                        title={
+                          notif.link_destino
+                            ? "Clique para abrir a página relacionada"
+                            : undefined
+                        }
                       >
                         {/* Indicador de Tipo */}
                         <div className="mt-0.5 flex-shrink-0">
@@ -213,12 +245,21 @@ const Header = ({ usuario }) => {
                               {notif.titulo}
                             </h4>
                             <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">
-                              {notif.data}
+                              {formatarDataNotificacao(notif.criado_em)}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5 leading-tight line-clamp-2">
                             {notif.mensagem}
                           </p>
+                          {notif.link_destino && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 mt-1">
+                              <FontAwesomeIcon
+                                icon={faArrowUpRightFromSquare}
+                                className="w-2.5 h-2.5"
+                              />
+                              Ver detalhes
+                            </span>
+                          )}
                         </div>
 
                         {/* Botão de excluir individual */}

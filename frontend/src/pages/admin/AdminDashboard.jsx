@@ -9,6 +9,7 @@ import {
   decidirSolicitacao,
 } from '../../services/aluno/solicitacao';
 import { Settings, Users, DoorOpen, CheckCircle, X, FileText, ClipboardList, UserSearch } from 'lucide-react';
+import Loading from '../../components/ui/Loading';
 
 function formatarData(iso) {
   if (!iso) return '—';
@@ -348,7 +349,11 @@ export default function AdminDashboard() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-500">Carregando...</p>
+        <Loading
+          texto="Carregando..."
+          corTexto="text-slate-400"
+          telaInteira
+        />
       ) : (
         <div>
           {/* ========== MEDIADORES TAB ========== */}

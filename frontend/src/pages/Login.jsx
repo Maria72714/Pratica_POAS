@@ -97,7 +97,7 @@ const Login = () => {
             <img
               src="/images/pratiCA_logo_vetorizada (1).png"
               alt="pratiCA"
-              className="h-12 w-auto"
+              className="h-10 w-auto"
             />
             <div>
               <h1 className="text-2xl font-bold text-gray-800 tracking-tight">

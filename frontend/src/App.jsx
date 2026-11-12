@@ -24,6 +24,8 @@ import ProfessorRelatorios from "./pages/professor/ProfessorRelatorios";
 import ComplementacaoPerfil from "./pages/aluno/ComplementacaoPerfil";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAtendimentos from "./pages/admin/AdminAtendimentos";
+import DetalhesCA from "./pages/ca/DetalhesCA";
+import MuralCA from "./pages/ca/MuralCA";
 
 import { AuthProvider } from "./context/AuthContext";
 import { resolveRoleFromUser, getRoleTheme } from "./theme/roles";
@@ -38,6 +40,7 @@ import {
   faClockRotateLeft,
   faCircleInfo,
   faChartColumn,
+  faChalkboardUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 function AppLayout({
@@ -68,13 +71,15 @@ function AppLayout({
     }
 
     const path = window.location.pathname;
+    // Rotas liberadas para todos os perfis autenticados (ex.: página do CA).
+    const rotaLivre = path.startsWith("/ca") || path === "/perfil";
 
-    if (isAdminUser && !path.startsWith("/admin") && path !== "/perfil") {
+    if (isAdminUser && !path.startsWith("/admin") && !rotaLivre) {
       navigate("/admin");
       return;
     }
 
-    if (isMediadorUser && !path.startsWith("/mediador") && path !== "/perfil") {
+    if (isMediadorUser && !path.startsWith("/mediador") && !rotaLivre) {
       navigate("/mediador");
       return;
     }
@@ -83,7 +88,7 @@ function AppLayout({
       isProfessorUser &&
       !isAdminUser &&
       !path.startsWith("/professor") &&
-      path !== "/perfil"
+      !rotaLivre
     ) {
       navigate("/professor");
       return;
@@ -144,6 +149,11 @@ function AppLayout({
       texto: "Solicitações TAI",
       link: "/mediador/solicitacoes",
     },
+    {
+      icon: faChalkboardUser,
+      texto: "Centros de Aprendizagem",
+      link: "/ca",
+    },
     { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
@@ -153,6 +163,11 @@ function AppLayout({
       icon: faClipboardList,
       texto: "Meus Atendimentos",
       link: "/professor/atendimentos",
+    },
+    {
+      icon: faChalkboardUser,
+      texto: "Centros de Aprendizagem",
+      link: "/ca",
     },
     {
       icon: faPlus,
@@ -180,6 +195,11 @@ function AppLayout({
       texto: "Atendimentos",
       link: "/admin/atendimentos",
     },
+    {
+      icon: faChalkboardUser,
+      texto: "Centros de Aprendizagem",
+      link: "/ca",
+    },
     { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
@@ -196,6 +216,11 @@ function AppLayout({
         ]
       : []),
     { icon: faClockRotateLeft, texto: "Histórico", link: "/historico" },
+    {
+      icon: faChalkboardUser,
+      texto: "Centros de Aprendizagem",
+      link: "/ca",
+    },
     { icon: faUser, texto: "Meu Perfil", link: "/perfil" },
   ];
 
@@ -314,6 +339,24 @@ function App() {
             element={
               <AppLayout>
                 <EditarSolicitacao />
+              </AppLayout>
+            }
+          />
+
+          {/* ── Página do CA (acessível a todos os perfis) ──────────────── */}
+          <Route
+            path="/ca"
+            element={
+              <AppLayout>
+                <MuralCA />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/ca/:id"
+            element={
+              <AppLayout>
+                <DetalhesCA />
               </AppLayout>
             }
           />
