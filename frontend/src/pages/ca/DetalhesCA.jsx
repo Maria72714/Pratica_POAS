@@ -429,8 +429,8 @@ export default function DetalhesCA() {
 
           {(dados.link_ca_online ||
             podeConcluir ||
-            dados.pode_confirmar_presenca ||
-            dados.pode_desmarcar_presenca) && (
+            (role === "aluno" && dados.pode_confirmar_presenca) ||
+            (role === "aluno" && dados.pode_desmarcar_presenca)) && (
             <div className="flex flex-wrap items-center gap-2">
               {dados.link_ca_online && (
                 <a
@@ -444,7 +444,7 @@ export default function DetalhesCA() {
                   <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5" />
                 </a>
               )}
-              {dados.pode_confirmar_presenca && (
+              {role === "aluno" && dados.pode_confirmar_presenca && (
                 <button
                   type="button"
                   onClick={confirmarPresenca}
@@ -459,7 +459,7 @@ export default function DetalhesCA() {
                   Confirmar presença
                 </button>
               )}
-              {dados.pode_desmarcar_presenca && (
+              {role === "aluno" && dados.pode_desmarcar_presenca && (
                 <button
                   type="button"
                   onClick={desmarcarPresenca}
@@ -668,7 +668,8 @@ export default function DetalhesCA() {
                 className="flex gap-3 bg-gray-50 rounded-xl p-3"
               >
                 <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {(c.autor_nome || "U").charAt(0).toUpperCase()}
+                  {(c.autor_nome || "U").charAt(0).toUpperCase()
+                  }
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

@@ -57,12 +57,13 @@ export function resolveRoleFromUser(user) {
   if (!user) return 'aluno';
   const tipo = (user.tipo || user.tipo_usuario || '').toLowerCase();
   if (tipo === 'admin') return 'admin';
+  if (tipo === 'mediador') return 'mediador';
+  if (tipo === 'professor') return 'professor';
+
   const vinculo = (user.tipo_vinculo || '').toLowerCase();
   if (user.is_aluno || vinculo.includes('aluno') || tipo === 'aluno') {
     return 'aluno';
   }
-  if (tipo === 'mediador') return 'mediador';
-  if (tipo === 'professor') return 'professor';
   if (vinculo.includes('prof') || vinculo.includes('docente') || vinculo.includes('servidor')) {
     return 'professor';
   }
